@@ -772,7 +772,7 @@ function keepPlaying(uid: number): LoggedChange {
 }
 
 /** Job codes as stored in contracts (see labels.ts). */
-const JOBS = [16, 20, 2, 2, 2, 34, 26, 14, 14, 44, 12, 60, 64, 88];
+const JOBS = [16, 20, 2, 2, 2, 34, 26, 14, 14, 44, 12, 60, 64, 88, 10, 38, 46, 62];
 const STAFF_ATTRIBUTES = [
   "attacking", "defending", "fitness", "goalkeeping", "possession", "set_pieces", "tactical", "technical",
   "determination", "motivating", "people_management", "data_analysis", "judging_ability", "judging_potential",
@@ -1320,14 +1320,17 @@ function recallLoan(uid: number): LoggedChange | null {
 /** `undo_change`: writes the old value back unless the value has changed since. */
 // Staff: moves and jobs ---------------------------------------------------------------------------------------------
 
-/** The jobs the real `change_staff_job` gives, by contract code. */
-const STAFF_JOBS = [2, 20, 22, 26, 34, 60, 64, 12, 40, 48, 50, 14, 44, 58];
+/** The jobs the real `change_staff_job` gives, by contract code: the last a director of football's. */
+const STAFF_JOBS = [2, 20, 22, 26, 34, 60, 62, 64, 12, 38, 40, 46, 48, 50, 14, 44, 58, 86, 88, 10];
 
-/** What a member of staff's move or new job changed, by the change's id: his list row as it was. */
+/** The job code of a director of football, whom a club has one of at most. */
+const DIRECTOR_OF_FOOTBALL = 10;
+
+/** What a member of staff's move, new job or signing changed, by the change's id: his list row as it was. */
 const staffUndo = new Map<number, Pick<StaffSummary, "club" | "clubUid" | "job">>();
 
-/** The member of staff `uid`, checked as the real commands check him before a move or a new job. */
-function movableStaff(uid: number): StaffSummary {
+/** The member of staff `uid`, checked as the real commands check him before a move, a new job or a signing. */
+function movableStaff(uid: number, signing = false): StaffSummary {
   const member = staff.find((s) => s.uid === uid);
   if (!member) {
     throw notFound("staff", uid);
@@ -1335,7 +1338,7 @@ function movableStaff(uid: number): StaffSummary {
   if (member.isHuman) {
     throw failure("staff.you", "this is you, the human manager");
   }
-  if (member.clubUid === null) {
+  if (member.clubUid === null && !signing) {
     throw failure("staff.unemployed", "the member of staff has no club");
   }
   if (member.job === 16) {
@@ -1346,15 +1349,46 @@ function movableStaff(uid: number): StaffSummary {
   return member;
 }
 
-/** A plan from one club to another: every one but a free agent's signing. */
+/** A plan from one club to another: every one but a signing. */
 type ClubToClub = MovePreview & { from: ClubName };
 
-/** `plan_staff_move`: the checks of the real command that the fixtures can have, with its messages. */
-function planStaffMove(uid: number, clubUid: number): ClubToClub {
-  const member = movableStaff(uid);
+/** A job the real commands give: refused otherwise, with their message. */
+function givenJob(code: number | null): number {
+  if (code === null || !STAFF_JOBS.includes(code)) {
+    throw failure("staff.job", `job ${code} is not one the editor gives or takes away`, { job: code ?? 0 });
+  }
+  return code;
+}
+
+/** Refuses a director of football for a club that has one, other than `member`, as the real commands do. */
+function checkDirector(clubUid: number, job: number, member: StaffSummary) {
+  const director = staff.find((s) => s.clubUid === clubUid && s.job === DIRECTOR_OF_FOOTBALL && s.uid !== member.uid);
+  if (job === DIRECTOR_OF_FOOTBALL && director) {
+    const message = `the club has a director of football already (the member of staff with id ${director.uid})`;
+    throw failure("staff.directorTaken", message, { uid: director.uid, name: director.name });
+  }
+}
+
+/**
+ * `plan_staff_move`: the checks of the real command that the fixtures can have, with its messages. One with no club is
+ * signed as `job`, on a contract made on `terms`.
+ */
+function planStaffMove(uid: number, clubUid: number, job?: number, terms: MoveTerms = {}): MovePreview {
+  const member = movableStaff(uid, true);
   const to = clubs.find((c) => c.uid === clubUid);
   if (!to) {
     throw notFound("club", clubUid);
+  }
+  if (member.clubUid === null) {
+    if (job === undefined) {
+      throw failure("staff.noJob", "choose the job the member of staff takes at the club");
+    }
+    if (to.women !== isWoman(member.uid)) {
+      throw failure("move.menAndWomen", "one club is a men's club and the other a women's club");
+    }
+    checkDirector(clubUid, givenJob(job), member);
+    const staffContract = { wage: terms.wage ?? 2_500, expires: terms.expires ?? 20290630 };
+    return { to: { uid: to.uid, name: to.name }, staffContract };
   }
   if (member.clubUid === clubUid) {
     throw failure("move.sameClub", "the player is at this club already");
@@ -1363,6 +1397,11 @@ function planStaffMove(uid: number, clubUid: number): ClubToClub {
   if (to.women !== from.women) {
     throw failure("move.menAndWomen", "one club is a men's club and the other a women's club");
   }
+  if (job !== undefined) {
+    givenJob(member.job);
+    givenJob(job);
+  }
+  checkDirector(clubUid, job ?? member.job ?? 0, member);
   return { from: { uid: from.uid, name: from.name }, to: { uid: to.uid, name: to.name } };
 }
 
@@ -1386,23 +1425,25 @@ function logStaff(member: StaffSummary, field: string, old: number, value: numbe
   return { ...logged };
 }
 
-function moveStaff(uid: number, clubUid: number): LoggedChange {
-  const preview = planStaffMove(uid, clubUid);
+function moveStaff(uid: number, clubUid: number, job?: number, terms: MoveTerms = {}): LoggedChange {
+  const preview = planStaffMove(uid, clubUid, job, terms);
   const member = staff.find((s) => s.uid === uid)!;
-  staffUndo.set(changes.length + 1, { club: member.club, clubUid: member.clubUid, job: member.job });
+  const was = { club: member.club, clubUid: member.clubUid, job: member.job };
+  staffUndo.set(changes.length + 1, was);
   member.club = preview.to.name;
   member.clubUid = preview.to.uid;
-  return logStaff(member, "club", preview.from.uid, preview.to.uid, { from: preview.from.name, to: preview.to.name });
+  member.job = job ?? member.job;
+  const moved = { ...(preview.from && { from: preview.from.name }), to: preview.to.name };
+  return logStaff(member, "club", preview.from?.uid ?? 0, preview.to.uid, moved);
 }
 
 function changeStaffJob(uid: number, job: number): LoggedChange {
   const member = movableStaff(uid);
-  for (const code of [member.job, job]) {
-    if (code === null || !STAFF_JOBS.includes(code)) {
-      throw failure("staff.job", `job ${code} is not one the editor gives or takes away`, { job: code ?? 0 });
-    }
-  }
-  staffUndo.set(changes.length + 1, { club: member.club, clubUid: member.clubUid, job: member.job });
+  givenJob(member.job);
+  givenJob(job);
+  checkDirector(member.clubUid!, job, member);
+  const was = { club: member.club, clubUid: member.clubUid, job: member.job };
+  staffUndo.set(changes.length + 1, was);
   const old = member.job!;
   member.job = job;
   return logStaff(member, "contract.job", old, job);
@@ -2705,9 +2746,10 @@ export async function mockInvoke<T>(command: string, args?: Record<string, unkno
       const limit = Number(args?.limit ?? 200);
       const filter = (args?.filter ?? {}) as ClubFilter;
       const kindOf = clubs.find((c) => c.uid === args?.kindOf);
-      // A free agent's kind is his own.
+      // A free agent's kind is his own, and so is that of a member of staff with no club.
       const kindOfPlayer = typeof args?.kindOfPlayer === "number" ? isWoman(args.kindOfPlayer) : undefined;
-      const women = kindOf ? kindOf.women : (kindOfPlayer ?? filter.women);
+      const kindOfStaff = typeof args?.kindOfStaff === "number" ? isWoman(args.kindOfStaff) : undefined;
+      const women = kindOf ? kindOf.women : (kindOfPlayer ?? kindOfStaff ?? filter.women);
       const words = fold(query).split(/\s+/).filter(Boolean);
       const hits = clubs
         .filter((c) => String(c.uid) === query.trim() || words.every((w) => fold(`${c.name} ${c.shortName ?? ""}`).includes(w)))
@@ -2882,9 +2924,19 @@ export async function mockInvoke<T>(command: string, args?: Record<string, unkno
     case "staff_jobs":
       return [...STAFF_JOBS] as T;
     case "plan_staff_move":
-      return planStaffMove(Number(args?.uid), Number(args?.club)) as T;
+      return planStaffMove(
+        Number(args?.uid),
+        Number(args?.club),
+        args?.job as number | undefined,
+        (args?.terms ?? {}) as MoveTerms,
+      ) as T;
     case "move_staff":
-      return moveStaff(Number(args?.uid), Number(args?.club)) as T;
+      return moveStaff(
+        Number(args?.uid),
+        Number(args?.club),
+        args?.job as number | undefined,
+        (args?.terms ?? {}) as MoveTerms,
+      ) as T;
     case "change_staff_job":
       return changeStaffJob(Number(args?.uid), Number(args?.job)) as T;
     case "plan_club_swap":

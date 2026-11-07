@@ -32,11 +32,12 @@ a member of staff (see `staff_move.rs`) or a squad for a player who joins it (se
 `transfer.rs`), whose elements it moves there (see `own_memory.rs`). It never gives that
 memory back.
 
-A contract for a free agent it signs is the game's own: the game keeps its contracts in a
-pool, a static of the plugin that hands out 200-byte slots and chains the free ones, and
-the editor takes the first free slot as the game does, writing the pool's first free slot
-and its counts (`object_pool.rs`, `signing.rs`; `Process::write_static` writes only a
-module's writable data, never its code). On Windows it puts no code of its own in the
+A contract for a free agent it signs, or for a member of staff with no club, is the game's
+own: the game keeps its contracts in a pool, a static of the plugin that hands out 200-byte
+slots and chains the free ones, and the editor takes the first free slot as the game does,
+writing the pool's first free slot and its counts (`object_pool.rs`, `signing.rs`,
+`staff_move.rs`; `Process::write_static` writes only a module's writable data, never its
+code). On Windows it puts no code of its own in the
 game; on macOS the game loads one small library of ours, the bridge (see
 [On macOS](#on-macos)).
 
@@ -291,7 +292,12 @@ fmlibre-probe move 28106491 597 --release 2000031611 --restore   # move him ther
 fmlibre-probe swap 13200568 72048035 --restore       # two players swap clubs and back: this writes too
 fmlibre-probe release 91100466 --restore             # release a player from his club and back: this writes too
 fmlibre-probe staff-move 4000571 1139 --restore      # move a member of staff to a club and back: this writes too
+fmlibre-probe staff-move 4102655 676 --job 88 --restore   # the same, as another job (a code, see staff-job)
 fmlibre-probe staff-job 4000571 14 --restore         # give a member of staff another job and back: this writes too
+fmlibre-probe staff-sign 9318 728 2 --restore        # sign one with no club, as a coach, and back: this writes too
+fmlibre-probe staff-places                           # where clubs keep their staff, job by job; no writes
+fmlibre-probe staff-places --club-offset 0x148       # what one place of every club holds: its director of football
+fmlibre-probe contract-classes                       # full and basic contracts of players and staff, counted
 fmlibre-probe injuries 728                           # the current injuries of a club's players
 fmlibre-probe heal 37055843 --heal --restore         # heal a player and list his injuries again: this writes too
 fmlibre-probe bans                                   # every player with a ban; bans <uid> for one player's
@@ -313,7 +319,7 @@ Addresses and lengths are hexadecimal. Add `--json report.json` to `info` or `sc
 to save the results. `calibrate --scan` ignores the build profile and finds the
 arrays, the in-game date and the retirement manager the way it would on an unknown build.
 
-Only `set`, `move`, `swap`, `release`, `staff-move`, `staff-job`, `heal --heal`,
+Only `set`, `move`, `swap`, `release`, `staff-move`, `staff-job`, `staff-sign`, `heal --heal`,
 `bans --lift`, `tie-set`, `tie-add`, `tie-remove` and `captain` write to the game. Unlike the app, the probe writes to
 a build without a profile too, as far as the checks allow, so that a new build can be mapped.
 - `set` changes one field after the checks above. Values are as stored:

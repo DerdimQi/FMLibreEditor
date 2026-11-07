@@ -1,7 +1,7 @@
 import { Fragment, useContext, useEffect, useId, useState, type ReactNode } from "react";
 import { AttributeActions } from "./AttributeActions";
 import { EditableValue } from "./EditControls";
-import { changeStaffJob, staffJobs } from "./editing";
+import { changeStaffJob, offeredStaffJobs } from "./editing";
 import { describeError } from "./format";
 import { jobLabel, profileText, STAFF_ATTRIBUTE_LABELS, type StaffAttributeKey } from "./labels";
 import { MoveButton } from "./MoveDialog";
@@ -121,14 +121,13 @@ export function StaffProfile({ member, version, onClose }: StaffProfileProps) {
       onClose={onClose}
       editing={editing}
       actions={
-        // Only while the profile is read, not edited, and for someone with a club to leave who is not you.
+        // Only while the profile is read, not edited, and for someone who is not you: one with no club is signed.
         editing.editable &&
         editing.stage === "view" &&
-        info.club !== null &&
         !info.isHuman && (
           <MoveButton
             kind="staff"
-            player={{ uid: info.uid, name: info.name, club: info.club, clubUid: info.clubUid }}
+            player={{ uid: info.uid, name: info.name, club: info.club, clubUid: info.clubUid, job: info.job }}
             contract={null}
             ready={details !== undefined}
           />
@@ -201,9 +200,6 @@ function ContractGroup({ uid, contract, canChangeJob }: ContractGroupProps) {
   );
 }
 
-/** The jobs the editor gives, once the app has said which; they do not change during a connection. */
-let offeredJobs: Promise<number[]> | null = null;
-
 /**
  * Giving the member of staff another job at their club: a button, then a select of the jobs the editor gives and
  * Apply. Offered while the game can be written to, for a job the editor can take away; the game moves them between
@@ -220,11 +216,7 @@ function JobChange({ uid, job }: { uid: number; job: number }) {
 
   useEffect(() => {
     let alive = true;
-    offeredJobs ??= staffJobs().catch((e: unknown) => {
-      offeredJobs = null;
-      throw e;
-    });
-    offeredJobs.then(
+    offeredStaffJobs().then(
       (codes) => alive && setJobs(codes),
       () => alive && setJobs([]),
     );
