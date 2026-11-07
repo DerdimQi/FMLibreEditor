@@ -1124,8 +1124,10 @@ impl Connection {
         let holder = failure.params.get("uid").and_then(|uid| uid.parse().ok());
         let name = match failure.code {
             "edit.taken" => holder.and_then(|uid| self.players.get(uid)).map(|player| player.name.clone()),
-            // The club's director of football, a member of staff.
-            "staff.directorTaken" => holder.and_then(|uid| self.staff.get(uid)).map(|member| member.name.clone()),
+            // The club's director of football or manager, a member of staff.
+            "staff.directorTaken" | "staff.managerTaken" => {
+                holder.and_then(|uid| self.staff.get(uid)).map(|member| member.name.clone())
+            }
             _ => None,
         };
         match name {

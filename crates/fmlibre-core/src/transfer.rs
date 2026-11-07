@@ -261,7 +261,8 @@ pub enum MoveError {
     You,
     /// The member of staff has no contract.
     Unemployed,
-    /// The club or one of its teams points at the member of staff directly, as a team does at its manager.
+    /// The club or one of its teams points at the member of staff directly, other than in its places for a director of
+    /// football and a manager, or someone with another job is in one of those places.
     StaffRole,
     /// None of the club's department lists holds the member of staff, or the new club's holds him already.
     NotInDepartment,
@@ -270,7 +271,8 @@ pub enum MoveError {
         department: &'static str,
         staff: u64,
     },
-    /// A job the editor does not give or take away (a manager's, the board's, one it cannot name).
+    /// A job the editor does not give or take away (the board's, one it cannot name), or one whose place the layout
+    /// does not put.
     UnusualJob {
         job: u8,
     },
@@ -278,6 +280,12 @@ pub enum MoveError {
     DirectorTaken {
         uid: u32,
     },
+    /// The club's senior team has a manager already: the member of staff with this id.
+    ManagerTaken {
+        uid: u32,
+    },
+    /// The club's senior team's manager is the human manager.
+    YourClub,
     /// A member of staff who has no club is signed for a job, and none was given.
     NoJob,
     /// The club's senior team plays at no stadium the editor can read.
@@ -381,8 +389,8 @@ impl fmt::Display for MoveError {
             MoveError::You => f.write_str("this is you, the human manager"),
             MoveError::Unemployed => f.write_str("the member of staff has no club"),
             MoveError::StaffRole => f.write_str(
-                "the club or one of its teams points at this member of staff directly, as a team does at its \
-                 manager; the game moves him itself",
+                "the club or one of its teams points at this member of staff directly, as a club does at a manager \
+                 who is also its director of football; the game moves him itself",
             ),
             MoveError::NotInDepartment => f.write_str("the club's staff lists do not hold him where they should"),
             MoveError::DepartmentFull { department, staff } => write!(
@@ -399,6 +407,14 @@ impl fmt::Display for MoveError {
                 "the club has a director of football already (the member of staff with id {uid}); give this one \
                  another job, or move that one first"
             ),
+            MoveError::ManagerTaken { uid } => write!(
+                f,
+                "the club has a manager already (the member of staff with id {uid}); give this one another job, or \
+                 move that one first"
+            ),
+            MoveError::YourClub => {
+                f.write_str("you manage this club; give this member of staff another job there, the editor never takes your place")
+            }
             MoveError::NoJob => f.write_str("choose the job the member of staff takes at the club"),
             MoveError::NoStadium => f.write_str("the club's first team plays at no stadium the editor can read"),
             MoveError::SharedName { holders } => write!(
@@ -487,6 +503,8 @@ impl Coded for MoveError {
             MoveError::DepartmentFull { .. } => "staff.noRoom",
             MoveError::UnusualJob { .. } => "staff.job",
             MoveError::DirectorTaken { .. } => "staff.directorTaken",
+            MoveError::ManagerTaken { .. } => "staff.managerTaken",
+            MoveError::YourClub => "staff.yourClub",
             MoveError::NoJob => "staff.noJob",
             MoveError::NoStadium => "stadium.none",
             MoveError::SharedName { .. } => "stadium.shared",
@@ -511,7 +529,10 @@ impl Coded for MoveError {
 
     fn params(&self) -> Vec<(&'static str, String)> {
         match self {
-            MoveError::Moved { uid } | MoveError::NotAClub { uid } | MoveError::DirectorTaken { uid } => {
+            MoveError::Moved { uid }
+            | MoveError::NotAClub { uid }
+            | MoveError::DirectorTaken { uid }
+            | MoveError::ManagerTaken { uid } => {
                 vec![("uid", uid.to_string())]
             }
             MoveError::NoRoom { players } => vec![("players", players.to_string())],

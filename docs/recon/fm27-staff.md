@@ -29,7 +29,7 @@ The other codes the editor names (2 Coach, 10 Director of Football, 12 Physio, .
 
 `fmlibre-probe staff-places` counts, job by job, which of the club's department lists hold its staff (`M`edical
 `+0x60`, `C`oaching `+0x78`, `S`couting `+0x90`), and at which offsets the club (its first `0x400` bytes) or one of its
-teams (`0x800`) points at them itself:
+teams (`0x800`, which takes in the teams that follow it in memory: see Managers below) points at them itself:
 
 - Chief doctors and doctors: all in the medical list (307 and 436). Head performance analysts: the coaching list (199,
   6 in coaching and scouting). Loan managers (89 + 2) and technical directors (223 + 5): the scouting list. So these move
@@ -39,15 +39,57 @@ teams (`0x800`) points at them itself:
   a director of football at each of the 362 clubs that have one, and at 34 more someone else who does that job too
   (25 managers, 4 directors, 2 presidents, a goalkeeping coach, a head of youth development, a recruitment analyst),
   always of that club. The place holds the member of staff's object, not his person block.
-- Managers: held by their team at `+0x80` (3,056 at a senior team, the rest at youth and reserve teams). The board
-  (chairpersons, directors, presidents, owners, codes 8 and 24): in no list and held by neither the club nor a team in
-  those bytes. These are left to the game.
+- Managers: held by their team at `+0x80` (3,056 at a senior team, the rest at youth and reserve teams; see Managers
+  below). The board (chairpersons, directors, presidents, owners, codes 8 and 24): in no list and held by neither the
+  club nor a team in those bytes, and left to the game.
 
 A move takes a director of football out of his club's place and puts him in the new club's, which must be empty: the
 game has no club with two, and a club with one refuses another (`staff.directorTaken`, naming him). Given another job,
 he leaves the place and joins that job's department; given the job, a member of staff leaves his departments and takes
 his club's place, if it is empty. A club whose place holds someone who is not a director of football by job (a manager
 who does the job too) leaves him to the game.
+
+## Managers
+
+Read on the Windows Steam build 26340721, on a save of 19 August 2027 (28,221 staff, 23,609 clubs), whose human manager
+runs Monza.
+
+**The team's place.** A team points at its manager's object (not his person block) at `+0x80` (`[team] manager`), null
+for none. `staff-places --team-offset 0x80` reads that place of every team, by kind: a manager (job 16) under contract
+with that team at 2,048 senior teams, and at 384 youth and reserve teams (91 under-21, 110 under-18 and 105 of kind 11
+among them); at six small clubs' senior teams a chairperson, owner, president or director of football who runs the
+team; null at 21,549 senior teams. A youth or reserve team's manager is also in the club's coaching list (that is the
+`C 384` among the 2,426 managers); a senior team's is in no list. The human manager's club points at his object too
+(his person block lies `0x340` further on).
+
+A team takes `0xB8` bytes, and the teams lie one after another in memory, in alphabetical order: Arsenal's senior team
+at `…200c8`, Aston Villa's at `…20180`, and Barnet's two teams on. So `+0x138` and `+0x1F0` of a team are the next two
+teams' `+0x80`: Parma's read Aimo Diana and Antonio Buscè, Perugia's and Pescara's managers. The youth and reserve teams
+said above to hold a manager at `+0x138` were that.
+
+**What else points at a manager.** `fmlibre-probe staff-refs` finds every pointer to a member of staff's object or
+person block and says what holds it. For four managers (Diego Simeone, Luis Enrique, Arne Slot, Xabi Alonso), against a
+coach, a fitness coach, an assistant coach and Pep Guardiola (with no club): his object is held only by his team's
+`+0x80` and the game's list of staff. His person block, by his contract (`+0x08`), entries of other people's relations
+(70 to 150 for a manager, a few for a coach), the game's lists of people, and records of what happened: match records
+(the senior team, the club and him), news items (`TRANSFER_OFFER_NEWS`, `PLAYER_CLUB_DEBUT_NEWS`, press conferences),
+`MANAGER_DESCRIPTION` (him at `+0xd8`, his club after him), and a few `db::CLUB_VISION_OBJECTIVE`. His id (a `u32`) is
+in about twenty records `0x140` bytes apart, likely one a match. None of these says who manages a club now: a move
+leaves them as they are, as the game does when a manager leaves.
+
+**Clubs between managers.** Of the clubs whose finances the game keeps (those of the leagues being played), ten had no
+manager at `+0x80`: Parma, Al Taawoun, Laguna, Albacete, US Orléans, Al Faisaly, Ceuta, Quevilly-Rouen, Exeter City and
+Crawley Town. So an empty place is a state the game itself leaves a club in. The game's job adverts (`JOB_ADVERT`, 0x50
+bytes: the team at `+0x20`, the job's code at `+0x3C`) numbered 125, five of them a manager's (Qingdao West Coast,
+Al-Wakrah, Al-Nasr, Sharjah, Shenzhen Peng City), none for those ten: an empty place is not tied to an advert there.
+
+**What the editor does** (the user's choice, of filling only an empty place or putting the manager out): a member of
+staff becomes a club's manager, moved or signed, or given the job at his club, only when its senior team's place is
+empty, and is refused otherwise (`staff.managerTaken`, naming the manager, or `staff.yourClub` at the human manager's
+club). A manager who is moved, or given another job, leaves his team's place empty, for the club to fill as the game
+does between two managers; a youth team's manager given the job at another club becomes its senior team's. His contract
+is with the senior team, as every manager's the game has is. Someone else in a team's place (a chairperson who runs the
+team) or a manager who is also his club's director of football is left to the game (`staff.role`).
 
 ## Staff contracts
 
@@ -85,6 +127,14 @@ memory: the same department list, the same arrays of people, the team's staff (w
 Continue, the moved one with them).
 
 ## Checked
+
+With the probe on Steam 26340721 (19 August 2027), each undone, for a manager: Pep Guardiola signed as Parma's manager
+(£1,211 a week, the contract of Parma's youth team's manager, to 30 June 2029); Arne Slot from Arsenal to Parma, which
+left Arsenal's place empty; Xabi Alonso from Chelsea to Parma as a coach (Chelsea's place empty, Parma's coaching list
+grown); Slot an assistant coach at Arsenal; Luca Mondini, Parma's goalkeeping coach, its manager; David Horseman,
+Arsenal's under-21 manager, to Parma as its manager, and a coach at Arsenal (the under-21 team's place emptied). Refused:
+Guardiola and Xabi Alonso at Arsenal (Arne Slot), Guardiola at Monza (the human manager's club). Afterwards `staff-places
+--team-offset 0x80` read as before.
 
 With the probe on Game Pass 0.9.2409.0, each undone: Óscar Celada (doctor, basic contract) Atlético → Tottenham;
 Jonathan Power (chief doctor) Liverpool → Tottenham as a doctor; Ben Chadwick (head performance analyst) Arsenal →

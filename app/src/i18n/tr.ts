@@ -162,7 +162,8 @@ const errors: ErrorTexts = {
   "staff.you": () => "Bu sizsiniz, yönettiğiniz teknik direktör.",
   "staff.unemployed": () => "Bu personelin bir kulübü yok.",
   "staff.role": () =>
-    "Kulüp ya da takımlarından biri bu personele doğrudan işaret ediyor (bir takımın teknik direktörü gibi); onu oyun kendisi taşır.",
+    "Kulüp ya da takımlarından biri bu personele doğrudan işaret ediyor (futbol direktörlüğünü de yapan bir teknik " +
+    "direktör ya da takımı çalıştıran bir başkan gibi); onu oyun kendisi taşır.",
   "staff.notListed": () => "Kulübün personel listeleri onu olması gereken yerde tutmuyor.",
   "staff.noRoom": (p) =>
     `Kulübün ${STAFF_DEPARTMENTS[p.department] ?? p.department} listesinde bir kişiye daha yer yok (şu an ${p.staff}) ve düzenleyici bu sistemde listeyi büyütemez.`,
@@ -175,6 +176,12 @@ const errors: ErrorTexts = {
   "staff.directorTaken": (p) =>
     `Kulübün zaten bir futbol direktörü var: ${p.name ?? "başka biri"}. Bu personele orada başka bir görev verin ya ` +
     "da önce mevcut futbol direktörünü başka bir yere taşıyın.",
+  "staff.managerTaken": (p) =>
+    `Kulübün zaten bir teknik direktörü var: ${p.name ?? "başka biri"}. Bu personele orada başka bir görev verin ya ` +
+    "da önce mevcut teknik direktörü başka bir yere taşıyın.",
+  "staff.yourClub": () =>
+    "Bu kulübü siz yönetiyorsunuz. Bu personele orada başka bir görev verin: FMLibreEditor sizin yerinizi hiçbir " +
+    "zaman almaz.",
   "staff.noJob": () => "Kulüpte alacağı görevi seçin.",
   "staff.noModel": () => "Kulüpte yeni sözleşmeye örnek alınacak, kendi tam sözleşmesi olan bir personel yok.",
   "squad.noTeam": () => `Kulübün böyle bir takımı yok ya da takım doğrulanamadı; ${reload}.`,
@@ -1557,9 +1564,9 @@ export const tr: Strings = {
     staffNewJob: "Yeni görevi alır; maaşı ve sözleşme bitişi aynı kalır, sözleşme oyundaki tarihle başlar.",
     staffDoes: [
       "Yeni kulübe görevinin olduğu yerde katılır: sağlık, antrenörlük ya da gözlem bölümüne veya futbol direktörü " +
-        "olarak (futbol direktörü olan kulüp ikincisini almaz)",
+        "ya da teknik direktör olarak (bunlardan birine sahip kulüp ikincisini almaz)",
       "Maaşı ve sözleşme bitişi aynı kalır; sözleşme oyundaki tarihle başlar",
-      "Takımın kendisinin işaret ettiği teknik direktör gibi roller ve yönetim oyuna bırakılır",
+      "Ayrılan teknik direktörün takımdaki yeri, kulüp doldursun diye boş kalır; yönetim oyuna bırakılır",
       "Değişiklikler bölümünde listelenir ve oradan geri alınabilir",
     ],
     staffSignButtonTitle: "Kulübü olmayan bu personeli oyunda bir kulübe imzalat",
@@ -1572,10 +1579,11 @@ export const tr: Strings = {
     staffSignRoute: (to) => `Kulübü yok → ${to}`,
     staffSignContract: (wage, expires) => `Yeni sözleşme: haftalık ${wage}, ${expires} tarihine kadar`,
     staffSignDoes: [
-      "Kulübe görevinin olduğu yerde katılır: bölümüne (liste doluysa büyütülür) ya da kulübün futbol direktörü yoksa " +
-        "futbol direktörü olarak",
+      "Kulübe görevinin olduğu yerde katılır: bölümüne (liste doluysa büyütülür) ya da kulübün futbol direktörü veya " +
+        "teknik direktörü yoksa onun yerine",
       "Oyunun kendi boş sözleşme yerlerinden birinde, oyunun yaptığı gibi, oyundaki tarihle başlayan yeni bir sözleşme",
-      "Kulübün aynı görevdeki (ya da aynı bölümdeki), yeteneği ona en yakın personelinin sözleşmesi örnek alınır",
+      "Kulübün aynı görevdeki (yoksa aynı bölümdeki, o da yoksa herhangi bir), yeteneği ona en yakın personelinin " +
+        "sözleşmesi örnek alınır",
       "Sizin maaşınız ve bitiş tarihiniz ya da o sözleşmenin maaşı ve gelecek sezonun sonu; madde ya da prim yok",
       "Değişiklikler bölümünde listelenir; tek geri alma hepsini geri alır",
     ],

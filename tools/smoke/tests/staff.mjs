@@ -4,7 +4,9 @@
 // as a basic one, with no dates) moved, a coach moved as a head performance analyst, a director of football moved to a
 // club that has none and refused at one that has one, and a member of staff with no club signed as a coach under a
 // contract taken from the game's own pool (skipped while the pool has no free slot, right after a load), then again
-// through his profile's Transfer dialog on a wage of the test's own.
+// through his profile's Transfer dialog on a wage of the test's own. Then a manager: refused at a club that has one and
+// at the human manager's, moved to a club whose leagues are played and whose senior team has none (his old club's
+// place left empty), given an assistant's job at his club, and a member of staff with no club signed as one.
 import { SHOWN, VIS, sleep } from "../lib/app.mjs";
 import { humanClubs, topClubs } from "../lib/witness.mjs";
 
@@ -19,6 +21,9 @@ const DIRECTOR_OF_FOOTBALL = 10;
 const DOCTORS = [38, 46];
 const HEAD_PERFORMANCE_ANALYST = 62;
 const COACH = 2;
+/** A manager's job, which the editor gives where the club's senior team has none, and an assistant coach's. */
+const MANAGER = 16;
+const ASSISTANT_COACH = 20;
 
 /** The line the probe lists the member of staff `id` on: his name, job and club, by name. */
 function probedClub(probe, id) {
@@ -81,6 +86,7 @@ export async function run({ app, report, probe }) {
   await doctor(app, report, probe, human, clubs);
   await director(app, report, probe, human, clubs);
   await signing(app, report, probe, clubs);
+  await manager(app, report, probe, human, clubs, jobs);
 }
 
 /** A doctor, whose contract the game keeps as a basic one, moved and back. */
@@ -224,6 +230,10 @@ async function viaDialog(app, report, probe, member, to) {
   const planLine = `${dialog}.querySelector(".move-plan")`;
   await app.waitFor(`${planLine}?.classList.contains("pending") && !${dialog}.querySelector(".move-search")`, "the club picked");
   report.check("asks for the job first", true, await app.js(`${planLine}.textContent`));
+  report.check(
+    "the Job select offers a manager's job",
+    await app.js(`[...${dialog}.querySelector("select.move-input").options].some((o) => o.value === "${MANAGER}")`),
+  );
   await app.setInput(`${dialog}.querySelector("select.move-input")`, String(COACH));
   await app.setInput(`${dialog}.querySelector('input[id$="-wage"]')`, String(WAGE));
   await app.waitFor(`${dialog}.querySelector(".move-plan.ok")`, "the plan of the signing", 20000);
@@ -240,4 +250,117 @@ async function viaDialog(app, report, probe, member, to) {
   await app.shot("staff-sign-changes");
   if (logged) await app.must("undo_change", { id: logged.id });
   report.check("undone again", / - /.test(` ${probedClub(probe, member.uid)} `), probedClub(probe, member.uid));
+}
+
+/** Who the probe reads as the manager of the club `uid`: "Name (id)", "no one", or "" when it reads none. */
+function probedManager(probe, uid) {
+  return probe.run(["club", uid]).match(/^\s+manager\s+(.*)$/m)?.[1]?.trim() ?? "";
+}
+
+/** The clubs whose leagues the game plays and whose senior team has no manager, as the probe lists them. */
+function vacantClubs(probe) {
+  const out = probe.run(["staff-places", "--team-offset", "0x80", "--job", String(MANAGER)]);
+  const lines = out.slice(out.indexOf("Senior teams holding no one there")).split(/\r?\n/).slice(1);
+  return lines.map((l) => l.trim().match(/^\d+\s+(.+)\s+(\d+)$/)).filter(Boolean).map((m) => ({ name: m[1], uid: Number(m[2]) }));
+}
+
+/** The member of staff with the id `uid`, as the Staff tab lists him. */
+async function staffRow(app, uid) {
+  return (await app.must("search_staff", { query: String(uid), limit: 5 })).rows.find((m) => m.uid === uid);
+}
+
+/**
+ * A manager: refused at a club whose senior team has one, naming him, and at the human manager's; moved to a club
+ * whose senior team has none, his old club's place left empty, and back; given an assistant coach's job at his club,
+ * and back; and one with no club signed as the manager of a club that has none, and back.
+ */
+async function manager(app, report, probe, human, clubs, jobs) {
+  report.check("offers a manager's job", jobs.includes(MANAGER), jobs.join(", "));
+  const managed = clubs
+    .map((club) => ({ club, id: Number(probedManager(probe, club.uid).match(/\((\d+)\)$/)?.[1]) }))
+    .filter(({ id }) => id > 0);
+  if (managed.length < 2) {
+    report.skip("moves a manager", "fewer than two of the best clubs have a manager the probe reads");
+    return;
+  }
+  const [{ club: from, id }, { club: other, id: otherId }] = managed;
+  const member = await staffRow(app, id);
+  const otherManager = await staffRow(app, otherId);
+  report.note(`manager: ${member?.name} (${id}), ${from.name}; ${otherManager?.name} (${otherId}), ${other.name}`);
+  const taken = await app.invoke("plan_staff_move", { uid: otherId, club: from.uid });
+  const said = taken.ok ? "offered" : `${taken.error.code} ${taken.error.params?.name ?? ""}`;
+  report.check(
+    "refuses a manager at a club that has one, and names that one",
+    !taken.ok && taken.error.code === "staff.managerTaken" && taken.error.params?.name === member?.name,
+    said,
+  );
+  if (human.length > 0) {
+    const yours = await app.invoke("plan_staff_move", { uid: id, club: human[0], job: MANAGER });
+    report.check(
+      "refuses the human manager's place",
+      !yours.ok && ["staff.yourClub", "move.menAndWomen"].includes(yours.error.code),
+      yours.ok ? "offered" : yours.error.code,
+    );
+  }
+
+  // To a club whose senior team has no manager, one of men's clubs as his.
+  let vacant = null;
+  for (const club of vacantClubs(probe)) {
+    const plan = await app.invoke("plan_staff_move", { uid: id, club: club.uid });
+    if (plan.ok) {
+      vacant = club;
+      break;
+    }
+  }
+  if (!vacant) {
+    report.skip("moves a manager to a club that has none", "no club whose leagues are played has an empty place he can take");
+    return;
+  }
+  report.note(`a club with no manager: ${vacant.name} (${vacant.uid})`);
+  const before = probedClub(probe, id);
+  const moved = await app.invoke("move_staff", { uid: id, club: vacant.uid });
+  report.check("moves the manager to a club that has none", moved.ok, moved.ok ? "" : moved.error.code);
+  if (moved.ok) {
+    const there = probedManager(probe, vacant.uid);
+    report.check("its senior team's manager, as the probe reads it", there.includes(`(${id})`), there);
+    report.check("his old club's place left empty", probedManager(probe, from.uid) === "no one", probedManager(probe, from.uid));
+    await app.must("undo_change", { id: moved.value.id });
+    report.check(
+      "and the undo makes him his old club's manager again",
+      probedClub(probe, id) === before && probedManager(probe, from.uid).includes(`(${id})`) && probedManager(probe, vacant.uid) === "no one",
+      `${probedManager(probe, from.uid)}; ${probedManager(probe, vacant.uid)}`,
+    );
+  }
+
+  // An assistant coach's job at his club: out of the manager's place, into the coaching staff.
+  const assistant = await app.invoke("change_staff_job", { uid: id, job: ASSISTANT_COACH });
+  report.check("gives the manager an assistant coach's job at his club", assistant.ok, assistant.ok ? "" : assistant.error.code);
+  if (assistant.ok) {
+    const now = probedClub(probe, id);
+    report.check("as the probe reads it, the place left empty", /Assistant Coach/.test(now) && probedManager(probe, from.uid) === "no one", now);
+    await app.must("undo_change", { id: assistant.value.id });
+    report.check("and the undo makes him the manager again", probedManager(probe, from.uid).includes(`(${id})`), probedManager(probe, from.uid));
+  }
+
+  // One with no club signed as the manager of the club that has none.
+  const out = (await app.must("search_staff", { query: "", limit: 50, filter: { unemployed: true, women: false } })).rows;
+  const free = out.find((m) => !m.isHuman);
+  if (!free) {
+    report.skip("signs a manager who has no club", "no one without a club");
+    return;
+  }
+  const plan = await app.invoke("plan_staff_move", { uid: free.uid, club: vacant.uid, job: MANAGER, terms: {} });
+  if (!plan.ok && plan.error.code === "sign.poolFull") {
+    report.skip("signs a manager who has no club", "the game has no free contract slot yet: continue a day in the game");
+    return;
+  }
+  report.check("offers the signing of a manager", plan.ok, plan.ok ? JSON.stringify(plan.value.staffContract) : plan.error.code);
+  if (!plan.ok) return;
+  const pool = contractPool(probe);
+  const signed = await app.must("move_staff", { uid: free.uid, club: vacant.uid, job: MANAGER, terms: {} });
+  const there = probedManager(probe, vacant.uid);
+  report.check("signs him as its manager, as the probe reads it", there.includes(`(${free.uid})`), `${free.name}: ${there}`);
+  await app.must("undo_change", { id: signed.id });
+  report.check("and the undo leaves the place empty again", probedManager(probe, vacant.uid) === "no one", probedManager(probe, vacant.uid));
+  report.check("the slot given back", JSON.stringify(contractPool(probe)) === JSON.stringify(pool), JSON.stringify(contractPool(probe)));
 }

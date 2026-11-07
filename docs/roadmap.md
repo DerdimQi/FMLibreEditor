@@ -269,9 +269,14 @@ changes many at once, and undo.
   - [x] Move a member of staff to another club, keeping the job and the contract, and change a job. A club
     keeps its staff in three department lists (medical, coaching, scouting); a move takes them out of the
     old club's and into the new club's, and a new job moves them between departments. Staff whom the club or
-    a team points at directly, such as a team's manager, are left to the game. Checked on the Mac Steam build and
-    both Windows builds, each change restored. A full department (most of them, once a save is loaded) is grown into
-    memory the editor takes in the game, as the lists of ties are.
+    a team points at directly, such as a team's manager, were left to the game (see the next item). Checked on the Mac
+    Steam build and both Windows builds, each change restored. A full department (most of them, once a save is loaded)
+    is grown into memory the editor takes in the game, as the lists of ties are.
+  - [x] Make a member of staff a club's manager (Windows): moved, signed or given the job at his club, he takes its
+    senior team's place for one (team `+0x80`) when it is empty, and is refused where the club has a manager or the
+    human manager runs it. A manager who is moved or given another job leaves his team's place empty, for the club to
+    fill, as the game leaves a club between two managers. Nothing else the game keeps says who manages a club now (see
+    the [staff notes](recon/fm27-staff.md#managers)). Checked with the probe on the Steam build, each change undone.
   - [x] Release a player on a free: he leaves his club's lists, and his team and contract pointers are
     cleared, as the game's own free agents have them. A captaincy he held is left empty; so is one a player
     gives up by moving. Checked on the Mac Steam build and both Windows builds, restored.
