@@ -64,8 +64,8 @@ team; null at 21,549 senior teams. A youth or reserve team's manager is also in 
 
 A team takes `0xB8` bytes, and the teams lie one after another in memory, in alphabetical order: Arsenal's senior team
 at `…200c8`, Aston Villa's at `…20180`, and Barnet's two teams on. So `+0x138` and `+0x1F0` of a team are the next two
-teams' `+0x80`: Parma's read Aimo Diana and Antonio Buscè, Perugia's and Pescara's managers. The youth and reserve teams
-said above to hold a manager at `+0x138` were that.
+teams' `+0x80`: Parma's read Aimo Diana and Antonio Buscè, Perugia's and Pescara's managers. What `staff-places` counts
+for a team at those offsets (some youth and reserve teams seemed to hold their manager at `+0x138`) is its neighbours'.
 
 **What else points at a manager.** `fmlibre-probe staff-refs` finds every pointer to a member of staff's object or
 person block and says what holds it. For four managers (Diego Simeone, Luis Enrique, Arne Slot, Xabi Alonso), against a
@@ -83,9 +83,9 @@ Crawley Town. So an empty place is a state the game itself leaves a club in. The
 bytes: the team at `+0x20`, the job's code at `+0x3C`) numbered 125, five of them a manager's (Qingdao West Coast,
 Al-Wakrah, Al-Nasr, Sharjah, Shenzhen Peng City), none for those ten: an empty place is not tied to an advert there.
 
-**What the editor does** (the user's choice, of filling only an empty place or putting the manager out): a member of
-staff becomes a club's manager, moved or signed, or given the job at his club, only when its senior team's place is
-empty, and is refused otherwise (`staff.managerTaken`, naming the manager, or `staff.yourClub` at the human manager's
+**What the editor does** (the user chose to fill only an empty place, rather than put the manager there out of his
+job): a member of staff becomes a club's manager, moved or signed, or given the job at his club, only when its senior
+team's place is empty, and is refused otherwise (`staff.managerTaken`, naming the manager, or `staff.yourClub` at the human manager's
 club). A manager who is moved, or given another job, leaves his team's place empty, for the club to fill as the game
 does between two managers; a youth team's manager given the job at another club becomes its senior team's. His contract
 is with the senior team, as every manager's the game has is. Someone else in a team's place (a chairperson who runs the
