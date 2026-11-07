@@ -136,11 +136,9 @@ const errors: ErrorTexts = {
     `there, or move ${p.name ?? "that one"} first.`,
   "staff.noJob": () => "Choose the job they take at the club.",
   "staff.noModel": (p) =>
-    (p.staff === "0"
-      ? "This club has no staff at all: the game keeps none at clubs of leagues that are not playable in this save. "
-      : `None of this club's ${p.staff} members of staff has a full contract of their own. `) +
-    "A new contract is modelled on one of the club's own staff's, so no one with no club can be signed for it. A " +
-    "member of staff who works at another club can still be moved there.",
+    p.staff === "0"
+      ? "This club has no staff at all: the game keeps none at clubs of leagues that are not playable in this save."
+      : "None of this club's staff has a full contract of their own to model a new one on.",
   "scout.noClub": () => "You do not manage a club in this save, so there is nobody to scout for.",
   "scout.noTactic": (p) => `Could not read the tactic of ${p.club} from the game.`,
   "scout.notPlaced": () => "The player is not in a slot of the tactic.",

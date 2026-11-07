@@ -446,15 +446,11 @@ impl fmt::Display for MoveError {
             ),
             MoveError::NoStaffModel { staff: 0 } => f.write_str(
                 "this club has no staff at all: the game keeps none at clubs of leagues that are not playable in this \
-                 save. A new contract is modelled on one of the club's own staff's, so no one with no club can be \
-                 signed for it; a member of staff who works at another club can still be moved there",
+                 save",
             ),
-            MoveError::NoStaffModel { staff } => write!(
-                f,
-                "none of this club's {staff} members of staff has a full contract of their own, which a new contract \
-                 is modelled on, so no one with no club can be signed for it; a member of staff who works at another \
-                 club can still be moved there"
-            ),
+            MoveError::NoStaffModel { .. } => {
+                f.write_str("none of this club's staff has a full contract of their own to model a new one on")
+            }
             MoveError::NoDate => f.write_str("the editor cannot read the in-game date, which a new contract starts on"),
             MoveError::Locked(lock) => write!(f, "nothing was changed: {lock}"),
             MoveError::Memory(err) => write!(f, "{err}"),

@@ -177,11 +177,9 @@ const errors: ErrorTexts = {
     "da önce mevcut futbol direktörünü başka bir yere taşıyın.",
   "staff.noJob": () => "Kulüpte alacağı görevi seçin.",
   "staff.noModel": (p) =>
-    (p.staff === "0"
-      ? "Bu kulübün hiç personeli yok: oyun, bu kayıtta oynanabilir olmayan liglerdeki kulüplerde personel tutmuyor. "
-      : `Bu kulübün ${p.staff} personelinden hiçbirinin kendi tam sözleşmesi yok. `) +
-    "Yeni sözleşme kulübün kendi personelinden birinin sözleşmesi örnek alınarak yapıldığı için bu kulübe kulüpsüz " +
-    "personel imzalatılamıyor. Başka bir kulüpte çalışan bir personeli ise buraya taşıyabilirsiniz.",
+    p.staff === "0"
+      ? "Bu kulübün hiç personeli yok: oyun, bu kayıtta oynanabilir olmayan liglerdeki kulüplerde personel tutmuyor."
+      : "Bu kulübün personelinden hiçbirinin, yeni sözleşmeye örnek alınacak kendi tam sözleşmesi yok.",
   "squad.noTeam": () => `Kulübün böyle bir takımı yok ya da takım doğrulanamadı; ${reload}.`,
   "captain.notInTeam": () => "Oyuncu bu takımda oynamıyor; kaptan ancak takımın kendi oyuncularından seçilebilir.",
   "captain.unchanged": () => "Oyuncu bu görevi zaten üstleniyor.",
