@@ -29,8 +29,9 @@ Each check prints a line: `PASS`, `FAIL` or `SKIP`. The screenshots and `results
 `tools/smoke/out/<date-time>/`, which git ignores. The run exits with 1 when a check failed.
 
 The copy of the app the tests start has its own WebView2 profile and its own data folder (`FMLIBRE_DATA`) under that
-folder, so it neither joins the copy you have open nor touches your `frozen.json`. It debugs on port 9341, and the
-copy for the unknown build on 9342 (`--port` moves both).
+folder, so it neither joins the copy you have open nor touches your `frozen.json`. It debugs on port 9341, as does the
+copy for the unknown build once the first is closed; the `freeze` test starts a second copy beside the first, on the
+data folder of the first, and it debugs two ports higher, on 9343 (`--port` moves them all).
 
 ## What they write
 
