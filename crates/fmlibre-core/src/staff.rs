@@ -44,7 +44,8 @@ pub const STAFF_ATTRIBUTE_GROUPS: &[(&str, &[&str])] = &[
 ];
 
 /// English name of an FM job code, as stored in contracts. Coaching jobs of
-/// player-coaches use the code plus one.
+/// player-coaches use the code plus one. Named as the game's English text names the jobs (see the game's
+/// `data/game_simulation/templates/user_folder/languages/example.ltf`), told apart by who holds them.
 pub fn job_name(code: u8) -> Option<&'static str> {
     let base = if code > 1 && code % 2 == 1 { code - 1 } else { code };
     Some(match base {
@@ -56,6 +57,8 @@ pub fn job_name(code: u8) -> Option<&'static str> {
         10 => "Director of Football",
         // Giuseppe Marotta (Inter) and Florentino Pérez (Real Madrid).
         70 => "President",
+        // John Henry (Liverpool), Al Waleed bin Talal (Al Hilal).
+        66 => "Owner",
         12 => "Physio",
         14 => "Scout",
         16 => "Manager",
@@ -63,12 +66,19 @@ pub fn job_name(code: u8) -> Option<&'static str> {
         22 => "Set Piece Coach",
         26 => "Fitness Coach",
         34 => "Goalkeeping Coach",
+        // Head of a club's doctors, one at nearly every club that has one: Ricard Pruna (Barcelona), Max Sala
+        // (Manchester City), José María Villalón (Atlético de Madrid).
+        38 => "Chief Doctor",
         40 => "Head of Sports Science",
         44 => "Chief Scout",
+        // Up to nine at a club: Eduardo Mauri (Manchester City), Óscar Celada (Atlético de Madrid).
+        46 => "Doctor",
         48 => "Sports Scientist",
         50 => "Head Physio",
         58 => "Recruitment Analyst",
         60 => "Performance Analyst",
+        // One at each club that has one: Harry Dunn (Manchester City), Ben Chadwick (Arsenal).
+        62 => "Head Performance Analyst",
         64 => "Head of Youth Development",
         86 => "Loan Manager",
         88 => "Technical Director",
@@ -371,6 +381,10 @@ mod tests {
         assert_eq!(job_name(3), Some("Coach"));
         assert_eq!(job_name(7), Some("Director"));
         assert_eq!(job_name(10), Some("Director of Football"));
+        assert_eq!(job_name(38), Some("Chief Doctor"));
+        assert_eq!(job_name(46), Some("Doctor"));
+        assert_eq!(job_name(62), Some("Head Performance Analyst"));
+        assert_eq!(job_name(8), None, "not told apart yet");
         assert_eq!(job_name(255), None);
     }
 

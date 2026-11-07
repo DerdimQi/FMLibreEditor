@@ -13,6 +13,9 @@
 //
 // For a free agent, who has no club, the dialog signs him for the club picked: no fee and no swap, and a new contract
 // the editor makes on the terms given, or on those the plan shows.
+//
+// A member of staff moves with no fee, no terms and no swap: in their own job, or in another picked from the jobs the
+// editor gives. One who has no club is signed like a free agent, in the job picked.
 
 import { useContext, useEffect, useId, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import { createPortal } from "react-dom";
@@ -24,6 +27,7 @@ import {
   movePlayer,
   moveStaff,
   numberFromDate,
+  offeredStaffJobs,
   planClubMove,
   planClubSwap,
   planStaffMove,
@@ -36,6 +40,7 @@ import { InfoTip } from "./InfoTip";
 import {
   clubListText,
   fieldLabel,
+  jobLabel,
   moveText as text,
   positionLabel,
   profileText,
@@ -74,9 +79,11 @@ interface MovingPlayer {
   club: string | null;
   /** The club's UID, for its logo. */
   clubUid: number | null;
+  /** For a member of staff, their job's code; null for one with no job. */
+  job?: number | null;
 }
 
-/** Who the dialog moves: a player, or a member of staff, who keeps his job and his contract's terms. */
+/** Who the dialog moves: a player, or a member of staff, who keeps his contract's terms and his job, or takes another. */
 type Kind = "player" | "staff";
 
 interface MoveButtonProps {
@@ -122,7 +129,15 @@ export function MoveButton({ player, kind = "player", contract, ready }: MoveBut
         className="move-toggle"
         aria-haspopup="dialog"
         disabled={!ready}
-        title={kind === "staff" ? text.staffButtonTitle : player.club === null ? text.signButtonTitle : text.buttonTitle}
+        title={
+          kind === "staff"
+            ? player.club === null
+              ? text.staffSignButtonTitle
+              : text.staffButtonTitle
+            : player.club === null
+              ? text.signButtonTitle
+              : text.buttonTitle
+        }
         onClick={() => setOpened({ player, contract })}
       >
         {text.button}
@@ -161,6 +176,15 @@ const MODES: readonly { id: Mode; label: string }[] = [
   { id: "swap", label: text.modeSwap },
 ];
 
+/**
+ * The jobs a member of staff can be moved or signed into, by name: those the editor gives (none until the app has said
+ * which), with their own first when the editor does not give it, as a move keeps it.
+ */
+const jobChoices = (offered: readonly number[] | null, own: number | null): number[] => {
+  const byName = [...(offered ?? [])].sort((a, b) => jobLabel(a).localeCompare(jobLabel(b)));
+  return own === null || byName.includes(own) ? byName : [own, ...byName];
+};
+
 /** What the search answered for the text it was asked with: a page of clubs, or why it failed. */
 type Found = { query: string; page: ClubPage } | { query: string; error: string };
 
@@ -180,8 +204,13 @@ interface Planned {
  * What a plan is for. A plan is the dialog's only while the club, the terms, the fee and the player released to make
  * room are those it was asked about.
  */
-const planKey = (club: number, terms: MoveTerms, fee: number | undefined, release: number | undefined) =>
-  `${club}:${terms.wage ?? ""}:${terms.expires ?? ""}:${fee ?? ""}:${release ?? ""}`;
+const planKey = (
+  club: number,
+  terms: MoveTerms,
+  fee: number | undefined,
+  release: number | undefined,
+  job?: number,
+) => `${club}:${terms.wage ?? ""}:${terms.expires ?? ""}:${fee ?? ""}:${release ?? ""}:${job ?? ""}`;
 
 /** A player the club can release, as one line of the list to pick from: his name, his ability, and what speaks against. */
 const makerLabel = (row: RoomMaker) =>
@@ -445,10 +474,13 @@ interface MoveDialogProps {
 }
 
 function MoveDialog({ player, kind, contract, onMoved, onClose }: MoveDialogProps) {
-  // A member of staff moves in the departments he works in, keeping his job and his contract's terms: no fee, no
-  // terms and no swap. A free agent is signed: no fee and no swap, and terms for a contract made for him.
+  // A member of staff moves keeping his contract's terms, in his own job or another: no fee, no terms and no swap. A
+  // free agent, or a member of staff with no club, is signed: no fee and no swap, and terms for a contract made for
+  // him; a member of staff in the job picked.
   const staff = kind === "staff";
-  const signing = !staff && player.club === null;
+  const signing = player.club === null;
+  // The job a member of staff has now, if any.
+  const ownJob = staff ? (player.job ?? null) : null;
   const base = useId();
   const id = (part: string) => `${base}-${part}`;
   const dialog = useRef<HTMLDivElement>(null);
@@ -493,20 +525,44 @@ function MoveDialog({ player, kind, contract, onMoved, onClose }: MoveDialogProp
   const [makers, setMakers] = useState<Makers | null>(null);
   // The player picked to release; the one suggested (the first) until another is picked.
   const [releasePick, setReleasePick] = useState<number | null>(null);
+  // For a member of staff, the job they take: their own until another is picked; none yet for one with no club.
+  const [job, setJob] = useState<number | null>(ownJob);
+  // The jobs the editor gives, once the app has said which.
+  const [jobs, setJobs] = useState<number[] | null>(null);
 
   useModal(dialog, !moving, onClose);
 
+  useEffect(() => {
+    if (!staff) {
+      return;
+    }
+    let cancelled = false;
+    offeredStaffJobs().then(
+      (codes) => !cancelled && setJobs(codes),
+      () => !cancelled && setJobs([]),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [staff]);
+
+  // A member of staff's contract keeps its terms in a move: only one signed has terms to set.
+  const hasTerms = !staff || signing;
   // The inputs, and the terms they stand for.
   const wageVerdict = judgeWage(wageText, wasWageShown);
   const expiresVerdict = judgeExpires(expiresText, wasExpires);
   const feeVerdict = judgeFee(feeText);
   const valid =
-    staff ||
+    !hasTerms ||
     (wageVerdict.status !== "invalid" && expiresVerdict.status !== "invalid" && feeVerdict.status !== "invalid");
-  const wage = !staff && wageVerdict.status === "changed" ? toPounds(wageVerdict.value) : undefined;
-  const expires = !staff && expiresVerdict.status === "changed" ? expiresVerdict.value : undefined;
+  const wage = hasTerms && wageVerdict.status === "changed" ? toPounds(wageVerdict.value) : undefined;
+  const expires = hasTerms && expiresVerdict.status === "changed" ? expiresVerdict.value : undefined;
   const fee = !staff && !signing && feeVerdict.status === "changed" ? toPounds(feeVerdict.value) : undefined;
   const terms = termsOf(wage, expires);
+  // The job asked for: none to keep their own; for one signed, the one picked, which they need.
+  const askedJob = staff && job !== null && job !== ownJob ? job : undefined;
+  const needsJob = staff && signing && job === null;
+  const staffTerms = staff && signing ? terms : undefined;
 
   const swap = mode === "swap";
 
@@ -528,19 +584,22 @@ function MoveDialog({ player, kind, contract, onMoved, onClose }: MoveDialogProp
     ? partner !== null
       ? swapKey(partner.uid)
       : null
-    : club !== null && valid && (fullClub === null || release !== undefined)
-      ? planKey(club.uid, terms, fee, release)
+    : club !== null && valid && !needsJob && (fullClub === null || release !== undefined)
+      ? planKey(club.uid, terms, fee, release, askedJob)
       : null;
   const outcome = key !== null && planned?.key === key ? planned.outcome : null;
   const preview = outcome !== null && "preview" in outcome ? outcome.preview : null;
   const canMove = preview !== null && !moving;
 
   // What the button makes, for the plan it is offered for: the swap with the player picked, or the move to the club
-  // (releasing the player picked, to make room).
+  // (releasing the player picked, to make room; for a member of staff, in the job picked).
   const make = swap
     ? partner && (() => swapPlayers(player.uid, partner.uid))
     : club &&
-      (() => (staff ? moveStaff(player.uid, club.uid) : movePlayer(player.uid, club.uid, terms, fee, release)));
+      (() =>
+        staff
+          ? moveStaff(player.uid, club.uid, askedJob, staffTerms)
+          : movePlayer(player.uid, club.uid, terms, fee, release));
 
   // The clubs on show. Until the search has answered for what is typed they are the last ones: Enter leaves them alone.
   const rows = found !== null && "page" in found ? found.page.rows : [];
@@ -571,14 +630,16 @@ function MoveDialog({ player, kind, contract, onMoved, onClose }: MoveDialogProp
     };
     const timer = setTimeout(
       () => {
-        // A free agent's kind is his own.
-        const kindOfPlayer = signing ? player.uid : undefined;
+        // A free agent's kind is his own, and so is that of a member of staff with no club.
+        const kindOfPlayer = signing && !staff ? player.uid : undefined;
+        const kindOfStaff = signing && staff ? player.uid : undefined;
         call<ClubPage>("search_clubs", {
           query,
           limit: RESULT_LIMIT,
           filter: {},
           kindOf: player.clubUid,
           kindOfPlayer,
+          kindOfStaff,
         }).then(
           (page) => answer({ query, page }),
           (e) => answer({ query, error: describeError(e) }),
@@ -598,18 +659,21 @@ function MoveDialog({ player, kind, contract, onMoved, onClose }: MoveDialogProp
   // players the club can release, and asks again with the one picked.
   const waitingForLeaver = fullClub !== null && release === undefined;
   useEffect(() => {
-    if (swap || club === null || !valid || waitingForLeaver) {
+    if (swap || club === null || !valid || needsJob || waitingForLeaver) {
       return;
     }
     let cancelled = false;
     const asked = termsOf(wage, expires);
     const answer = (result: Planned["outcome"]) => {
       if (!cancelled) {
-        setPlanned({ key: planKey(club.uid, asked, fee, release), outcome: result });
+        setPlanned({ key: planKey(club.uid, asked, fee, release, askedJob), outcome: result });
       }
     };
     const timer = setTimeout(() => {
-      (staff ? planStaffMove(player.uid, club.uid) : planClubMove(player.uid, club.uid, asked, fee, release)).then(
+      (staff
+        ? planStaffMove(player.uid, club.uid, askedJob, signing ? asked : undefined)
+        : planClubMove(player.uid, club.uid, asked, fee, release)
+      ).then(
         (made) => answer({ preview: made }),
         (e) => {
           if (!cancelled && !staff && release === undefined && errorCode(e) === "move.noRoom") {
@@ -623,7 +687,7 @@ function MoveDialog({ player, kind, contract, onMoved, onClose }: MoveDialogProp
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [swap, staff, player.uid, club, valid, wage, expires, fee, release, waitingForLeaver, replans]);
+  }, [swap, staff, signing, player.uid, club, valid, needsJob, askedJob, wage, expires, fee, release, waitingForLeaver, replans]);
 
   // The players a club with a full squad list can release, asked once the plan found it full, and again after a move
   // the game refused.
@@ -797,6 +861,17 @@ function MoveDialog({ player, kind, contract, onMoved, onClose }: MoveDialogProp
     if (swap && partner !== null) {
       return text.swapRoute(player.name, from, made.to.name, partner.name);
     }
+    if (staff && signing) {
+      const lines = [text.staffSignRoute(made.to.name)];
+      if (job !== null) {
+        lines.push(jobLabel(job));
+      }
+      if (made.staffContract) {
+        const { wage: pounds, expires: end } = made.staffContract;
+        lines.push(text.staffSignContract(formatMoney(pounds), formatDate(dateFromNumber(end))));
+      }
+      return lines.join("\n");
+    }
     if (signing) {
       const lines = [text.signRoute(made.to.name)];
       if (made.contract) {
@@ -807,6 +882,10 @@ function MoveDialog({ player, kind, contract, onMoved, onClose }: MoveDialogProp
       return lines.join("\n");
     }
     const lines = [text.route(from, made.to.name)];
+    // A member of staff who takes another job: the old one and the new.
+    if (askedJob !== undefined) {
+      lines.push(text.route(jobLabel(ownJob), jobLabel(askedJob)));
+    }
     if (leaver !== null) {
       lines.push(`${leaver.name}: ${releaseText.ready(made.to.name)}`);
     }
@@ -831,7 +910,9 @@ function MoveDialog({ player, kind, contract, onMoved, onClose }: MoveDialogProp
   const chooseClub = swap
     ? text.swapChooseClub
     : staff
-      ? text.staffChooseClub
+      ? signing
+        ? text.staffSignChooseClub
+        : text.staffChooseClub
       : signing
         ? text.signChooseClub
         : text.chooseClub;
@@ -840,6 +921,8 @@ function MoveDialog({ player, kind, contract, onMoved, onClose }: MoveDialogProp
       ? { tone: "pending", message: chooseClub }
       : swap && partner === null
         ? { tone: "pending", message: text.swapChoosePlayer }
+        : needsJob
+          ? { tone: "pending", message: text.staffSignChooseJob }
         : !swap && !valid
           ? { tone: "pending", message: text.fixTerms }
           : noLeaver !== null
@@ -873,7 +956,9 @@ function MoveDialog({ player, kind, contract, onMoved, onClose }: MoveDialogProp
         tabIndex={-1}
       >
         <header className="modal-head">
-          <h2 id={id("title")}>{swap ? text.swapTitle : signing ? text.signTitle : text.title}</h2>
+          <h2 id={id("title")}>
+            {swap ? text.swapTitle : signing ? (staff ? text.staffSignTitle : text.signTitle) : text.title}
+          </h2>
           <p id={id("player")} className="move-player">
             {player.name}
           </p>
@@ -901,7 +986,7 @@ function MoveDialog({ player, kind, contract, onMoved, onClose }: MoveDialogProp
             <h3 id={id("from")}>{text.from}</h3>
             <div className="move-club">
               {player.club === null ? (
-                <span className="muted">{profileText.freeAgent}</span>
+                <span className="muted">{staff ? profileText.unemployed : profileText.freeAgent}</span>
               ) : (
                 <ClubLine uid={player.clubUid} name={player.club} />
               )}
@@ -1029,10 +1114,37 @@ function MoveDialog({ player, kind, contract, onMoved, onClose }: MoveDialogProp
             </section>
           )}
 
+          {staff && (
+            <section className="move-section" aria-labelledby={id("job-heading")}>
+              <h3 id={id("job-heading")}>{text.staffJob}</h3>
+              <div className="move-terms">
+                <div className="move-term">
+                  <select
+                    id={id("job")}
+                    className="move-input"
+                    aria-labelledby={id("job-heading")}
+                    value={job ?? ""}
+                    disabled={moving || jobs === null}
+                    onChange={(e) => setJob(e.currentTarget.value === "" ? null : Number(e.currentTarget.value))}
+                  >
+                    {ownJob === null && <option value="">{text.staffJobChoose}</option>}
+                    {jobChoices(jobs, ownJob).map((code) => (
+                      <option key={code} value={code}>
+                        {code === ownJob ? text.staffJobKept(jobLabel(code)) : jobLabel(code)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </section>
+          )}
+
           <section className="move-section" aria-labelledby={id("contract")}>
             <h3 id={id("contract")}>{profileText.contract}</h3>
-            {swap || staff ? (
-              <p className="move-note">{staff ? text.staffContract : text.swapContract}</p>
+            {swap || (staff && !signing) ? (
+              <p className="move-note">
+                {swap ? text.swapContract : askedJob !== undefined ? text.staffNewJob : text.staffContract}
+              </p>
             ) : (
               <div className="move-terms">
                 <div className="move-term">
@@ -1083,7 +1195,7 @@ function MoveDialog({ player, kind, contract, onMoved, onClose }: MoveDialogProp
                 </div>
               </div>
             )}
-            {signing && <p className="move-note">{text.signTerms}</p>}
+            {signing && <p className="move-note">{staff ? text.staffSignTerms : text.signTerms}</p>}
           </section>
 
           {offerRoom && club !== null && (
@@ -1143,7 +1255,9 @@ function MoveDialog({ player, kind, contract, onMoved, onClose }: MoveDialogProp
               {(swap
                 ? text.swapDoes
                 : staff
-                  ? text.staffDoes
+                  ? signing
+                    ? text.staffSignDoes
+                    : text.staffDoes
                   : signing
                     ? text.signDoes
                     : offerRoom

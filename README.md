@@ -33,7 +33,9 @@ How to install and use it: [docs/INSTALL.md](docs/INSTALL.md).
   again when you connect to that save another time.
 - Rename a stadium. The game takes stadium names from its database each time it loads a save,
   so the app gives the new name back whenever it does, while the app is open.
-- Transfer, swap or release players, and move staff between clubs.
+- Transfer, swap or release players, sign free agents, and move staff between clubs in their
+  own job or another (doctors, analysts and directors of football too), or sign staff who have
+  no club.
 - Mass edit many at once, with a preview; undo any change.
 - Export the player list, with its search and filters, to CSV or JSON for a spreadsheet or
   your own tools: attributes, positions, personality, contract and more, with the in-game date.

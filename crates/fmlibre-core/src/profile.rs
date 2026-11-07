@@ -588,6 +588,10 @@ pub struct ClubLayout {
     pub medical_staff: u64,
     pub coaching_staff: u64,
     pub scouting_staff: u64,
+    /// Where the club points at the member of staff whose job is to be its director of football, null for none; unset
+    /// where the layout has not placed it, and a director of football is then left as he is.
+    #[serde(default)]
+    pub director_of_football: Option<u64>,
 }
 
 impl ClubLayout {
@@ -603,6 +607,7 @@ impl ClubLayout {
             self.medical_staff + 24,
             self.coaching_staff + 24,
             self.scouting_staff + 24,
+            self.director_of_football.map_or(0, |at| at + 8),
         ]
         .into_iter()
         .max()
@@ -956,6 +961,7 @@ mod tests {
             assert_eq!(mac.contract.contract_type, windows.contract.contract_type);
         }
         assert_eq!(mac.team.end(), windows.team.end());
+        assert_eq!(mac.club.director_of_football, windows.club.director_of_football);
         assert_eq!(mac.club_finance.end(), windows.club_finance.end());
         assert_eq!(
             (mac.ban.list, mac.ban.started, mac.ban.marker, mac.ban.matches),

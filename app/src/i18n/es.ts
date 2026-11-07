@@ -297,6 +297,15 @@ const errors: ErrorTexts = {
     `El nuevo nombre de este estadio debe ocupar de ${p.min} a ${p.max} bytes para caber donde el juego lo guarda; este ocupa ${p.bytes}.`,
   "stadium.badName": () => "El nombre de un estadio no puede estar vacío, empezar o acabar con un espacio ni tener caracteres de control.",
   "staff.job": (p) => `El editor todavía no mueve al personal con el puesto de ${jobName(p.job)} ni da ese puesto.`,
+  "staff.directorTaken": (p) =>
+    `El club ya tiene director de fútbol: ${p.name ?? "otra persona"}. Dale a este miembro del personal otro puesto ` +
+    `allí, o mueve antes a ${p.name ?? "esa persona"}.`,
+  "staff.noJob": () => "Elige el puesto que ocupará en el club.",
+  "staff.noModel": (p) =>
+    p.staff === "0"
+      ? "Este club no tiene personal: el juego no lo mantiene en los clubes de ligas que no son jugables en esta " +
+        "partida."
+      : "Nadie del personal de este club tiene un contrato completo propio en el que basar uno nuevo.",
   "squad.noTeam": () => `El club no tiene ese equipo o no supera la comprobación; ${reload}.`,
   "captain.notInTeam": () =>
     "El jugador no juega en este equipo; el capitán solo puede ser uno de los jugadores del propio equipo.",
@@ -517,13 +526,18 @@ export const es: Strings = {
     22: "Entrenador de balón parado",
     26: "Preparador físico",
     34: "Entrenador de porteros",
+    // Named as the game's Spanish text names them.
+    38: "Médico jefe",
     40: "Jefe de ciencias del deporte",
     44: "Jefe de ojeadores",
+    46: "Médico",
     48: "Científico deportivo",
     50: "Fisioterapeuta jefe",
     58: "Analista de captación",
     60: "Analista de rendimiento",
+    62: "Analista jefe de rendimiento",
     64: "Director de cantera",
+    66: "Propietario",
     70: "Presidente del club",
     86: "Gestor de cesiones",
     88: "Director técnico",
@@ -1608,11 +1622,37 @@ export const es: Strings = {
     staffButtonTitle: "Mover a este miembro del personal a otro club en el juego",
     staffChooseClub: "Elige el club al que mover a este miembro del personal.",
     staffContract: "Conserva el puesto, el salario y el fin de contrato; el contrato lleva la fecha del día del juego.",
+    staffJob: "Puesto",
+    staffJobChoose: "Elige un puesto…",
+    staffJobKept: (job) => `${job} (lo conserva)`,
+    staffNewJob:
+      "Ocupa el nuevo puesto y conserva el salario y el fin de contrato; el contrato lleva la fecha del día del juego.",
     staffDoes: [
-      "Se une al nuevo club en los departamentos en los que trabaja (médico, técnico, ojeo)",
-      "Mismo puesto, salario y fin de contrato; el contrato lleva la fecha del día del juego",
-      "Del mánager de un equipo, al que apunta el propio equipo, se encarga el juego",
+      "Se une al nuevo club donde está su puesto: el departamento médico, técnico o de ojeo, o como director de " +
+        "fútbol, que un club que ya tiene uno no acepta",
+      "Mismo salario y fin de contrato; el contrato lleva la fecha del día del juego",
+      "Del mánager de un equipo, al que apunta el propio equipo, y de la directiva se encarga el juego",
       "Aparece en Cambios, donde se puede deshacer",
+    ],
+    staffSignButtonTitle: "Fichar a este miembro del personal, que no tiene club, por un club en el juego",
+    staffSignTitle: "Fichar a un miembro del personal",
+    staffSignChooseClub: "Elige el club por el que ficharlo.",
+    staffSignChooseJob: "Elige el puesto que ocupará en el club.",
+    staffSignTerms:
+      "Déjalos vacíos para el salario del miembro del personal del club con el puesto más parecido y un contrato " +
+      "hasta el final de la próxima temporada.",
+    staffSignRoute: (to) => `Sin club → ${to}`,
+    staffSignContract: (wage, expires) => `Nuevo contrato: ${wage} por semana hasta el ${expires}`,
+    staffSignDoes: [
+      "Se une al club donde está su puesto: su departamento, que se amplía si está lleno, o como director de " +
+        "fútbol, si no tiene uno",
+      "Un contrato nuevo desde la fecha del juego, en uno de los huecos libres de contratos del propio juego, como " +
+        "hace el juego",
+      "Copia el contrato del miembro del personal del club con el mismo puesto (o del mismo departamento) más " +
+        "cercano en capacidad",
+      "Tu salario y fin de contrato, o el salario de ese contrato y el final de la próxima temporada; sin cláusulas " +
+        "ni primas",
+      "Aparece en Cambios, donde un solo deshacer lo revierte todo",
     ],
     swapChooseClub: "Elige el club del jugador por el que intercambiar.",
     swapChoosePlayer: "Elige el jugador por el que intercambiar.",

@@ -854,6 +854,16 @@ export interface MovePreview {
   fee?: FeePlan;
   /** For a free agent, the contract the editor makes for him. */
   contract?: NewContract;
+  /** For a member of staff who has no club, the contract the editor makes for him. */
+  staffContract?: NewStaffContract;
+}
+
+/** The contract the editor makes for a member of staff who has no club, as the plan has it. */
+export interface NewStaffContract {
+  /** Pounds per week. */
+  wage: number;
+  /** The end date, as a number like 20290630. */
+  expires: number;
 }
 
 /** The contract the editor makes for a free agent it signs, as the plan has it. */
