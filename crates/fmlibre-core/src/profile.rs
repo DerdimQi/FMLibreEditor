@@ -966,6 +966,7 @@ mod tests {
             assert_eq!(mac.contract.contract_type, windows.contract.contract_type);
         }
         assert_eq!(mac.team.end(), windows.team.end());
+        assert_eq!(mac.team.manager, windows.team.manager);
         assert_eq!(mac.club.director_of_football, windows.club.director_of_football);
         assert_eq!(mac.club_finance.end(), windows.club_finance.end());
         assert_eq!(

@@ -184,3 +184,18 @@ Barcelona. The pool had free slots on this save, and signings went through: Jür
 model's £7,746 a week, to 30 June 2029) and as a doctor, Pep Guardiola as an assistant coach on £40,000 a week, and as
 R. Madrid's director of football, refused at Liverpool's. `staff-places --club-offset 0x148` read as before
 afterwards.
+
+Managers are held alike: `staff-places --team-offset 0x80` read a manager under contract with that team at 2,041 senior
+teams and at youth and reserve teams (Arsenal's under-21s: David Horseman), at six senior teams a chairperson, owner,
+president or director of football, null at 21,559; so `layout-macos.toml` places `[team] manager` at `+0x80` too. On
+this save Parma had a manager (Vincenzo Montella) and Nottingham Forest none. With the probe, each undone: Hans-Dieter
+Flick Barcelona → Nottingham Forest (Barcelona's place empty meanwhile), and an assistant coach at Barcelona; Pep
+Guardiola signed as Nottingham Forest's manager on £50,000 a week; David Horseman to Nottingham Forest as its manager,
+and a coach at Arsenal; Arne Slot Chelsea → Nottingham Forest as a coach (Chelsea's place empty meanwhile). Refused:
+Slot at Arsenal, the human manager's club (`staff.yourClub`); Guardiola at Barcelona (named: Flick); Luca Mondini made
+Parma's manager (named: Montella). `staff-places --team-offset 0x80` read as before afterwards.
+
+In the Mac app (`tauri dev --release`, the same save): `staff_jobs` gave every job, director of football (10) and
+manager (16) among them; the Transfer dialog offered both in its Job select, moved Flick to Nottingham Forest as its
+manager and signed Jürgen Klopp as R. Madrid's director of football (£5,295 a week, the model's, to 30 June 2029),
+each read back with the probe and undone from Changes, the clubs' places read as before afterwards.
