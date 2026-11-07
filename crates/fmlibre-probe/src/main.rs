@@ -3779,12 +3779,11 @@ fn team_slot(session: &Session, offset: u64, only: Option<u8>) -> Result<()> {
         let bytes = process.read_bytes(begin, (end - begin) as usize).unwrap_or_default();
         bytes.as_chunks::<8>().0.iter().map(|w| u64::from_le_bytes(*w)).collect()
     };
-    /// The people of one job in that place: how many, how many by where their contract is, and a few of them.
+    /// The people of one job in that place: how many, and by where their contract is, how many and a few of them.
     #[derive(Default)]
     struct Job {
         people: usize,
-        ties: BTreeMap<&'static str, usize>,
-        samples: Vec<String>,
+        ties: BTreeMap<&'static str, (usize, Vec<String>)>,
     }
     #[derive(Default)]
     struct Kind {
@@ -3850,9 +3849,11 @@ fn team_slot(session: &Session, offset: u64, only: Option<u8>) -> Result<()> {
                 .map_or_else(|| "no contract".to_owned(), |j| job_name(j).map_or(format!("job {j}"), str::to_owned));
             let held = entry.jobs.entry(job).or_default();
             held.people += 1;
-            *held.ties.entry(tie).or_default() += 1;
-            if held.samples.len() < 3 {
-                held.samples.push(format!("{} -> {} {}", club.name, member.name, member.uid));
+            let (n, samples) = held.ties.entry(tie).or_default();
+            *n += 1;
+            if samples.len() < 3 {
+                let works = member.club.as_deref().unwrap_or("-");
+                samples.push(format!("{} -> {} {} ({works})", club.name, member.name, member.uid));
             }
         }
     }
@@ -3860,8 +3861,10 @@ fn team_slot(session: &Session, offset: u64, only: Option<u8>) -> Result<()> {
     for (kind, k) in &kinds {
         println!("  kind {kind:>3}: {} teams, null {}, someone else {}", k.teams, k.null, k.other.len());
         for (job, held) in &k.jobs {
-            let ties: Vec<String> = held.ties.iter().map(|(tie, n)| format!("{tie} {n}")).collect();
-            println!("      {job:<26} {:>5}  {}  e.g. {}", held.people, ties.join(", "), held.samples.join("; "));
+            println!("      {job:<26} {:>5}", held.people);
+            for (tie, (n, samples)) in &held.ties {
+                println!("        {tie:<40} {n:>5}  e.g. {}", samples.join("; "));
+            }
         }
         if !k.other.is_empty() {
             println!("      other: {}", k.other.join("; "));

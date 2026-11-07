@@ -55,12 +55,19 @@ Read on the Windows Steam build 26340721, on a save of 19 August 2027 (28,221 st
 runs Monza.
 
 **The team's place.** A team points at its manager's object (not his person block) at `+0x80` (`[team] manager`), null
-for none. `staff-places --team-offset 0x80` reads that place of every team, by kind: a manager (job 16) under contract
-with that team at 2,048 senior teams, and at 384 youth and reserve teams (91 under-21, 110 under-18 and 105 of kind 11
-among them); at six small clubs' senior teams a chairperson, owner, president or director of football who runs the
-team; null at 21,549 senior teams. A youth or reserve team's manager is also in the club's coaching list (that is the
-`C 384` among the 2,426 managers); a senior team's is in no list. The human manager's club points at his object too
-(his person block lies `0x340` further on).
+for none. `staff-places --team-offset 0x80` reads that place of every team, by kind: a manager under contract with that
+team at 2,048 senior teams, and at 384 youth and reserve teams (91 under-21, 110 under-18 and 105 of kind 11 among
+them); at six small clubs' senior teams a chairperson, owner, president or director of football who runs the team;
+null at 21,549 senior teams. A youth or reserve team's manager is also in the club's coaching list (that is the `C 384`
+among the 2,426 managers); a senior team's is in no list. The human manager's club points at his object too (his
+person block lies `0x340` further on). Some managers are player-managers, whose job is 17 (a manager's code plus one):
+32 of the 3,090 at a senior team on the Game Pass save of 21 November 2026 (`--job 16` leaves them out). The editor
+moves them as players or not at all, as other player-coaches.
+
+A manager can be another team's too, of another club: the Game Pass save's MLS All-Stars team held Dean Smith,
+Charlotte FC's manager, at its `+0x80`, as a national team does a club's manager it shares (on the Steam save Jürgen
+Klopp, an assistant coach at Monza, was a national team's: `db::NATIONAL_TEAM+0x80`). Those are other jobs: a move
+leaves them as they are, as the game lets a manager hold both.
 
 A team takes `0xB8` bytes, and the teams lie one after another in memory, in alphabetical order: Arsenal's senior team
 at `…200c8`, Aston Villa's at `…20180`, and Barnet's two teams on. So `+0x138` and `+0x1F0` of a team are the next two
@@ -147,6 +154,13 @@ grown); Slot an assistant coach at Arsenal; Luca Mondini, Parma's goalkeeping co
 Arsenal's under-21 manager, to Parma as its manager, and a coach at Arsenal (the under-21 team's place emptied). Refused:
 Guardiola and Xabi Alonso at Arsenal (Arne Slot), Guardiola at Monza (the human manager's club). Afterwards `staff-places
 --team-offset 0x80` read as before.
+
+With the probe on Game Pass 0.9.2409.0 (21 November 2026), each undone, for a manager: Pep Guardiola signed as West
+Bromwich Albion's manager (its place empty; £850 a week, the model's, to 30 June 2028); Mikel Arteta from Arsenal to
+West Brom, Arsenal's place left empty; Arteta an assistant coach at Arsenal (its coaching list grown); Matt Gill, West
+Brom's assistant coach, its manager; Dean Smith from Charlotte FC to Atlanta United, the MLS All-Stars' place left
+holding him. Refused: Guardiola at Manchester United (the human manager's club) and at Arsenal (Arteta). Afterwards
+`staff-places --team-offset 0x80` read as before.
 
 With the probe on Game Pass 0.9.2409.0, each undone: Óscar Celada (doctor, basic contract) Atlético → Tottenham;
 Jonathan Power (chief doctor) Liverpool → Tottenham as a doctor; Ben Chadwick (head performance analyst) Arsenal →
