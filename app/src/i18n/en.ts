@@ -140,8 +140,10 @@ const errors: ErrorTexts = {
   "staff.yourClub": () =>
     "You manage this club. Give this member of staff another job there: FMLibreEditor never takes your place.",
   "staff.noJob": () => "Choose the job they take at the club.",
-  "staff.noModel": () =>
-    "The club has no member of staff under a full contract of their own that a new one can be modelled on.",
+  "staff.noModel": (p) =>
+    p.staff === "0"
+      ? "This club has no staff at all: the game keeps none at clubs of leagues that are not playable in this save."
+      : "None of this club's staff has a full contract of their own to model a new one on.",
   "scout.noClub": () => "You do not manage a club in this save, so there is nobody to scout for.",
   "scout.noTactic": (p) => `Could not read the tactic of ${p.club} from the game.`,
   "scout.notPlaced": () => "The player is not in a slot of the tactic.",

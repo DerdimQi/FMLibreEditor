@@ -742,6 +742,8 @@ impl Session {
         if let Some(director) = self.director_of(club)? {
             staff.push((director, Post::DirectorOfFootball));
         }
+        // How many the club has: none at a club of a league the save does not play, where the game keeps no staff.
+        let held = staff.len();
         // The nearest of each kind: the same job, the same post, any; each the distance in ability and the contract.
         let mut nearest: [Option<(u16, u64)>; 3] = [None; 3];
         for (object, at) in staff {
@@ -776,7 +778,12 @@ impl Session {
                 }
             }
         }
-        nearest.into_iter().flatten().next().map(|(_, contract)| contract).ok_or(MoveError::NoStaffModel)
+        nearest
+            .into_iter()
+            .flatten()
+            .next()
+            .map(|(_, contract)| contract)
+            .ok_or(MoveError::NoStaffModel { staff: held })
     }
 
     /// The bytes of a new contract for the member of staff `object` with the senior team `senior` as `job`, on

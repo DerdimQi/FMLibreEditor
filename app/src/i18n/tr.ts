@@ -183,7 +183,10 @@ const errors: ErrorTexts = {
     "Bu kulübü siz yönetiyorsunuz. Bu personele orada başka bir görev verin: FMLibreEditor sizin yerinizi hiçbir " +
     "zaman almaz.",
   "staff.noJob": () => "Kulüpte alacağı görevi seçin.",
-  "staff.noModel": () => "Kulüpte yeni sözleşmeye örnek alınacak, kendi tam sözleşmesi olan bir personel yok.",
+  "staff.noModel": (p) =>
+    p.staff === "0"
+      ? "Bu kulübün hiç personeli yok: oyun, bu kayıtta oynanabilir olmayan liglerdeki kulüplerde personel tutmuyor."
+      : "Bu kulübün personelinden hiçbirinin, yeni sözleşmeye örnek alınacak kendi tam sözleşmesi yok.",
   "squad.noTeam": () => `Kulübün böyle bir takımı yok ya da takım doğrulanamadı; ${reload}.`,
   "captain.notInTeam": () => "Oyuncu bu takımda oynamıyor; kaptan ancak takımın kendi oyuncularından seçilebilir.",
   "captain.unchanged": () => "Oyuncu bu görevi zaten üstleniyor.",

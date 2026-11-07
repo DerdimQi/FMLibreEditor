@@ -306,8 +306,11 @@ const errors: ErrorTexts = {
   "staff.yourClub": () =>
     "Este club lo diriges tú. Dale a este miembro del personal otro puesto allí: FMLibreEditor nunca ocupa tu lugar.",
   "staff.noJob": () => "Elige el puesto que ocupará en el club.",
-  "staff.noModel": () =>
-    "El club no tiene ningún miembro del personal con un contrato completo propio en el que basar el nuevo.",
+  "staff.noModel": (p) =>
+    p.staff === "0"
+      ? "Este club no tiene personal: el juego no lo mantiene en los clubes de ligas que no son jugables en esta " +
+        "partida."
+      : "Nadie del personal de este club tiene un contrato completo propio en el que basar uno nuevo.",
   "squad.noTeam": () => `El club no tiene ese equipo o no supera la comprobación; ${reload}.`,
   "captain.notInTeam": () =>
     "El jugador no juega en este equipo; el capitán solo puede ser uno de los jugadores del propio equipo.",

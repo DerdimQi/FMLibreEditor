@@ -167,3 +167,20 @@ moved there as a doctor, Ben Chadwick from Arsenal as a performance analyst (he 
 Deco to Real Madrid as director of football. After Continue the game showed each at his new club in his job, Klopp
 with the contract the editor made, and Celada in Manchester United's Staff screen (his profile does not open, as no
 doctor's does).
+
+### On the Mac
+
+The Mac Steam build (26340721, Apple silicon) keeps its clubs alike: on the Arsenal save of 12 July 2027,
+`staff-places --club-offset 0x148` read null at 23,299 of 23,606 clubs and each of the 293 directors of football at his
+own club (Pablo Longoria, River Plate), at 14 more one of the club's own staff with another job (seven managers, three
+directors); so `layout-macos.toml` places `[club] director_of_football` at `+0x148` too. Chief doctors, doctors, head
+performance analysts, loan managers and technical directors sit in the same lists as on Windows, and `contract-classes`
+tells the contracts apart by the same class names (12,748 staff contracts full, 1,705 basic).
+
+With the probe, each undone: Óscar Celada (doctor, basic contract) A. Madrid → Tottenham (the medical list grown);
+Ricard Pruna (chief doctor) Barcelona → Tottenham as a doctor; Ben Chadwick Arsenal → Tottenham; Deco Barcelona →
+R. Madrid, refused at Liverpool (Julian Ward), to Liverpool as a technical director, a technical director at
+Barcelona. The pool had free slots on this save, and signings went through: Jürgen Klopp to Tottenham as a coach (the
+model's £7,746 a week, to 30 June 2029) and as a doctor, Pep Guardiola as an assistant coach on £40,000 a week, and as
+R. Madrid's director of football, refused at Liverpool's. `staff-places --club-offset 0x148` read as before
+afterwards.

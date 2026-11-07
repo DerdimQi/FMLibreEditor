@@ -328,8 +328,11 @@ pub enum MoveError {
     /// The club has no player under a plain contract with its senior team whose contract a new one can be modelled on.
     NoModel,
     /// The club has no member of staff under a full contract of his own with it whose contract a new one for a member
-    /// of staff can be modelled on.
-    NoStaffModel,
+    /// of staff can be modelled on: of the `staff` its departments and its director of football's place hold, none; and
+    /// none at all at a club of a league the save does not play, where the game keeps no staff.
+    NoStaffModel {
+        staff: usize,
+    },
     /// The editor cannot read the in-game date, which a new contract starts on.
     NoDate,
     /// The editor does not make this change to this game: see [`Lock`].
@@ -457,9 +460,13 @@ impl fmt::Display for MoveError {
             MoveError::NoModel => f.write_str(
                 "the club has no player under a plain contract with its first team to model the new contract on",
             ),
-            MoveError::NoStaffModel => f.write_str(
-                "the club has no member of staff under a full contract of their own to model the new contract on",
+            MoveError::NoStaffModel { staff: 0 } => f.write_str(
+                "this club has no staff at all: the game keeps none at clubs of leagues that are not playable in this \
+                 save",
             ),
+            MoveError::NoStaffModel { .. } => {
+                f.write_str("none of this club's staff has a full contract of their own to model a new one on")
+            }
             MoveError::NoDate => f.write_str("the editor cannot read the in-game date, which a new contract starts on"),
             MoveError::Locked(lock) => write!(f, "nothing was changed: {lock}"),
             MoveError::Memory(err) => write!(f, "{err}"),
@@ -520,7 +527,7 @@ impl Coded for MoveError {
             MoveError::NoPool => "sign.noPool",
             MoveError::PoolFull => "sign.poolFull",
             MoveError::NoModel => "sign.noModel",
-            MoveError::NoStaffModel => "staff.noModel",
+            MoveError::NoStaffModel { .. } => "staff.noModel",
             MoveError::NoDate => "sign.noDate",
             MoveError::Locked(lock) => lock.code(),
             MoveError::Memory(err) => err.code(),
@@ -550,6 +557,7 @@ impl Coded for MoveError {
                 vec![("department", (*department).to_owned()), ("staff", staff.to_string())]
             }
             MoveError::UnusualJob { job } => vec![("job", job.to_string())],
+            MoveError::NoStaffModel { staff } => vec![("staff", staff.to_string())],
             MoveError::SharedName { holders } => vec![("holders", holders.to_string())],
             MoveError::NameLength { min, max, bytes } => {
                 vec![("min", min.to_string()), ("max", max.to_string()), ("bytes", bytes.to_string())]
