@@ -298,6 +298,7 @@ fmlibre-probe staff-sign 9318 728 2 --restore        # sign one with no club, as
 fmlibre-probe staff-places                           # where clubs keep their staff, job by job; no writes
 fmlibre-probe staff-places --club-offset 0x148       # what one place of every club holds: its director of football
 fmlibre-probe contract-classes                       # full and basic contracts of players and staff, counted
+fmlibre-probe staff-at 0x28eb75773a0 --len 0x100     # name the staff a stretch of memory points at, e.g. after refs
 fmlibre-probe injuries 728                           # the current injuries of a club's players
 fmlibre-probe heal 37055843 --heal --restore         # heal a player and list his injuries again: this writes too
 fmlibre-probe bans                                   # every player with a ban; bans <uid> for one player's

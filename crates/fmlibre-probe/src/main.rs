@@ -139,6 +139,15 @@ enum Command {
     /// Count the classes of the contracts of players and of staff (db::FULL_CONTRACT, db::BASIC_CONTRACT, ...), with a
     /// few people of each. Only reads memory
     ContractClasses,
+    /// Read LEN bytes at ADDR as 8-byte words and name those that point at a member of staff (his object, identity or
+    /// person block): his id, name, job and club. Only reads memory
+    StaffAt {
+        /// Where to start, e.g. a hit from `refs`.
+        addr: String,
+        /// How many bytes to read.
+        #[arg(long, default_value = "0x100")]
+        len: String,
+    },
     /// List players, best first, optionally only those matching TEXT.
     Players {
         /// Words to look for in player names (accents and case are ignored), or a UID.
@@ -1017,6 +1026,11 @@ fn run(cli: Cli) -> Result<()> {
         }
         Command::StaffPlaces { job, .. } => staff_places(&connect(process, ArraySource::ProfileFirst)?, job),
         Command::ContractClasses => contract_classes(&connect(process, ArraySource::ProfileFirst)?),
+        Command::StaffAt { addr, len } => {
+            let modules = list_modules(&process).context("listing modules")?;
+            let session = connect(process, ArraySource::ProfileFirst)?;
+            staff_at(&session, resolve(&addr, &modules)?, parse_hex(&len)?)
+        }
         Command::Clubs { text, limit } => clubs(&connect(process, ArraySource::ProfileFirst)?, text.as_deref(), limit),
         Command::Club { uid } => club(&connect(process, ArraySource::ProfileFirst)?, uid),
         Command::Players { text, limit, filter, export, semicolon } => {
@@ -3364,6 +3378,37 @@ struct JobPlaces {
     /// Neither a list nor the club nor a team holds them.
     nowhere: usize,
     samples: Vec<String>,
+}
+
+/// The 8-byte words of the `len` bytes at `addr`, those that point at a member of staff (his object, identity or
+/// person block) named with his id, job and club.
+fn staff_at(session: &Session, addr: u64, len: u64) -> Result<()> {
+    let layout = &session.layout.staff;
+    let staff = session.staff()?;
+    let mut by_address = std::collections::HashMap::new();
+    for member in &staff {
+        by_address.insert(member.address, (member, "object"));
+        by_address.insert(member.address + layout.identity() + member.shift, (member, "identity"));
+    }
+    let bytes = session.process.read_bytes(addr, len as usize)?;
+    for (i, word) in bytes.as_chunks::<8>().0.iter().map(|w| u64::from_le_bytes(*w)).enumerate() {
+        let at = addr + i as u64 * 8;
+        match by_address.get(&word) {
+            Some((member, part)) => {
+                let job = member
+                    .job
+                    .map_or_else(|| "-".to_owned(), |j| job_name(j).map_or(format!("job {j}"), str::to_owned));
+                println!(
+                    "{at:#x}  {word:#x}  {part:<8}  {} {} ({job}, {})",
+                    member.uid,
+                    member.name,
+                    member.club.as_deref().unwrap_or("-")
+                );
+            }
+            None => println!("{at:#x}  {word:#x}"),
+        }
+    }
+    Ok(())
 }
 
 /// The classes of the players' and the staff's contracts, counted, with a few people of each.

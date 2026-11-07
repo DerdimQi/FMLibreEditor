@@ -74,6 +74,16 @@ department (grown when full) or the club's place for a director of football (if 
 Right after a save is loaded the pool has no free slot (70,826 used, 0 free on this save), and the signing is refused
 until the game makes a contract itself, as it does when the days go by.
 
+## In the game
+
+The game shows doctors only in a club's Staff screen: their profiles do not open and the search does not find them,
+a club's own doctors as much as one the editor moved (checked on Game Pass with Manchester United's Tony Gill, £2,500 a
+week, Atlético's Lucía Costafreda, £0, and Óscar Celada, moved). So a doctor moved or signed is found in the Staff
+screen of his new club, not by the search. The game keeps doctors per team, as the board allows them ("Board agree to
+appointment of team doctor"), but nothing that points at a club's own doctors and not at one moved there was found in
+memory: the same department list, the same arrays of people, the team's staff (which the game builds again on
+Continue, the moved one with them).
+
 ## Checked
 
 With the probe on Game Pass 0.9.2409.0, each undone: Óscar Celada (doctor, basic contract) Atlético → Tottenham;
@@ -89,3 +99,9 @@ Begiristain to Real Madrid as director of football, and refused at Liverpool; Ca
 assistant coach on £50,000 a week to 30 June 2028. With the app, `tools/smoke --writes --only connect,staff,sign`: 64
 passed, the staff signing through the command and through the Transfer dialog (Klopp to Manchester City, £12,345 a
 week), each one slot taken from the pool and given back by the undo.
+
+Left in the save for a look in the game (19 November 2026): Klopp signed for Manchester United as a coach, Celada
+moved there as a doctor, Ben Chadwick from Arsenal as a performance analyst (he was the head performance analyst), and
+Deco to Real Madrid as director of football. After Continue the game showed each at his new club in his job, Klopp
+with the contract the editor made, and Celada in Manchester United's Staff screen (his profile does not open, as no
+doctor's does).
