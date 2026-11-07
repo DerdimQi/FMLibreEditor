@@ -366,6 +366,13 @@ players = 0x38
 captain = 0x88
 vice_captain = 0x90
 reputation = 0xA8         # u16, 0..10000; the club's reputation lives on its senior team
+# The team's manager: a pointer to his object (not his person block), null for none. Read on the Steam save of 19
+# August 2027 (probe `staff-places --team-offset 0x80`): it held a manager (job 16) under contract with that team at
+# 2,048 senior teams and at 384 youth and reserve teams, and at six small clubs a chairperson, owner, president or
+# director of football who runs the team; null at 21,549 senior teams, 10 of them of clubs whose leagues are played
+# (Parma, Exeter City), as the game leaves a club between two managers. A team takes 0xB8 bytes, one after another
+# in memory, so what lies 0xB8 on is the next team's.
+manager = 0x80
 
 # The game's allocator hands out blocks in size classes, without headers. Measured on
 # the buffers of the teams' player lists (probe `squads`): a list of n pointers sits in
@@ -404,9 +411,14 @@ finance = 0x150           # finance record pointer
 # The club's staff by department, each a (begin, end, capacity) list of pointers. Read on macOS, whose
 # club layout is the same, and checked on the Windows Steam and Game Pass builds with Coventry City's coach
 # Chris Jones; a move checks the lists hold the member of staff before it writes.
-medical_staff = 0x60      # physios, sports scientists, the head of sports science, some fitness coaches
+medical_staff = 0x60      # physios, doctors, sports scientists, their heads, some fitness coaches
 coaching_staff = 0x78     # coaches, assistants, goalkeeping and fitness coaches, analysts, youth managers
-scouting_staff = 0x90     # scouts, the chief scout, recruitment analysts
+scouting_staff = 0x90     # scouts, the chief scout, recruitment analysts, loan managers, technical directors
+# The club's director of football: a pointer to his object (not his person block), null for none. On the Game Pass
+# save of 17 Nov 2026 it was null at 30,831 of 31,227 clubs, and held each of the 362 members of staff whose job is
+# director of football (job 10), at his own club; at 34 more a manager, director or president who does that job too.
+# A director of football is in none of the department lists (350 of 362), so this is how his club holds him.
+director_of_football = 0x148
 
 # A club's stadium (db::STADIUM, 0xC0 bytes), which its senior team points at. Read on the Game Pass build with
 # Manchester United's Old Trafford: capacity 74,879, all of it seated, 74,310 in use, room to grow to 95,285; and

@@ -131,6 +131,19 @@ const errors: ErrorTexts = {
   "memory.noBridge": () =>
     "macOS does not let FMLibreEditor into the game: the game was started without the FMLibreEditor bridge. Set " +
     "the bridge up, then start the game again from Steam.",
+  "staff.directorTaken": (p) =>
+    `${p.name ?? "Someone else"} is the club's director of football already. Give this member of staff another job ` +
+    `there, or move ${p.name ?? "that one"} first.`,
+  "staff.managerTaken": (p) =>
+    `${p.name ?? "Someone else"} is the club's manager already. Give this member of staff another job there, or ` +
+    `move ${p.name ?? "that one"} first.`,
+  "staff.yourClub": () =>
+    "You manage this club. Give this member of staff another job there: FMLibreEditor never takes your place.",
+  "staff.noJob": () => "Choose the job they take at the club.",
+  "staff.noModel": (p) =>
+    p.staff === "0"
+      ? "This club has no staff at all: the game keeps none at clubs of leagues that are not playable in this save."
+      : "None of this club's staff has a full contract of their own to model a new one on.",
   "scout.noClub": () => "You do not manage a club in this save, so there is nobody to scout for.",
   "scout.noTactic": (p) => `Could not read the tactic of ${p.club} from the game.`,
   "scout.notPlaced": () => "The player is not in a slot of the tactic.",
@@ -426,13 +439,17 @@ export const en = {
     22: "Set Piece Coach",
     26: "Fitness Coach",
     34: "Goalkeeping Coach",
+    38: "Chief Doctor",
     40: "Head of Sports Science",
     44: "Chief Scout",
+    46: "Doctor",
     48: "Sports Scientist",
     50: "Head Physio",
     58: "Recruitment Analyst",
     60: "Performance Analyst",
+    62: "Head Performance Analyst",
     64: "Head of Youth Development",
+    66: "Owner",
     70: "President",
     86: "Loan Manager",
     88: "Technical Director",
@@ -1733,11 +1750,41 @@ export const en = {
     staffButtonTitle: "Move this member of staff to another club in the game",
     staffChooseClub: "Choose the club to move this member of staff to.",
     staffContract: "Keeps the job, the wage and the contract end; the contract is dated from the game's date.",
+    /** The select of the job they take at the club, and its first choice for one who has no job yet. */
+    staffJob: "Job",
+    staffJobChoose: "Choose a job…",
+    /** After the name of their own job in that select. */
+    staffJobKept: (job: string) => `${job} (keeps it)`,
+    /** In the place of `staffContract` when another job is chosen. */
+    staffNewJob: "Takes the new job, and keeps the wage and the contract end; the contract is dated from the game's date.",
     staffDoes: [
-      "Joins the new club in the departments they work in (medical, coaching, scouting)",
-      "Same job, wage and contract end; the contract is dated from the game's date",
-      "A team's manager, whom the team itself points at, is left to the game",
+      "Joins the new club where the job is: its medical, coaching or scouting department, or as its director of " +
+        "football or manager, which a club with one already does not take",
+      "Same wage and contract end; the contract is dated from the game's date",
+      "A manager who leaves a team leaves its place empty, for the club to fill; the board is left to the game",
       "Listed under Changes, where it can be undone",
+    ],
+    // Signing a member of staff who has no club: the same dialog with a job to choose and a contract the editor makes.
+    staffSignButtonTitle: "Sign this member of staff, who has no club, for a club in the game",
+    staffSignTitle: "Sign a member of staff",
+    staffSignChooseClub: "Choose the club to sign them for.",
+    staffSignChooseJob: "Choose the job they take at the club.",
+    /** Under the contract's inputs. */
+    staffSignTerms:
+      "Leave them empty for the wage of the club's member of staff whose job is most like theirs, and a contract to " +
+      "the end of next season.",
+    /** The signing can be made: `to` is the club. */
+    staffSignRoute: (to: string) => `No club → ${to}`,
+    /** The contract the editor makes: `wage` and `expires` written out. */
+    staffSignContract: (wage: string, expires: string) => `New contract: ${wage} a week until ${expires}`,
+    staffSignDoes: [
+      "Joins the club where the job is: its department, made bigger when full, or as its director of football or " +
+        "manager, when it has none",
+      "A new contract from the game's date, in one of the game's own free contract slots, as the game makes one",
+      "Modelled on the contract of the club's member of staff with the same job (else in the same department, else " +
+        "any) nearest their ability",
+      "Your wage and contract end, or that contract's wage and the end of next season; no clauses or bonuses",
+      "Listed under Changes, where one undo takes it all back",
     ],
     swapChooseClub: "Choose the club of the player to swap with.",
     swapChoosePlayer: "Choose the player to swap with.",

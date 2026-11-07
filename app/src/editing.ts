@@ -294,17 +294,34 @@ export const addTie = (uid: number, tie: TieKind, target: number, rule?: number)
 /** The homegrown rules `changeTie` and `addTie` write, by the game's code. */
 export const homegrownRules = () => call<number[]>("homegrown_rules");
 
-/** Checks that the member of staff can move to the club, and names the clubs; the error says why he cannot. */
-export const planStaffMove = (uid: number, club: number) => call<MovePreview>("plan_staff_move", { uid, club });
+/**
+ * Checks that the member of staff can move to the club, as `job` (a contract code) if given, else in his own job, and
+ * names the clubs; the error says why he cannot. One who has no club is signed, as `job`, on a contract the app makes
+ * on `terms`, which the answer says (`MovePreview.staffContract`).
+ */
+export const planStaffMove = (uid: number, club: number, job?: number, terms?: MoveTerms) =>
+  call<MovePreview>("plan_staff_move", { uid, club, job, terms });
 
-/** Moves the member of staff to the club, in the departments he works in; logged and undone like any change. */
-export const moveStaff = (uid: number, club: number) => call<LoggedChange>("move_staff", { uid, club });
+/**
+ * Moves the member of staff to the club, as `job` if given (else in the departments he works in), or signs one who has
+ * no club as `job` on `terms`; logged and undone like any change.
+ */
+export const moveStaff = (uid: number, club: number, job?: number, terms?: MoveTerms) =>
+  call<LoggedChange>("move_staff", { uid, club, job, terms });
 
 /** Gives the member of staff another job at his club (a contract code); logged and undone like any change. */
 export const changeStaffJob = (uid: number, job: number) => call<LoggedChange>("change_staff_job", { uid, job });
 
-/** The jobs `changeStaffJob` gives, by contract code. */
+/** The jobs `changeStaffJob` gives, and a move or signing of staff can, by contract code. */
 export const staffJobs = () => call<number[]>("staff_jobs");
+
+/** `staffJobs`, asked once: they do not change during a connection. A failure is asked again the next time. */
+let offeredJobs: Promise<number[]> | null = null;
+export const offeredStaffJobs = (): Promise<number[]> =>
+  (offeredJobs ??= staffJobs().catch((e: unknown) => {
+    offeredJobs = null;
+    throw e;
+  }));
 
 /**
  * Moves the player to the senior team of the club on `terms`; the move is logged and undone like any change. With

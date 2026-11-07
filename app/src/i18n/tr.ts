@@ -162,7 +162,8 @@ const errors: ErrorTexts = {
   "staff.you": () => "Bu sizsiniz, yönettiğiniz teknik direktör.",
   "staff.unemployed": () => "Bu personelin bir kulübü yok.",
   "staff.role": () =>
-    "Kulüp ya da takımlarından biri bu personele doğrudan işaret ediyor (bir takımın teknik direktörü gibi); onu oyun kendisi taşır.",
+    "Kulüp ya da takımlarından biri bu personele doğrudan işaret ediyor (futbol direktörlüğünü de yapan bir teknik " +
+    "direktör ya da takımı çalıştıran bir başkan gibi); onu oyun kendisi taşır.",
   "staff.notListed": () => "Kulübün personel listeleri onu olması gereken yerde tutmuyor.",
   "staff.noRoom": (p) =>
     `Kulübün ${STAFF_DEPARTMENTS[p.department] ?? p.department} listesinde bir kişiye daha yer yok (şu an ${p.staff}) ve düzenleyici bu sistemde listeyi büyütemez.`,
@@ -172,6 +173,20 @@ const errors: ErrorTexts = {
     `Bu stadyumun yeni adı, oyunun adı tuttuğu yere sığmak için ${p.min} ile ${p.max} bayt arası olmalı; bu ad ${p.bytes} bayt.`,
   "stadium.badName": () => "Stadyum adı boş olamaz, boşlukla başlayıp bitemez ve denetim karakteri içeremez.",
   "staff.job": (p) => `Düzenleyici, görevi ${jobName(p.job)} olan personeli henüz taşıyamıyor ve bu görevi veremiyor.`,
+  "staff.directorTaken": (p) =>
+    `Kulübün zaten bir futbol direktörü var: ${p.name ?? "başka biri"}. Bu personele orada başka bir görev verin ya ` +
+    "da önce mevcut futbol direktörünü başka bir yere taşıyın.",
+  "staff.managerTaken": (p) =>
+    `Kulübün zaten bir teknik direktörü var: ${p.name ?? "başka biri"}. Bu personele orada başka bir görev verin ya ` +
+    "da önce mevcut teknik direktörü başka bir yere taşıyın.",
+  "staff.yourClub": () =>
+    "Bu kulübü siz yönetiyorsunuz. Bu personele orada başka bir görev verin: FMLibreEditor sizin yerinizi hiçbir " +
+    "zaman almaz.",
+  "staff.noJob": () => "Kulüpte alacağı görevi seçin.",
+  "staff.noModel": (p) =>
+    p.staff === "0"
+      ? "Bu kulübün hiç personeli yok: oyun, bu kayıtta oynanabilir olmayan liglerdeki kulüplerde personel tutmuyor."
+      : "Bu kulübün personelinden hiçbirinin, yeni sözleşmeye örnek alınacak kendi tam sözleşmesi yok.",
   "squad.noTeam": () => `Kulübün böyle bir takımı yok ya da takım doğrulanamadı; ${reload}.`,
   "captain.notInTeam": () => "Oyuncu bu takımda oynamıyor; kaptan ancak takımın kendi oyuncularından seçilebilir.",
   "captain.unchanged": () => "Oyuncu bu görevi zaten üstleniyor.",
@@ -501,13 +516,18 @@ export const tr: Strings = {
     22: "Duran Top Antrenörü",
     26: "Kondisyoner",
     34: "Kaleci Antrenörü",
+    // Named as the game's Turkish text names them.
+    38: "Sağlık Ekibi Sorumlusu",
     40: "Spor Bilimi Sorumlusu",
     44: "Baş Gözlemci",
+    46: "Doktor",
     48: "Spor Bilimci",
     50: "Baş Fizyoterapist",
     58: "Transfer Analisti",
     60: "Performans Analisti",
+    62: "Kıdemli Performans Analisti",
     64: "Altyapı Sorumlusu",
+    66: "Kulübün Sahibi",
     // Code 4 is "Başkan" already: the two are told apart, as a job select with two of the same name would not be.
     70: "Kulüp Başkanı",
     86: "Kiralık Oyuncu Sorumlusu",
@@ -1547,11 +1567,34 @@ export const tr: Strings = {
     staffButtonTitle: "Bu personeli oyunda başka bir kulübe taşı",
     staffChooseClub: "Personelin taşınacağı kulübü seçin.",
     staffContract: "Görevi, maaşı ve sözleşme bitişi aynı kalır; sözleşme oyundaki tarihle başlar.",
+    staffJob: "Görev",
+    staffJobChoose: "Görev seçin…",
+    staffJobKept: (job) => `${job} (aynı kalır)`,
+    staffNewJob: "Yeni görevi alır; maaşı ve sözleşme bitişi aynı kalır, sözleşme oyundaki tarihle başlar.",
     staffDoes: [
-      "Yeni kulübe, çalıştığı bölümlerde (sağlık, antrenörlük, gözlem) katılır",
-      "Görevi, maaşı ve sözleşme bitişi aynı kalır; sözleşme oyundaki tarihle başlar",
-      "Takımın kendisinin işaret ettiği teknik direktör gibi roller oyuna bırakılır",
+      "Yeni kulübe görevinin olduğu yerde katılır: sağlık, antrenörlük ya da gözlem bölümüne veya futbol direktörü " +
+        "ya da teknik direktör olarak (bunlardan birine sahip kulüp ikincisini almaz)",
+      "Maaşı ve sözleşme bitişi aynı kalır; sözleşme oyundaki tarihle başlar",
+      "Ayrılan teknik direktörün takımdaki yeri, kulüp doldursun diye boş kalır; yönetim oyuna bırakılır",
       "Değişiklikler bölümünde listelenir ve oradan geri alınabilir",
+    ],
+    staffSignButtonTitle: "Kulübü olmayan bu personeli oyunda bir kulübe imzalat",
+    staffSignTitle: "Personel imzalat",
+    staffSignChooseClub: "Personelin imzalayacağı kulübü seçin.",
+    staffSignChooseJob: "Kulüpte alacağı görevi seçin.",
+    staffSignTerms:
+      "Boş bırakırsanız maaş, kulüpte görevi ona en çok benzeyen personelinki olur; sözleşme gelecek sezonun sonuna " +
+      "kadar sürer.",
+    staffSignRoute: (to) => `Kulübü yok → ${to}`,
+    staffSignContract: (wage, expires) => `Yeni sözleşme: haftalık ${wage}, ${expires} tarihine kadar`,
+    staffSignDoes: [
+      "Kulübe görevinin olduğu yerde katılır: bölümüne (liste doluysa büyütülür) ya da kulübün futbol direktörü veya " +
+        "teknik direktörü yoksa onun yerine",
+      "Oyunun kendi boş sözleşme yerlerinden birinde, oyunun yaptığı gibi, oyundaki tarihle başlayan yeni bir sözleşme",
+      "Kulübün aynı görevdeki (yoksa aynı bölümdeki, o da yoksa herhangi bir), yeteneği ona en yakın personelinin " +
+        "sözleşmesi örnek alınır",
+      "Sizin maaşınız ve bitiş tarihiniz ya da o sözleşmenin maaşı ve gelecek sezonun sonu; madde ya da prim yok",
+      "Değişiklikler bölümünde listelenir; tek geri alma hepsini geri alır",
     ],
     swapChooseClub: "Takas edilecek oyuncunun kulübünü seçin.",
     swapChoosePlayer: "Takas edilecek oyuncuyu seçin.",

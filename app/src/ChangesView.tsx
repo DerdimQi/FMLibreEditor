@@ -505,8 +505,10 @@ function ChangeRow({ change, field, failure, undoing, onUndo, inBatch }: ChangeR
   // club: he became a free agent), and so do the players' for a captaincy. A heal is logged as a change of his
   // injuries from how many he had to none, and lifting his bans as one of his bans: "Healed 2 injuries" says it better
   // than "2 → 0". Keeping him from retiring is logged with the date he was to retire on, which it names.
+  // No club is a free agent's for a player, and unemployed for a member of staff.
+  const noClub = change.entity === "staff" ? profileText.unemployed : profileText.freeAgent;
   const value = change.moved
-    ? valueChange(change.moved.from ?? profileText.freeAgent, change.moved.to ?? profileText.freeAgent)
+    ? valueChange(change.moved.from ?? noClub, change.moved.to ?? noClub)
     : change.captaincy
       ? valueChange(change.captaincy.from ?? profileText.none, change.captaincy.to)
       : change.tie

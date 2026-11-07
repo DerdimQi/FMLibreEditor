@@ -311,6 +311,11 @@ players = 0x38
 captain = 0x88            # Tottenham: Micky van de Ven, as on Windows
 vice_captain = 0x90       # Tottenham: Pedro Porro
 reputation = 0xA8         # Tottenham: 7650
+# As on Windows: the team's manager, a pointer to his object, null for none. On the Arsenal save (12 July 2027; probe
+# `staff-places --team-offset 0x80`) it held a manager (job 16) under contract with that team at 2,041 senior teams and
+# at youth and reserve teams (Arsenal's David Horseman, under-21s), at six senior teams a chairperson, owner, president
+# or director of football who runs it; null at 21,559 senior teams. A team takes 0xB8 bytes, the next one after it.
+manager = 0x80
 
 # The game brings its own allocator to macOS: it carves the chunks it gets from malloc into
 # blocks of the same size classes as on Windows (blocks of 8 bytes too, which malloc never
@@ -343,6 +348,11 @@ finance = 0x150
 medical_staff = 0x60
 coaching_staff = 0x78
 scouting_staff = 0x90
+# As on Windows. On the Arsenal save (Steam build 26340721, Apple silicon, 12 July 2027; probe `staff-places
+# --club-offset 0x148`): null at 23,299 of 23,606 clubs, and each of the 293 members of staff whose job is director of
+# football (job 10) at his own club (Pablo Longoria, River Plate; Marc Wilmots, Standard de Liège); at 14 more one of
+# its own staff with another job who does that one too (seven managers, three directors).
+director_of_football = 0x148
 
 # Stadiums are laid out as on Windows: Old Trafford reads 74,879, 74,310 in use, room to grow to 95,285; the
 # Emirates 60,704, the Tottenham Hotspur Stadium 62,850, the Amex 31,876.

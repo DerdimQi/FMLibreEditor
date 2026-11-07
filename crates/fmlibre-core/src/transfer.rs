@@ -261,7 +261,8 @@ pub enum MoveError {
     You,
     /// The member of staff has no contract.
     Unemployed,
-    /// The club or one of its teams points at the member of staff directly, as a team does at its manager.
+    /// The club or one of its teams points at the member of staff directly, other than in its places for a director of
+    /// football and a manager, or someone with another job is in one of those places.
     StaffRole,
     /// None of the club's department lists holds the member of staff, or the new club's holds him already.
     NotInDepartment,
@@ -270,10 +271,23 @@ pub enum MoveError {
         department: &'static str,
         staff: u64,
     },
-    /// A job the editor does not give or take away (a manager's, the board's, one it cannot name).
+    /// A job the editor does not give or take away (the board's, one it cannot name), or one whose place the layout
+    /// does not put.
     UnusualJob {
         job: u8,
     },
+    /// The club has a director of football already: the member of staff with this id.
+    DirectorTaken {
+        uid: u32,
+    },
+    /// The club's senior team has a manager already: the member of staff with this id.
+    ManagerTaken {
+        uid: u32,
+    },
+    /// The club's senior team's manager is the human manager.
+    YourClub,
+    /// A member of staff who has no club is signed for a job, and none was given.
+    NoJob,
     /// The club's senior team plays at no stadium the editor can read.
     NoStadium,
     /// Other objects of the game hold the stadium's name too: changed in place, it would change for them as well.
@@ -313,6 +327,12 @@ pub enum MoveError {
     PoolFull,
     /// The club has no player under a plain contract with its senior team whose contract a new one can be modelled on.
     NoModel,
+    /// The club has no member of staff under a full contract of his own with it whose contract a new one for a member
+    /// of staff can be modelled on: of the `staff` its departments and its director of football's place hold, none; and
+    /// none at all at a club of a league the save does not play, where the game keeps no staff.
+    NoStaffModel {
+        staff: usize,
+    },
     /// The editor cannot read the in-game date, which a new contract starts on.
     NoDate,
     /// The editor does not make this change to this game: see [`Lock`].
@@ -372,8 +392,8 @@ impl fmt::Display for MoveError {
             MoveError::You => f.write_str("this is you, the human manager"),
             MoveError::Unemployed => f.write_str("the member of staff has no club"),
             MoveError::StaffRole => f.write_str(
-                "the club or one of its teams points at this member of staff directly, as a team does at its \
-                 manager; the game moves him itself",
+                "the club or one of its teams points at this member of staff directly, as a club does at a manager \
+                 who is also its director of football; the game moves him itself",
             ),
             MoveError::NotInDepartment => f.write_str("the club's staff lists do not hold him where they should"),
             MoveError::DepartmentFull { department, staff } => write!(
@@ -385,6 +405,20 @@ impl fmt::Display for MoveError {
                 Some(name) => write!(f, "the editor does not yet move staff whose job is {name}, or give that job"),
                 None => write!(f, "the editor does not yet move staff whose job is {job}, or give that job"),
             },
+            MoveError::DirectorTaken { uid } => write!(
+                f,
+                "the club has a director of football already (the member of staff with id {uid}); give this one \
+                 another job, or move that one first"
+            ),
+            MoveError::ManagerTaken { uid } => write!(
+                f,
+                "the club has a manager already (the member of staff with id {uid}); give this one another job, or \
+                 move that one first"
+            ),
+            MoveError::YourClub => {
+                f.write_str("you manage this club; give this member of staff another job there, the editor never takes your place")
+            }
+            MoveError::NoJob => f.write_str("choose the job the member of staff takes at the club"),
             MoveError::NoStadium => f.write_str("the club's first team plays at no stadium the editor can read"),
             MoveError::SharedName { holders } => write!(
                 f,
@@ -426,6 +460,13 @@ impl fmt::Display for MoveError {
             MoveError::NoModel => f.write_str(
                 "the club has no player under a plain contract with its first team to model the new contract on",
             ),
+            MoveError::NoStaffModel { staff: 0 } => f.write_str(
+                "this club has no staff at all: the game keeps none at clubs of leagues that are not playable in this \
+                 save",
+            ),
+            MoveError::NoStaffModel { .. } => {
+                f.write_str("none of this club's staff has a full contract of their own to model a new one on")
+            }
             MoveError::NoDate => f.write_str("the editor cannot read the in-game date, which a new contract starts on"),
             MoveError::Locked(lock) => write!(f, "nothing was changed: {lock}"),
             MoveError::Memory(err) => write!(f, "{err}"),
@@ -468,6 +509,10 @@ impl Coded for MoveError {
             MoveError::NotInDepartment => "staff.notListed",
             MoveError::DepartmentFull { .. } => "staff.noRoom",
             MoveError::UnusualJob { .. } => "staff.job",
+            MoveError::DirectorTaken { .. } => "staff.directorTaken",
+            MoveError::ManagerTaken { .. } => "staff.managerTaken",
+            MoveError::YourClub => "staff.yourClub",
+            MoveError::NoJob => "staff.noJob",
             MoveError::NoStadium => "stadium.none",
             MoveError::SharedName { .. } => "stadium.shared",
             MoveError::NameLength { .. } => "stadium.nameLength",
@@ -482,6 +527,7 @@ impl Coded for MoveError {
             MoveError::NoPool => "sign.noPool",
             MoveError::PoolFull => "sign.poolFull",
             MoveError::NoModel => "sign.noModel",
+            MoveError::NoStaffModel { .. } => "staff.noModel",
             MoveError::NoDate => "sign.noDate",
             MoveError::Locked(lock) => lock.code(),
             MoveError::Memory(err) => err.code(),
@@ -490,7 +536,12 @@ impl Coded for MoveError {
 
     fn params(&self) -> Vec<(&'static str, String)> {
         match self {
-            MoveError::Moved { uid } | MoveError::NotAClub { uid } => vec![("uid", uid.to_string())],
+            MoveError::Moved { uid }
+            | MoveError::NotAClub { uid }
+            | MoveError::DirectorTaken { uid }
+            | MoveError::ManagerTaken { uid } => {
+                vec![("uid", uid.to_string())]
+            }
             MoveError::NoRoom { players } => vec![("players", players.to_string())],
             MoveError::NoTeam { index } => vec![("index", index.to_string())],
             MoveError::OutOfRange { field, value, min, max } => vec![
@@ -506,6 +557,7 @@ impl Coded for MoveError {
                 vec![("department", (*department).to_owned()), ("staff", staff.to_string())]
             }
             MoveError::UnusualJob { job } => vec![("job", job.to_string())],
+            MoveError::NoStaffModel { staff } => vec![("staff", staff.to_string())],
             MoveError::SharedName { holders } => vec![("holders", holders.to_string())],
             MoveError::NameLength { min, max, bytes } => {
                 vec![("min", min.to_string()), ("max", max.to_string()), ("bytes", bytes.to_string())]
