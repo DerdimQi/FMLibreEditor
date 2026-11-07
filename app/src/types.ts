@@ -131,12 +131,13 @@ export interface Refrozen {
   staff: string[];
   clubs: string[];
   fitness: string[];
+  positions: string[];
   stadiums: string[];
   waiting: number;
 }
 
-/** What freezing a player holds: his attributes, or his energy and match sharpness ("fitness"). */
-export type FreezeKind = "attributes" | "fitness";
+/** What freezing a player holds: his attributes, his energy and match sharpness ("fitness"), or his position ratings. */
+export type FreezeKind = "attributes" | "fitness" | "positions";
 
 /** From `freeze_team`: what freezing or unfreezing a team came to. */
 export interface TeamFreeze {
@@ -793,9 +794,10 @@ export interface SquadPlayer extends PlayerSummary {
   injuries: number;
   /** How many current bans he has. */
   bans: number;
-  /** Whether his attributes are frozen, and his energy and match sharpness (see `freeze_team`). */
+  /** Whether his attributes are frozen, his energy and match sharpness, or his positions (see `freeze_team`). */
   attributesFrozen: boolean;
   fitnessFrozen: boolean;
+  positionsFrozen: boolean;
 }
 
 /** A team's two captaincies. */

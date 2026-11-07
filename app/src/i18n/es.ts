@@ -806,6 +806,12 @@ export const es: Strings = {
       "Mientras la aplicación esté abierta y conectada, su energía y su ritmo de competición no bajan: lo que el " +
       "juego quita se devuelve, y lo que gana sigue contando, así que al 100 % se queda ahí. La aplicación lo " +
       "recuerda para esta partida.",
+    freezePositions: "Congelar",
+    freezePositionsInfo: "¿Qué hace congelar las posiciones?",
+    freezePositionsNote:
+      "Mientras la aplicación esté abierta y conectada, sus valoraciones por posición se quedan como están: no " +
+      "aprende ninguna posición nueva y sus valoraciones ni suben ni bajan. La aplicación lo recuerda para esta " +
+      "partida.",
 
     // Personal
     you: "Tú",
@@ -1103,6 +1109,7 @@ export const es: Strings = {
       staff: (names) => `Atributos del personal: ${names}`,
       clubs: (names) => `Dinero: ${names}`,
       fitness: (names) => `Energía y ritmo: ${names}`,
+      positions: (names) => `Posiciones: ${names}`,
       stadiums: (names) => `Nombres de estadio: ${names}`,
       more: (count) => `y ${format(count)} más`,
       waiting: (count) =>
@@ -1852,6 +1859,10 @@ export const es: Strings = {
       "Mientras la aplicación esté abierta y conectada, la energía y el ritmo de competición de todos los jugadores " +
       "de este equipo no bajan: lo que el juego quita se devuelve. Pulsa antes Recuperar a todos para mantenerlos al " +
       "100 %",
+    freezePositions: "Congelar posiciones",
+    freezePositionsTitle:
+      "Mientras la aplicación esté abierta y conectada, las valoraciones por posición de todos los jugadores " +
+      "de este equipo se quedan como están: lo que el juego sube o baja se devuelve",
     frozenCount: (frozen, total) => `${format(frozen)} de ${format(total)}`,
     freezeHint:
       "Congelar abarca a todos los jugadores de la lista y acompaña a cada uno vaya donde vaya. La aplicación lo " +
@@ -1866,6 +1877,11 @@ export const es: Strings = {
         ? "Su energía y su ritmo ya estaban congelados"
         : `Se congelaron la energía y el ritmo de ${entityCount("player", count)}`,
     unfrozeFitness: (count) => `Se descongelaron la energía y el ritmo de ${entityCount("player", count)}`,
+    frozePositions: (count) =>
+      count === 0
+        ? "Sus posiciones ya estaban congeladas"
+        : `Se congelaron las posiciones de ${entityCount("player", count)}`,
+    unfrozePositions: (count) => `Se descongelaron las posiciones de ${entityCount("player", count)}`,
 
     // Lo que hizo una acción
     written: (count) =>
@@ -1930,12 +1946,18 @@ export const es: Strings = {
     elsewhere: "En otro equipo",
     elsewhereTitle: "Juega en otro equipo del club",
     frozen: "Congelado",
-    frozenTitle: (attributes, fitness) =>
-      attributes && fitness
-        ? "Sus atributos, su energía y su ritmo están congelados"
-        : attributes
-          ? "Sus atributos están congelados"
-          : "Su energía y su ritmo están congelados",
+    frozenTitle: (attributes, fitness, positions) => {
+      const frozen = [
+        ...(attributes ? ["sus atributos"] : []),
+        ...(fitness ? ["su energía", "su ritmo"] : []),
+        ...(positions ? ["sus posiciones"] : []),
+      ];
+      const last = frozen.pop() ?? "";
+      const listed = frozen.length > 0 ? `${frozen.join(", ")} y ${last}` : last;
+      // Feminine only when his positions alone are frozen.
+      const ending = attributes || fitness ? "congelados" : "congeladas";
+      return `${listed.charAt(0).toUpperCase()}${listed.slice(1)} están ${ending}`;
+    },
   },
 
   game: {

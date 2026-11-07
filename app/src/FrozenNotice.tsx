@@ -21,6 +21,7 @@ export function FrozenNotice({ refrozen, onDismiss }: { refrozen: Refrozen; onDi
     refrozen.players.length +
       refrozen.staff.length +
       refrozen.fitness.length +
+      refrozen.positions.length +
       refrozen.clubs.length +
       refrozen.stadiums.length >
     0;
@@ -31,6 +32,7 @@ export function FrozenNotice({ refrozen, onDismiss }: { refrozen: Refrozen; onDi
         {refrozen.players.length > 0 && <p>{text.players(names(refrozen.players))}</p>}
         {refrozen.staff.length > 0 && <p>{text.staff(names(refrozen.staff))}</p>}
         {refrozen.fitness.length > 0 && <p>{text.fitness(names(refrozen.fitness))}</p>}
+        {refrozen.positions.length > 0 && <p>{text.positions(names(refrozen.positions))}</p>}
         {refrozen.clubs.length > 0 && <p>{text.clubs(names(refrozen.clubs))}</p>}
         {refrozen.stadiums.length > 0 && <p>{text.stadiums(names(refrozen.stadiums))}</p>}
         {refrozen.waiting > 0 && <p>{text.waiting(refrozen.waiting)}</p>}

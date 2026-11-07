@@ -1,5 +1,11 @@
+import { useContext, useEffect, useState, type ReactNode } from "react";
 import { EditableValue } from "./EditControls";
+import { freezePositions, frozenPositions } from "./editing";
+import { describeError } from "./format";
+import { InfoTip } from "./InfoTip";
 import { POSITION_LABELS, profileText, type PositionKey } from "./labels";
+import type { PlayerDetails } from "./types";
+import { EditorContext, useEditSession } from "./useProfileEditing";
 
 /** Rating bands, best first. `range` is what the legend prints. */
 const TIERS = [
@@ -42,8 +48,11 @@ const SPOTS: readonly (readonly [PositionKey, number, number])[] = [
 /** The positions in the order the pitch has them, front to back and left to right. */
 export const PITCH_ORDER: readonly PositionKey[] = SPOTS.map(([key]) => key);
 
-/** A portrait pitch with one marker per position, filled by how well the player can play there. */
-export function PositionPitch({ ratings }: { ratings: Record<string, number> }) {
+/**
+ * A portrait pitch with one marker per position, filled by how well the player can play there; `children` go right
+ * under it, over the legend.
+ */
+export function PositionPitch({ ratings, children }: { ratings: Record<string, number>; children?: ReactNode }) {
   const rating = (key: PositionKey): number => ratings[key] ?? 0;
   const best = SPOTS.map(([key]) => key)
     .filter((key) => rating(key) >= 10)
@@ -87,6 +96,7 @@ export function PositionPitch({ ratings }: { ratings: Record<string, number> }) 
           );
         })}
       </svg>
+      {children}
       <ul className="legend">
         {TIERS.map((tier) => (
           <li key={tier.name}>
@@ -127,5 +137,66 @@ export function PositionRatings({ ratings }: { ratings: Record<string, number> }
         })}
       </dl>
     </section>
+  );
+}
+
+/**
+ * The box under the pitch that freezes a player's position ratings; its (i) says what that does. It waits while the
+ * game cannot be written to, and says why. Not there while the player is edited: the inputs hold them then.
+ */
+export function PositionFreeze({ details }: { details: PlayerDetails }) {
+  const uid = details.uid;
+  const { editable, readOnlyNote, onEdited } = useContext(EditorContext);
+  const editing = useEditSession() !== null;
+  // Whether they are frozen; null until the app has said.
+  const [frozen, setFrozen] = useState<boolean | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Asked again whenever the profile is read again: the squad tab of his club may have frozen him meanwhile.
+  useEffect(() => {
+    let current = true;
+    frozenPositions()
+      .then((players) => current && setFrozen(players.includes(uid)))
+      .catch(() => current && setFrozen(false));
+    return () => {
+      current = false;
+    };
+  }, [uid, details]);
+
+  if (editing || frozen === null) {
+    return null;
+  }
+
+  const freeze = async (on: boolean) => {
+    setError(null);
+    try {
+      setFrozen((await freezePositions(uid, on)).includes(uid));
+      // Nothing in the game has changed, but the squad tab of his club says who is frozen: it reads again.
+      onEdited();
+    } catch (e) {
+      setError(describeError(e));
+    }
+  };
+
+  return (
+    <div className="position-freeze">
+      <div className="freeze-line">
+        <label className="freeze-toggle" title={editable ? undefined : readOnlyNote}>
+          <input
+            type="checkbox"
+            checked={frozen}
+            disabled={!editable}
+            onChange={(e) => void freeze(e.currentTarget.checked)}
+          />
+          <span>{profileText.freezePositions}</span>
+        </label>
+        <InfoTip label={profileText.freezePositionsInfo} note={profileText.freezePositionsNote} />
+      </div>
+      {error && (
+        <p className="note error" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
   );
 }
