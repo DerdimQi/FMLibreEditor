@@ -1,6 +1,6 @@
-// The notice under the masthead after connecting to a save in which players' attributes, energy and match sharpness,
-// the attributes of staff or clubs' money were frozen before, or stadiums renamed: what is frozen or renamed again, and
-// what waits until FMLibreEditor can write to this version of the game.
+// The notice under the masthead after connecting to a save in which players' attributes, energy and match sharpness or
+// positions, the attributes of staff or clubs' money were frozen before, or stadiums renamed: what is frozen or renamed
+// again, and what waits until FMLibreEditor can write to this version of the game.
 
 import { appText } from "./labels";
 import type { Refrozen } from "./types";

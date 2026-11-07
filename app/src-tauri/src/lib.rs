@@ -395,11 +395,11 @@ impl Connection {
         Ok(Self { session, players, staff, clubs, human_clubs, log, mass: None, next_id, frozen, save, clubs_seen })
     }
 
-    /// Freezes again what was frozen in this save before, as the file at `path` remembers it: the attributes, energy
-    /// and match sharpness of its players and the money of its clubs, each held from what it is now. Only on a build
-    /// the editor has a profile for and only where its checks let it write: on any other, after an update of the game
-    /// say, nothing is frozen, and the file keeps them for later. What is no longer in the lists (a player who retired)
-    /// is forgotten.
+    /// Freezes again what was frozen in this save before, as the file at `path` remembers it: the attributes, energy,
+    /// match sharpness and positions of its players and the money of its clubs, each held from what it is now. Only on
+    /// a build the editor has a profile for and only where its checks let it write: on any other, after an update of
+    /// the game say, nothing is frozen, and the file keeps them for later. What is no longer in the lists (a player who
+    /// retired) is forgotten.
     fn restore_frozen(&mut self, path: Option<&Path>) -> Refrozen {
         let mut refrozen = Refrozen::default();
         let (Some(path), Some(save)) = (path, self.save.clone()) else {
@@ -1389,7 +1389,8 @@ impl Connection {
 
     /// Keeps the balance of every frozen club, the attributes, energy and match sharpness of every frozen player and
     /// the attributes of every frozen member of staff from getting worse: what the game took is put back, and what it
-    /// gave raises what they are held at. These writes are not logged; unfreezing ends them.
+    /// gave raises what they are held at. The position ratings of a frozen player are held exactly: what the game gave
+    /// is put back too. These writes are not logged; unfreezing ends them.
     fn hold_frozen(&mut self) {
         self.hold_money();
         self.hold_stadiums();
@@ -2617,8 +2618,8 @@ struct TeamFreeze {
 }
 
 /// Freezes what `kind` names for every player of the team `team` of the club `club`, read now, those out on loan
-/// too, or unfreezes it, as `freeze_attributes` and `freeze_fitness` do for one player. Refused at once while those
-/// fields may not be written. The app remembers it for this save.
+/// too, or unfreezes it, as `freeze_attributes`, `freeze_fitness` and `freeze_positions` do for one player. Refused at
+/// once while those fields may not be written. The app remembers it for this save.
 #[tauri::command]
 fn freeze_team(
     state: State<'_, AppState>,
