@@ -80,5 +80,12 @@ With the probe on Game Pass 0.9.2409.0, each undone: Óscar Celada (doctor, basi
 Jonathan Power (chief doctor) Liverpool → Tottenham as a doctor; Ben Chadwick (head performance analyst) Arsenal →
 Tottenham; Deco (director of football) Barcelona → Real Madrid, refused at Liverpool (Julian Ward), to Liverpool as a
 technical director, and a technical director at Barcelona; Juni Calafat (chief scout) made Real Madrid's director of
-football, and refused as Barcelona's. Afterwards `staff-places --club-offset 0x148` read as before. With the app,
-`tools/smoke --writes --only connect,staff`: 35 passed; the signing was skipped while the pool had no free slot.
+football, and refused as Barcelona's. Afterwards `staff-places --club-offset 0x148` read as before.
+
+Two days on (19 November 2026), the game had made contracts and taken a second chunk of 1,024 slots (1,019 free), and
+signings went through, each undone with the pool read back as before: Jürgen Klopp to Tottenham as a coach (£7,746 a
+week, the model's, to 30 June 2028); Rodolfo Borrell to Tottenham as a doctor (the medical list grown); Txiki
+Begiristain to Real Madrid as director of football, and refused at Liverpool; Carlo Ancelotti to Tottenham as an
+assistant coach on £50,000 a week to 30 June 2028. With the app, `tools/smoke --writes --only connect,staff,sign`: 64
+passed, the staff signing through the command and through the Transfer dialog (Klopp to Manchester City, £12,345 a
+week), each one slot taken from the pool and given back by the undo.

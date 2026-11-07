@@ -3,7 +3,9 @@
 // of his club, the same way. Then the jobs the editor gives since issue #120: a doctor (whose contract the game keeps
 // as a basic one, with no dates) moved, a coach moved as a head performance analyst, a director of football moved to a
 // club that has none and refused at one that has one, and a member of staff with no club signed as a coach under a
-// contract taken from the game's own pool (skipped while the pool has no free slot, right after a load).
+// contract taken from the game's own pool (skipped while the pool has no free slot, right after a load), then again
+// through his profile's Transfer dialog on a wage of the test's own.
+import { SHOWN, VIS, sleep } from "../lib/app.mjs";
 import { humanClubs, topClubs } from "../lib/witness.mjs";
 
 export const name = "staff";
@@ -131,6 +133,21 @@ async function director(app, report, probe, human, clubs) {
   report.check("and the undo puts him back", probedClub(probe, member.uid) === before, probedClub(probe, member.uid));
 }
 
+/** The contract line of the probe's `staff-member` for `id` ("job 2, £7746 per week, signed ..."), or "". */
+function probedContract(probe, id) {
+  return probe.run(["staff-member", id]).match(/^\s+contract\s+(.*)$/m)?.[1]?.trim() ?? "";
+}
+
+/** The game's pool of contracts as the probe reads it: how many slots are free and used. */
+function contractPool(probe) {
+  const line = probe.run(["pools"]).split(/\r?\n/).find((l) => l.includes("FULL_CONTRACT"));
+  const match = line?.match(/(\d+) free\s+(\d+) used/);
+  return match ? { free: Number(match[1]), used: Number(match[2]) } : null;
+}
+
+/** A date stored as a number like 20280630, as the probe prints it. */
+const iso = (number) => `${String(number).slice(0, 4)}-${String(number).slice(4, 6)}-${String(number).slice(6, 8)}`;
+
 /** A member of staff with no club signed as a coach, and back. */
 async function signing(app, report, probe, clubs) {
   const out = (await app.must("search_staff", { query: "", limit: 50, filter: { unemployed: true, women: false } })).rows;
@@ -150,10 +167,77 @@ async function signing(app, report, probe, clubs) {
   report.check("offers the signing, with the contract made", plan.ok && plan.value.staffContract != null, plan.ok ? JSON.stringify(plan.value.staffContract) : plan.error.code);
   if (!plan.ok) return;
   report.note(`signing: ${member.name} (${member.uid}) → ${to.name} as a coach`);
+  const pool = contractPool(probe);
   const signed = await app.must("move_staff", { uid: member.uid, club: to.uid, job: COACH, terms: {} });
   const there = probedClub(probe, member.uid);
   report.check("signs him, as the probe reads it", there.includes(to.name.slice(0, 20)) && /Coach/.test(there), there);
+  const { wage, expires } = plan.value.staffContract;
+  const contract = probedContract(probe, member.uid);
+  report.check(
+    "under the contract the plan showed",
+    /^(Coach|job 2),/.test(contract) && contract.includes(`£${wage} per week`) && contract.includes(`expires ${iso(expires)}`),
+    contract,
+  );
+  const taken = contractPool(probe);
+  report.check("in a slot of the game's pool of contracts", pool && taken && taken.free === pool.free - 1 && taken.used === pool.used + 1, `${JSON.stringify(pool)} → ${JSON.stringify(taken)}`);
   await app.must("undo_change", { id: signed.id });
   const back = probedClub(probe, member.uid);
   report.check("and the undo leaves him with no club again", / - /.test(` ${back} `) || !back.includes(to.name.slice(0, 20)), back);
+  const given = contractPool(probe);
+  report.check("the slot given back", JSON.stringify(given) === JSON.stringify(pool), JSON.stringify(given));
+
+  // On terms of one's own, through his profile's Transfer dialog: the club, the job, a wage, Sign; undone from the log.
+  await viaDialog(app, report, probe, member, to);
+}
+
+/**
+ * The signing through the Transfer button of the member of staff's profile: a Job select and the contract's inputs,
+ * no fee and no swap; the plan asks for the job first, then shows the contract made on the wage typed; Sign. The undo
+ * goes through the app.
+ */
+async function viaDialog(app, report, probe, member, to) {
+  const WAGE = 12_345;
+  await app.openTab("Staff");
+  await app.setInput(`${VIS}(".search input")`, String(member.uid));
+  const rows = `[...document.querySelectorAll("table.grid tbody tr")].filter(${SHOWN})`;
+  await app.waitFor(`${rows}.length === 1 && ${rows}[0].textContent.includes(${JSON.stringify(member.name)})`, "his row");
+  await app.click(`${rows}[0]`, "his row");
+  const profile = `${VIS}(".profile:not(.popup)")`;
+  await app.waitFor(`${profile} && ${profile}.getAttribute("aria-busy") === "false"`, "his profile", 30000);
+  const button = `${profile}.querySelector(".move-toggle")`;
+  await app.waitFor(`${button} && !${button}.disabled`, "the Transfer button of one with no club");
+  await app.click(button, "Transfer");
+  const dialog = `document.querySelector(".move-dialog")`;
+  await app.waitFor(dialog, "the dialog");
+  report.check(
+    "the dialog signs him: a job and a contract to set, no fee or swap",
+    await app.js(
+      `!!${dialog}.querySelector("select.move-input") && !!${dialog}.querySelector('input[id$="-wage"]') && ` +
+        `!${dialog}.querySelector(".move-mode") && !${dialog}.querySelector('input[id$="-fee"]')`,
+    ),
+  );
+  await app.setInput(`${dialog}.querySelector(".move-search input")`, String(to.uid));
+  const option = `${dialog}.querySelector(".move-option")`;
+  await app.waitFor(`${option}?.textContent.includes(${JSON.stringify(to.name)})`, "the club found", 20000);
+  await sleep(300);
+  await app.press("Enter");
+  const planLine = `${dialog}.querySelector(".move-plan")`;
+  await app.waitFor(`${planLine}?.classList.contains("pending") && !${dialog}.querySelector(".move-search")`, "the club picked");
+  report.check("asks for the job first", true, await app.js(`${planLine}.textContent`));
+  await app.setInput(`${dialog}.querySelector("select.move-input")`, String(COACH));
+  await app.setInput(`${dialog}.querySelector('input[id$="-wage"]')`, String(WAGE));
+  await app.waitFor(`${dialog}.querySelector(".move-plan.ok")`, "the plan of the signing", 20000);
+  const planText = await app.js(`${planLine}.textContent`);
+  report.check("the plan shows the club, the job and the wage", planText.includes(to.name) && /12[,.\s]?345/.test(planText), planText);
+  await app.shot("staff-sign-dialog");
+  await app.click(`${dialog}.querySelector(".modal-foot .primary")`, "Sign");
+  await app.waitFor(`!${dialog}`, "the dialog to close", 30000);
+  const contract = probedContract(probe, member.uid);
+  report.check("Sign signs him on that wage, as the probe reads it", /^(Coach|job 2),/.test(contract) && contract.includes(`£${WAGE} per week`), contract);
+  const logged = (await app.must("change_log")).find((c) => c.uid === member.uid && c.field === "club" && c.undoneAt == null);
+  report.check("logged as a move from no club", logged?.moved?.from === undefined && logged?.moved?.to === to.name, JSON.stringify(logged?.moved));
+  await app.openTab("Changes");
+  await app.shot("staff-sign-changes");
+  if (logged) await app.must("undo_change", { id: logged.id });
+  report.check("undone again", / - /.test(` ${probedClub(probe, member.uid)} `), probedClub(probe, member.uid));
 }
