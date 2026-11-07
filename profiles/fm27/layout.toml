@@ -366,6 +366,13 @@ players = 0x38
 captain = 0x88
 vice_captain = 0x90
 reputation = 0xA8         # u16, 0..10000; the club's reputation lives on its senior team
+# The team's manager: a pointer to his object (not his person block), null for none. Read on the Steam save of 19
+# August 2027 (probe `staff-places --team-offset 0x80`): it held a manager (job 16) under contract with that team at
+# 2,048 senior teams and at 384 youth and reserve teams, and at six small clubs a chairperson, owner, president or
+# director of football who runs the team; null at 21,549 senior teams, 10 of them of clubs whose leagues are played
+# (Parma, Exeter City), as the game leaves a club between two managers. A team takes 0xB8 bytes, one after another
+# in memory, so what lies 0xB8 on is the next team's.
+manager = 0x80
 
 # The game's allocator hands out blocks in size classes, without headers. Measured on
 # the buffers of the teams' player lists (probe `squads`): a list of n pointers sits in

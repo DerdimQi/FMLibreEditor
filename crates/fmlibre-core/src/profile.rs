@@ -553,6 +553,10 @@ pub struct TeamLayout {
     pub captain: u64,
     pub vice_captain: u64,
     pub reputation: u64,
+    /// Where the team points at its manager's object, null for none; unset where the layout has not placed it, and a
+    /// manager is then left as he is.
+    #[serde(default)]
+    pub manager: Option<u64>,
 }
 
 impl TeamLayout {
@@ -566,6 +570,7 @@ impl TeamLayout {
             self.captain + 8,
             self.vice_captain + 8,
             self.reputation + 2,
+            self.manager.map_or(0, |at| at + 8),
         ]
         .into_iter()
         .max()
@@ -961,6 +966,7 @@ mod tests {
             assert_eq!(mac.contract.contract_type, windows.contract.contract_type);
         }
         assert_eq!(mac.team.end(), windows.team.end());
+        assert_eq!(mac.team.manager, windows.team.manager);
         assert_eq!(mac.club.director_of_football, windows.club.director_of_football);
         assert_eq!(mac.club_finance.end(), windows.club_finance.end());
         assert_eq!(

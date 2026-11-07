@@ -285,8 +285,8 @@ const errors: ErrorTexts = {
   "staff.you": () => "Eres tú, el mánager que controlas.",
   "staff.unemployed": () => "Este miembro del personal no tiene club.",
   "staff.role": () =>
-    "El club o uno de sus equipos apunta directamente a este miembro del personal (como un equipo a su mánager); " +
-    "de moverlo se encarga el propio juego.",
+    "El club o uno de sus equipos apunta directamente a este miembro del personal (como a un mánager que también es " +
+    "su director de fútbol, o a un presidente que dirige el equipo); de moverlo se encarga el propio juego.",
   "staff.notListed": () => "Las listas de personal del club no lo tienen donde deberían.",
   "staff.noRoom": (p) =>
     `La lista ${STAFF_DEPARTMENTS[p.department] ?? `de ${p.department}`} del club no tiene sitio para nadie más ` +
@@ -300,6 +300,11 @@ const errors: ErrorTexts = {
   "staff.directorTaken": (p) =>
     `El club ya tiene director de fútbol: ${p.name ?? "otra persona"}. Dale a este miembro del personal otro puesto ` +
     `allí, o mueve antes a ${p.name ?? "esa persona"}.`,
+  "staff.managerTaken": (p) =>
+    `El club ya tiene mánager: ${p.name ?? "otra persona"}. Dale a este miembro del personal otro puesto allí, o ` +
+    `mueve antes a ${p.name ?? "esa persona"}.`,
+  "staff.yourClub": () =>
+    "Este club lo diriges tú. Dale a este miembro del personal otro puesto allí: FMLibreEditor nunca ocupa tu lugar.",
   "staff.noJob": () => "Elige el puesto que ocupará en el club.",
   "staff.noModel": (p) =>
     p.staff === "0"
@@ -1629,9 +1634,9 @@ export const es: Strings = {
       "Ocupa el nuevo puesto y conserva el salario y el fin de contrato; el contrato lleva la fecha del día del juego.",
     staffDoes: [
       "Se une al nuevo club donde está su puesto: el departamento médico, técnico o de ojeo, o como director de " +
-        "fútbol, que un club que ya tiene uno no acepta",
+        "fútbol o mánager, que un club que ya tiene uno no acepta",
       "Mismo salario y fin de contrato; el contrato lleva la fecha del día del juego",
-      "Del mánager de un equipo, al que apunta el propio equipo, y de la directiva se encarga el juego",
+      "Un mánager que deja un equipo deja vacío su sitio, para que el club lo cubra; de la directiva se encarga el juego",
       "Aparece en Cambios, donde se puede deshacer",
     ],
     staffSignButtonTitle: "Fichar a este miembro del personal, que no tiene club, por un club en el juego",
@@ -1645,11 +1650,11 @@ export const es: Strings = {
     staffSignContract: (wage, expires) => `Nuevo contrato: ${wage} por semana hasta el ${expires}`,
     staffSignDoes: [
       "Se une al club donde está su puesto: su departamento, que se amplía si está lleno, o como director de " +
-        "fútbol, si no tiene uno",
+        "fútbol o mánager, si no tiene uno",
       "Un contrato nuevo desde la fecha del juego, en uno de los huecos libres de contratos del propio juego, como " +
         "hace el juego",
-      "Copia el contrato del miembro del personal del club con el mismo puesto (o del mismo departamento) más " +
-        "cercano en capacidad",
+      "Copia el contrato del miembro del personal del club con el mismo puesto (si no, del mismo departamento, o de " +
+        "cualquiera) más cercano en capacidad",
       "Tu salario y fin de contrato, o el salario de ese contrato y el final de la próxima temporada; sin cláusulas " +
         "ni primas",
       "Aparece en Cambios, donde un solo deshacer lo revierte todo",

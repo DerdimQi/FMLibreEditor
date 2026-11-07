@@ -2,15 +2,20 @@
 //!
 //! A club keeps its staff in three department lists of pointers (see [`ClubLayout`]): the medical team, the coaches
 //! and the scouts; a fitness coach may be in the first two. Its director of football is in none of them: the club
-//! points at him itself, in its place for one (`director_of_football`), which most clubs leave empty. A member of
-//! staff's contract points at the team he works for and at the club's senior team.
+//! points at him itself, in its place for one (`director_of_football`), which most clubs leave empty. Its manager is
+//! in none of them either: its senior team points at him, in its place for one (`manager` of [`TeamLayout`]), as a
+//! youth or reserve team does at its own manager, who is one of the coaches too. A member of staff's contract points
+//! at the team he works for and at the club's senior team.
 //!
-//! A move takes him out of every department list of his old club that holds him, and out of its director of
-//! football's place when it holds him. Keeping his job, he joins the same departments of the new club, and its place
-//! for a director of football when he leaves one; given another job, he joins where that job is (see [`STAFF_JOBS`]).
-//! His contract points at the new club's senior team, dated from today, with the job. A new job at his own club moves
-//! him between his club's departments, or into or out of its director of football's place, as the job needs. A club's
-//! place for a director of football takes one only while it is empty: the editor does not put one out of his job.
+//! A move takes him out of every department list of his old club that holds him, out of its director of football's
+//! place when it holds him, and out of a team's place for a manager when one holds him: that place is left empty, as
+//! the game leaves it between two managers, for the club to fill. Keeping his job, he joins the same departments of
+//! the new club, and its place for a director of football when he leaves one; given another job, or as a manager, he
+//! joins where that job is (see [`STAFF_JOBS`]): a manager, the senior team's place. His contract points at the new
+//! club's senior team, dated from today, with the job. A new job at his own club moves him between his club's
+//! departments, or into or out of its places for a director of football and a manager, as the job needs. Those two
+//! places take one only while they are empty: the editor does not put anyone out of his job, and never takes the
+//! human manager's place.
 //!
 //! Signing a member of staff who has no club: like a free agent (see `signing.rs`), he gets a contract the editor makes
 //! in a slot of the game's own pool of contracts, a copy of one of the club's own staff's contracts (see
@@ -18,13 +23,15 @@
 //!
 //! A department list with no room for him in its block is grown into memory of the editor's own (see
 //! `own_memory.rs`), where the editor can grow it (see `Session::growth`); elsewhere the move is refused. Only staff
-//! whom neither the club nor its teams point at directly, other than in its place for a director of football, are
-//! moved or given a new job: a team's manager, for one, is held by his team, and is left to the game.
+//! whom neither the club nor its teams point at directly, other than in its places for a director of football and a
+//! manager, are moved or given a new job; and only a director of football and a manager out of those places: someone
+//! else there, a chairperson who runs a small club's team, is left to the game.
 //!
 //! The game keeps the contracts of some staff, most doctors and the board among them, as `db::BASIC_CONTRACT`: 40
 //! bytes, as far as the job, with no dates. Only those first bytes of theirs are written.
 //!
 //! [`ClubLayout`]: crate::ClubLayout
+//! [`TeamLayout`]: crate::TeamLayout
 
 use fmlibre_mem::is_user_pointer;
 use serde::Serialize;
@@ -75,15 +82,20 @@ pub enum Post {
     Department(Department),
     /// In the club's place for its director of football.
     DirectorOfFootball,
+    /// In the senior team's place for its manager.
+    Manager,
 }
 
 /// The job code of a director of football.
 pub const DIRECTOR_OF_FOOTBALL: u8 = 10;
 
+/// The job code of a manager.
+pub const MANAGER: u8 = 16;
+
 /// The jobs the editor gives and takes away, by contract code (see [`crate::job_name`]), with where each puts a member
-/// of staff: the department lists that hold most of the game's staff of that job (all of them, for most). A manager,
-/// the board and jobs the editor cannot name are left as they are.
-pub const STAFF_JOBS: [(u8, Post); 20] = [
+/// of staff: the department lists that hold most of the game's staff of that job (all of them, for most), or the
+/// club's or its senior team's place for one. The board and jobs the editor cannot name are left as they are.
+pub const STAFF_JOBS: [(u8, Post); 21] = [
     (2, Post::Department(Department::Coaching)),  // Coach
     (20, Post::Department(Department::Coaching)), // Assistant Coach
     (22, Post::Department(Department::Coaching)), // Set Piece Coach
@@ -104,6 +116,7 @@ pub const STAFF_JOBS: [(u8, Post); 20] = [
     (86, Post::Department(Department::Scouting)), // Loan Manager
     (88, Post::Department(Department::Scouting)), // Technical Director
     (DIRECTOR_OF_FOOTBALL, Post::DirectorOfFootball),
+    (MANAGER, Post::Manager),
 ];
 
 /// Where a job the editor gives and takes away puts a member of staff.
@@ -174,32 +187,54 @@ struct Holder {
     lists: Vec<(Department, PointerList, usize, Vec<u64>)>,
     /// Whether the club's place for its director of football holds him.
     director: bool,
+    /// The team of the club whose place for a manager holds him, if one does.
+    manager: Option<u64>,
 }
 
 impl Session {
-    /// The jobs the editor gives and takes away in this game: a director of football's only where the layout places
-    /// a club's.
+    /// The jobs the editor gives and takes away in this game: a director of football's and a manager's only where the
+    /// layout places a club's and a team's.
     pub fn staff_jobs(&self) -> Vec<u8> {
-        STAFF_JOBS
-            .iter()
-            .filter(|&&(_, post)| post != Post::DirectorOfFootball || self.layout.club.director_of_football.is_some())
-            .map(|&(code, _)| code)
-            .collect()
+        STAFF_JOBS.iter().filter(|&&(_, post)| self.placed(post)).map(|&(code, _)| code).collect()
+    }
+
+    /// Whether the layout places `post` in this game.
+    fn placed(&self, post: Post) -> bool {
+        match post {
+            Post::Department(_) => true,
+            Post::DirectorOfFootball => self.layout.club.director_of_football.is_some(),
+            Post::Manager => self.layout.team.manager.is_some(),
+        }
     }
 
     /// Where `job` puts a member of staff in this game; refused for a job the editor does not give.
     fn post(&self, job: u8) -> Result<Post, MoveError> {
-        match post_of(job) {
-            Some(Post::DirectorOfFootball) if self.layout.club.director_of_football.is_none() => {
-                Err(MoveError::UnusualJob { job })
-            }
-            Some(post) => Ok(post),
-            None => Err(MoveError::UnusualJob { job }),
+        post_of(job).filter(|&post| self.placed(post)).ok_or(MoveError::UnusualJob { job })
+    }
+
+    /// Who the senior team of `club` has in its place for a manager: the member of staff's id, `None` for no one or
+    /// where the layout does not place it.
+    pub fn club_manager(&self, club: &ClubSummary) -> Result<Option<u32>, MoveError> {
+        let Some(offset) = self.layout.team.manager else {
+            return Ok(None);
+        };
+        let (senior, _) = self.senior_team(club.address, club.uid)?;
+        match self.process.read_u64(senior + offset)? {
+            0 => Ok(None),
+            held => Ok(Some(self.staff_uid(held))),
         }
     }
 
+    /// The id of the member of staff whose object is at `object`, wherever his person block is (the human manager's
+    /// is further on); 0 where it cannot be read.
+    fn staff_uid(&self, object: u64) -> u32 {
+        let s = &self.layout.staff;
+        let shift = crate::staff::person_shift(&self.process, s, object);
+        self.process.read_u32(object + s.at(s.uid, shift)).unwrap_or(0)
+    }
+
     /// Works out moving `member` to `club` on his contract dated from today: keeping his job, in the departments he
-    /// works in, or as `job` where it is. Nothing is written.
+    /// works in, or as `job` where it is; a manager, as the new club's, if its place is empty. Nothing is written.
     pub fn plan_staff_move(
         &self,
         member: &StaffSummary,
@@ -214,7 +249,8 @@ impl Session {
         let job = job.unwrap_or(holder.job);
 
         let (mut patches, mut grow) = (Patches::default(), Vec::new());
-        if job == holder.job {
+        // A manager is the senior team's at the new club, whichever team's he was: his job says where he works there.
+        if job == holder.job && job != MANAGER {
             for (department, list, index, elements) in &holder.lists {
                 self.join_post(club.address, Post::Department(*department), holder.object, &mut patches, &mut grow)?;
                 removal_patches(list, *index, elements, &mut patches);
@@ -244,7 +280,8 @@ impl Session {
     }
 
     /// Works out giving `member` the job `job` at his club: he leaves the departments, or the director of football's
-    /// place, the job is not in, and joins where it is. Nothing is written.
+    /// or manager's place, the job is not in, and joins where it is: as the manager, his club's senior team's place, if
+    /// it is empty, and his contract with the senior team. Nothing is written.
     pub fn plan_staff_job(&self, member: &StaffSummary, job: u8) -> Result<StaffPlan, MoveError> {
         let holder = self.staff_holder(member)?;
         self.post(holder.job)?;
@@ -260,14 +297,28 @@ impl Session {
             if holder.director && post != Post::DirectorOfFootball {
                 self.leave_director(holder.club, holder.object, &mut patches)?;
             }
+            // Only a manager is in a team's place for one, so a new job takes him out of it.
+            if let Some(team) = holder.manager {
+                self.leave_manager(team, holder.object, &mut patches)?;
+            }
             let there = match post {
                 Post::Department(department) => holder.lists.iter().any(|(from, ..)| *from == department),
                 Post::DirectorOfFootball => holder.director,
+                Post::Manager => false,
             };
             if !there {
                 self.join_post(holder.club, post, holder.object, &mut patches, &mut grow)?;
             }
             self.staff_contract_patches(&holder, None, job, &mut patches);
+            if post == Post::Manager {
+                // The senior team's manager works for it, as every one the game has does.
+                let (senior, _) = self.senior_team(holder.club, holder.club_uid)?;
+                let c = &self.layout.contract;
+                let team = &holder.record[c.team as usize..c.team as usize + 8];
+                if team != senior.to_le_bytes() {
+                    patches.push(holder.contract + c.team, team, senior.to_le_bytes());
+                }
+            }
         }
         Ok(StaffPlan {
             member: member.uid,
@@ -384,8 +435,8 @@ impl Session {
         Ok(self.senior_team(club.address, club.uid)?.0)
     }
 
-    /// Checks what ties `member` to his club, and finds every department list of it that holds him, and whether its
-    /// place for a director of football does.
+    /// Checks what ties `member` to his club, and finds every department list of it that holds him, whether its place
+    /// for a director of football does, and which of its teams' places for a manager does.
     fn staff_holder(&self, member: &StaffSummary) -> Result<Holder, MoveError> {
         let (process, layout) = (&self.process, &self.layout);
         let (s, c) = (&layout.staff, &layout.contract);
@@ -431,22 +482,55 @@ impl Session {
                 _ => return Err(MoveError::NotInDepartment),
             }
         }
-        // Only a director of football is moved out of the club's place for one: someone else who does that job too,
-        // a manager for one, is the game's to move.
+        // Only a director of football is moved out of the club's place for one, and only a manager out of a team's:
+        // someone else who does that job too, a manager who is the director of football or a chairperson who runs
+        // the team, is the game's to move.
         let director = self.director_of(club)? == Some(object);
         if director && job != DIRECTOR_OF_FOOTBALL {
             return Err(MoveError::StaffRole);
         }
-        if lists.is_empty() && !director {
-            // A manager or a member of the board is in none of them: his job, not the lists, is why he stays; so is a
-            // director of football where the layout does not place a club's.
+        let manager = self.managed_team(club, object)?;
+        if manager.is_some() && job != MANAGER {
+            return Err(MoveError::StaffRole);
+        }
+        if lists.is_empty() && !director && manager.is_none() {
+            // A member of the board is in none of them: his job, not the lists, is why he stays; so is a director of
+            // football or a manager where the layout does not place a club's or a team's.
             return Err(match self.post(job) {
                 Ok(_) => MoveError::NotInDepartment,
                 Err(err) => err,
             });
         }
-        self.check_unheld(club, object, object + s.identity(), object + s.person_block)?;
-        Ok(Holder { object, contract, record, full, club, club_uid, job, lists, director })
+        let mut leaving = Vec::new();
+        if let (true, Some(offset)) = (director, self.layout.club.director_of_football) {
+            leaving.push(club + offset);
+        }
+        if let (Some(team), Some(offset)) = (manager, self.layout.team.manager) {
+            leaving.push(team + offset);
+        }
+        self.check_unheld(club, &leaving, object, object + s.identity(), object + s.person_block)?;
+        Ok(Holder { object, contract, record, full, club, club_uid, job, lists, director, manager })
+    }
+
+    /// The team of the club at `club` whose place for a manager holds `object`, if one does; refused when more than one
+    /// does, which the game never has.
+    fn managed_team(&self, club: u64, object: u64) -> Result<Option<u64>, MoveError> {
+        let Some(offset) = self.layout.team.manager else {
+            return Ok(None);
+        };
+        let Some(teams) = PointerList::read(&self.process, club + self.layout.club.teams)? else {
+            return Ok(None);
+        };
+        let mut managed = None;
+        for team in teams.elements(&self.process)?.into_iter().filter(|&t| is_user_pointer(t)) {
+            if self.process.read_u64(team + offset)? == object {
+                if managed.is_some() {
+                    return Err(MoveError::StaffRole);
+                }
+                managed = Some(team);
+            }
+        }
+        Ok(managed)
     }
 
     /// Whether the contract at `contract` is a full one (`db::FULL_CONTRACT`), with dates, as the game's own class
@@ -475,7 +559,8 @@ impl Session {
     }
 
     /// Puts `object` where `post` is at the club at `club`: into a department's list (see
-    /// [`Session::join_department`]), or into its place for a director of football, which must be empty.
+    /// [`Session::join_department`]), or into its place for a director of football or its senior team's for a
+    /// manager, which must be empty.
     fn join_post(
         &self,
         club: u64,
@@ -501,10 +586,24 @@ impl Session {
                         Ok(())
                     }
                     Some(held) if held == object => Err(MoveError::NotInDepartment),
-                    Some(held) => {
-                        let uid = self.process.read_u32(held + self.layout.staff.uid).unwrap_or(0);
-                        Err(MoveError::DirectorTaken { uid })
+                    Some(held) => Err(MoveError::DirectorTaken { uid: self.staff_uid(held) }),
+                }
+            }
+            Post::Manager => {
+                let offset = self.layout.team.manager.ok_or(MoveError::UnusualJob { job: MANAGER })?;
+                let club_uid = self.process.read_u32(club + self.layout.club.uid)?;
+                let (senior, _) = self.senior_team(club, club_uid)?;
+                match self.process.read_u64(senior + offset)? {
+                    0 => {
+                        patches.push(senior + offset, 0u64.to_le_bytes(), object.to_le_bytes());
+                        Ok(())
                     }
+                    held if held == object => Err(MoveError::NotInDepartment),
+                    // The human manager's object is the one whose person block lies further on.
+                    held if crate::staff::person_shift(&self.process, &self.layout.staff, held) != 0 => {
+                        Err(MoveError::YourClub)
+                    }
+                    held => Err(MoveError::ManagerTaken { uid: self.staff_uid(held) }),
                 }
             }
         }
@@ -517,6 +616,13 @@ impl Session {
         Ok(())
     }
 
+    /// Takes `object` out of the place for a manager of the team at `team`, which holds him: it is left empty.
+    fn leave_manager(&self, team: u64, object: u64, patches: &mut Patches) -> Result<(), MoveError> {
+        let offset = self.layout.team.manager.ok_or(MoveError::StaffRole)?;
+        patches.push(team + offset, object.to_le_bytes(), 0u64.to_le_bytes());
+        Ok(())
+    }
+
     /// Takes the member of staff `holder` describes out of every place at his club that holds him.
     fn leave_all(&self, holder: &Holder, patches: &mut Patches) -> Result<(), MoveError> {
         for (_, list, index, elements) in &holder.lists {
@@ -524,6 +630,9 @@ impl Session {
         }
         if holder.director {
             self.leave_director(holder.club, holder.object, patches)?;
+        }
+        if let Some(team) = holder.manager {
+            self.leave_manager(team, holder.object, patches)?;
         }
         Ok(())
     }
@@ -549,11 +658,18 @@ impl Session {
     }
 
     /// Fails when the club or one of its teams points at the member of staff (his object, identity or person block)
-    /// itself, rather than through a department list or its place for a director of football: such a role is the
-    /// game's to move.
-    fn check_unheld(&self, club: u64, object: u64, identity: u64, person: u64) -> Result<(), MoveError> {
+    /// itself, other than through a department list or the places `leaving` (his club's place for a director of
+    /// football, a team's for a manager), which the move takes him out of: such a role is the game's to move. Each
+    /// team is looked through with what follows it, the teams of other clubs among them (a team takes 0xB8 bytes).
+    fn check_unheld(
+        &self,
+        club: u64,
+        leaving: &[u64],
+        object: u64,
+        identity: u64,
+        person: u64,
+    ) -> Result<(), MoveError> {
         let process = &self.process;
-        let director = self.layout.club.director_of_football;
         let mut places = vec![(club, CLUB_BYTES)];
         if let Some(teams) = PointerList::read(process, club + self.layout.club.teams)? {
             places
@@ -566,7 +682,7 @@ impl Session {
                 .0
                 .iter()
                 .enumerate()
-                .filter(|&(i, _)| address != club || director != Some(i as u64 * 8))
+                .filter(|&(i, _)| !leaving.contains(&(address + i as u64 * 8)))
                 .map(|(_, w)| u64::from_le_bytes(*w))
                 .any(|w| w == object || w == identity || w == person);
             if held {
@@ -727,8 +843,9 @@ mod tests {
         assert_eq!(post_of(62), Some(Post::Department(Department::Coaching)));
         assert_eq!(post_of(88), Some(Post::Department(Department::Scouting)));
         assert_eq!(post_of(DIRECTOR_OF_FOOTBALL), Some(Post::DirectorOfFootball));
-        assert_eq!(post_of(16), None, "a manager is left as he is");
-        assert_eq!(post_of(4), None, "so is the board");
+        assert_eq!(post_of(MANAGER), Some(Post::Manager));
+        assert_eq!(crate::job_name(MANAGER), Some("Manager"));
+        assert_eq!(post_of(4), None, "the board is left as it is");
     }
 
     #[test]
@@ -738,6 +855,15 @@ mod tests {
         assert!(c.job < BASIC_CONTRACT_BYTES && c.wage + 4 <= BASIC_CONTRACT_BYTES);
         assert!(c.team + 8 <= BASIC_CONTRACT_BYTES && c.senior_team + 8 <= BASIC_CONTRACT_BYTES);
         assert!(c.owner + 8 <= BASIC_CONTRACT_BYTES);
+    }
+
+    #[test]
+    fn the_managers_place_is_one_of_a_teams_own_bytes() {
+        let layout = crate::layout_for(27).expect("FM27 layout");
+        let at = layout.team.manager.expect("placed on Windows");
+        // A team takes 0xB8 bytes; past them lies the next team.
+        assert!(at + 8 <= 0xB8 && at + 8 <= TEAM_BYTES as u64);
+        assert!(![layout.team.captain, layout.team.vice_captain, layout.team.club].contains(&at));
     }
 
     #[test]

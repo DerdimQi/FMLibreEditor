@@ -134,6 +134,11 @@ const errors: ErrorTexts = {
   "staff.directorTaken": (p) =>
     `${p.name ?? "Someone else"} is the club's director of football already. Give this member of staff another job ` +
     `there, or move ${p.name ?? "that one"} first.`,
+  "staff.managerTaken": (p) =>
+    `${p.name ?? "Someone else"} is the club's manager already. Give this member of staff another job there, or ` +
+    `move ${p.name ?? "that one"} first.`,
+  "staff.yourClub": () =>
+    "You manage this club. Give this member of staff another job there: FMLibreEditor never takes your place.",
   "staff.noJob": () => "Choose the job they take at the club.",
   "staff.noModel": (p) =>
     p.staff === "0"
@@ -1754,9 +1759,9 @@ export const en = {
     staffNewJob: "Takes the new job, and keeps the wage and the contract end; the contract is dated from the game's date.",
     staffDoes: [
       "Joins the new club where the job is: its medical, coaching or scouting department, or as its director of " +
-        "football, which a club with one already does not take",
+        "football or manager, which a club with one already does not take",
       "Same wage and contract end; the contract is dated from the game's date",
-      "A team's manager, whom the team itself points at, and the board are left to the game",
+      "A manager who leaves a team leaves its place empty, for the club to fill; the board is left to the game",
       "Listed under Changes, where it can be undone",
     ],
     // Signing a member of staff who has no club: the same dialog with a job to choose and a contract the editor makes.
@@ -1773,11 +1778,11 @@ export const en = {
     /** The contract the editor makes: `wage` and `expires` written out. */
     staffSignContract: (wage: string, expires: string) => `New contract: ${wage} a week until ${expires}`,
     staffSignDoes: [
-      "Joins the club where the job is: its department, made bigger when full, or as its director of football, " +
-        "when it has none",
+      "Joins the club where the job is: its department, made bigger when full, or as its director of football or " +
+        "manager, when it has none",
       "A new contract from the game's date, in one of the game's own free contract slots, as the game makes one",
-      "Modelled on the contract of the club's member of staff with the same job (or in the same department) " +
-        "nearest their ability",
+      "Modelled on the contract of the club's member of staff with the same job (else in the same department, else " +
+        "any) nearest their ability",
       "Your wage and contract end, or that contract's wage and the end of next season; no clauses or bonuses",
       "Listed under Changes, where one undo takes it all back",
     ],

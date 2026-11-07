@@ -1320,11 +1320,14 @@ function recallLoan(uid: number): LoggedChange | null {
 /** `undo_change`: writes the old value back unless the value has changed since. */
 // Staff: moves and jobs ---------------------------------------------------------------------------------------------
 
-/** The jobs the real `change_staff_job` gives, by contract code: the last a director of football's. */
-const STAFF_JOBS = [2, 20, 22, 26, 34, 60, 62, 64, 12, 38, 40, 46, 48, 50, 14, 44, 58, 86, 88, 10];
+/** The jobs the real `change_staff_job` gives, by contract code: the last two a director of football's and a manager's. */
+const STAFF_JOBS = [2, 20, 22, 26, 34, 60, 62, 64, 12, 38, 40, 46, 48, 50, 14, 44, 58, 86, 88, 10, 16];
 
 /** The job code of a director of football, whom a club has one of at most. */
 const DIRECTOR_OF_FOOTBALL = 10;
+
+/** The job code of a manager, whom a club's senior team has one of at most. */
+const MANAGER = 16;
 
 /** What a member of staff's move, new job or signing changed, by the change's id: his list row as it was. */
 const staffUndo = new Map<number, Pick<StaffSummary, "club" | "clubUid" | "job">>();
@@ -1341,11 +1344,6 @@ function movableStaff(uid: number, signing = false): StaffSummary {
   if (member.clubUid === null && !signing) {
     throw failure("staff.unemployed", "the member of staff has no club");
   }
-  if (member.job === 16) {
-    const message =
-      "the club or one of its teams points at this member of staff directly, as a team does at its manager; the game moves him itself";
-    throw failure("staff.role", message);
-  }
   return member;
 }
 
@@ -1360,12 +1358,23 @@ function givenJob(code: number | null): number {
   return code;
 }
 
-/** Refuses a director of football for a club that has one, other than `member`, as the real commands do. */
+/**
+ * Refuses a director of football or a manager for a club that has one, other than `member`, as the real commands do:
+ * never the human manager's place.
+ */
 function checkDirector(clubUid: number, job: number, member: StaffSummary) {
   const director = staff.find((s) => s.clubUid === clubUid && s.job === DIRECTOR_OF_FOOTBALL && s.uid !== member.uid);
   if (job === DIRECTOR_OF_FOOTBALL && director) {
     const message = `the club has a director of football already (the member of staff with id ${director.uid})`;
     throw failure("staff.directorTaken", message, { uid: director.uid, name: director.name });
+  }
+  const manager = staff.find((s) => s.clubUid === clubUid && s.job === MANAGER && s.uid !== member.uid);
+  if (job === MANAGER && manager?.isHuman) {
+    throw failure("staff.yourClub", "you manage this club; give this member of staff another job there");
+  }
+  if (job === MANAGER && manager) {
+    const message = `the club has a manager already (the member of staff with id ${manager.uid})`;
+    throw failure("staff.managerTaken", message, { uid: manager.uid, name: manager.name });
   }
 }
 

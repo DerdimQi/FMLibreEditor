@@ -14,10 +14,10 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 use fmlibre_core::{
     ATTRIBUTE_GROUPS, ArrayCandidate, ArrayRvas, ArraySource, AttributeBound, BuildProfile, Buyer, CaptainRole,
     ClubIndex, Entity, ExportFormat, ExportHeader, Field, FmDate, Found, GAME_EXE, GAME_PLUGIN, GameInfo,
-    GraphicsIndex, Kind, Loan, MoveTerms, PERSONALITY, POSITIONS, Picture, PlayerFilter, PlayerIndex, PlayerOrder,
-    PlayerSort, ProfileNotes, Purpose, STAFF_ATTRIBUTE_GROUPS, SUPPORTER_MIX, SUPPORTER_TRAITS, Scale, ScanOptions,
-    ScoutOrder, ScoutRequest, Session, SessionError, StaffIndex, Target, Tie, TieTarget, find_game, job_name, nations,
-    profile_text, scan_object_arrays, sort_players,
+    GraphicsIndex, Kind, Loan, MANAGER, MoveTerms, PERSONALITY, POSITIONS, Picture, PlayerFilter, PlayerIndex,
+    PlayerOrder, PlayerSort, ProfileNotes, Purpose, STAFF_ATTRIBUTE_GROUPS, SUPPORTER_MIX, SUPPORTER_TRAITS, Scale,
+    ScanOptions, ScoutOrder, ScoutRequest, Session, SessionError, StaffIndex, Target, Tie, TieTarget, find_game,
+    job_name, nations, profile_text, scan_object_arrays, sort_players,
 };
 #[cfg(target_os = "macos")]
 use fmlibre_mem::MachImage;
@@ -131,6 +131,11 @@ enum Command {
         /// Instead, what this offset of every club holds: nothing, a member of staff (by job), or something else.
         #[arg(long, value_parser = parse_hex)]
         club_offset: Option<u64>,
+        /// Instead, what this offset of every team holds, by the kind of team: nothing, a member of staff (by job, and
+        /// whether his contract is with that team), or something else; with the clubs whose senior team holds no one
+        /// there while their departments have staff.
+        #[arg(long, value_parser = parse_hex)]
+        team_offset: Option<u64>,
         /// Instead, what this offset of every member of staff's contract holds, by job: zero, the contract's team or
         /// senior team, or something else; and the class of the contracts.
         #[arg(long, value_parser = parse_hex)]
@@ -147,6 +152,21 @@ enum Command {
         /// How many bytes to read.
         #[arg(long, default_value = "0x100")]
         len: String,
+    },
+    /// Find every pointer to these members of staff (their object or person block) in the game's memory, and say what
+    /// holds each: a club or one of its teams (and where in it), his contract, an entry of someone's relations, a list
+    /// of staff, a thread's stack, or else the object whose vtable comes last before it, by class and offset. Counted
+    /// for each member of staff, then over all of them. Only reads memory
+    StaffRefs {
+        /// The members of staff's ids.
+        #[arg(required = true)]
+        ids: Vec<u32>,
+        /// How far before a pointer to look for the vtable of the object that holds it.
+        #[arg(long, default_value = "0x400")]
+        back: String,
+        /// Also print where each pointer is whose holder's name holds this text.
+        #[arg(long)]
+        show: Option<String>,
     },
     /// List players, best first, optionally only those matching TEXT.
     Players {
@@ -303,9 +323,9 @@ enum Command {
     StaffJob {
         /// The member of staff's id.
         id: u32,
-        /// The new job's code: 2 coach, 10 director of football, 12 physio, 14 scout, 20 assistant coach, 26 fitness
-        /// coach, 34 goalkeeping coach, 38 chief doctor, 46 doctor, 60 performance analyst, 62 head performance
-        /// analyst, 86 loan manager, 88 technical director, ...
+        /// The new job's code: 2 coach, 10 director of football, 12 physio, 14 scout, 16 manager, 20 assistant coach,
+        /// 26 fitness coach, 34 goalkeeping coach, 38 chief doctor, 46 doctor, 60 performance analyst, 62 head
+        /// performance analyst, 86 loan manager, 88 technical director, ...
         job: u8,
         /// Give him his old job back afterwards and check it.
         #[arg(long)]
@@ -788,6 +808,9 @@ enum Command {
         /// a pointer into the heap, into a module, or something else, and the commonest values.
         #[arg(long)]
         fields: bool,
+        /// Also name the players, staff, clubs, teams and contracts each object points at.
+        #[arg(long)]
+        names: bool,
     },
     /// List the extras of contracts: with a UID, one player's clauses and bonuses; without, how many contracts hold
     /// each kind of entry, its amounts and a few players who have one.
@@ -1021,6 +1044,9 @@ fn run(cli: Cli) -> Result<()> {
         Command::StaffPlaces { club_offset: Some(offset), .. } => {
             club_slot(&connect(process, ArraySource::ProfileFirst)?, offset)
         }
+        Command::StaffPlaces { team_offset: Some(offset), job, .. } => {
+            team_slot(&connect(process, ArraySource::ProfileFirst)?, offset, job)
+        }
         Command::StaffPlaces { contract_offset: Some(offset), job, .. } => {
             staff_contract_word(&connect(process, ArraySource::ProfileFirst)?, offset, job)
         }
@@ -1030,6 +1056,9 @@ fn run(cli: Cli) -> Result<()> {
             let modules = list_modules(&process).context("listing modules")?;
             let session = connect(process, ArraySource::ProfileFirst)?;
             staff_at(&session, resolve(&addr, &modules)?, parse_hex(&len)?)
+        }
+        Command::StaffRefs { ids, back, show } => {
+            staff_refs(&connect(process, ArraySource::ProfileFirst)?, &ids, parse_hex(&back)?, show.as_deref())
         }
         Command::Clubs { text, limit } => clubs(&connect(process, ArraySource::ProfileFirst)?, text.as_deref(), limit),
         Command::Club { uid } => club(&connect(process, ArraySource::ProfileFirst)?, uid),
@@ -1243,18 +1272,19 @@ fn run(cli: Cli) -> Result<()> {
             let modules = list_modules(&process).context("listing modules")?;
             types(&process, &modules, &text, max)
         }
-        Command::Instances { class, max, holds, span, fields } => {
+        Command::Instances { class, max, holds, span, fields, names } => {
             let modules = list_modules(&process).context("listing modules")?;
             let holds = holds.map(|bytes| parse_bytes(&bytes)).transpose()?;
-            instances(
-                &process,
-                &modules,
-                &class,
-                if fields { usize::MAX } else { max },
-                holds.as_deref(),
-                parse_hex(&span)?,
-                fields,
-            )
+            let max = if fields { usize::MAX } else { max };
+            let span = parse_hex(&span)?;
+            if names {
+                let session = connect(process, ArraySource::ProfileFirst)?;
+                let names = object_names(&session)?;
+                let process = &session.process;
+                instances(process, &modules, &class, max, holds.as_deref(), span, fields, Some(&names))
+            } else {
+                instances(&process, &modules, &class, max, holds.as_deref(), span, fields, None)
+            }
         }
         Command::Clauses { uid } => clauses(&connect(process, ArraySource::ProfileFirst)?, uid),
         Command::ClauseSet { uid, index, amount, condition, restore } => {
@@ -2217,6 +2247,12 @@ fn object_names(session: &Session) -> Result<std::collections::HashMap<u64, Stri
     }
     for club in session.clubs()? {
         names.insert(club.address, format!("club {}", club.name));
+        let teams = list_entries(process, club.address + session.layout.club.teams, 8);
+        for (i, team) in teams.iter().map(|t| u64::from_le_bytes(t[..8].try_into().expect("8 bytes"))).enumerate() {
+            let kind = process.read_bytes(team + session.layout.team.kind, 1).map_or(255, |b| b[0]);
+            let which = if i == 0 { "senior team".to_owned() } else { format!("team (kind {kind})") };
+            names.insert(team, format!("{which} of {}", club.name));
+        }
     }
     names.remove(&0);
     Ok(names)
@@ -2458,6 +2494,7 @@ fn words_equal_to(process: &Process, start: u64, end: u64, values: &std::collect
     found
 }
 
+#[allow(clippy::too_many_arguments)]
 fn instances(
     process: &Process,
     modules: &[Module],
@@ -2466,6 +2503,7 @@ fn instances(
     holds: Option<&[u8]>,
     span: u64,
     fields: bool,
+    names: Option<&std::collections::HashMap<u64, String>>,
 ) -> Result<()> {
     let plugin = find_module(modules, GAME_PLUGIN).with_context(|| format!("{GAME_PLUGIN} is not loaded"))?;
     let vtables = class_vtables(process, plugin, class)?;
@@ -2527,9 +2565,18 @@ fn instances(
     }
     for &at in objects.iter().take(max) {
         let Ok(bytes) = process.read_bytes(at, span as usize) else { continue };
-        let words: Vec<String> =
-            bytes.as_chunks::<8>().0.iter().map(|w| format!("{:x}", u64::from_le_bytes(*w))).collect();
-        println!("  {at:#014x}  {}", words.join(" "));
+        let words: Vec<u64> = bytes.as_chunks::<8>().0.iter().map(|w| u64::from_le_bytes(*w)).collect();
+        println!("  {at:#014x}  {}", words.iter().map(|w| format!("{w:x}")).collect::<Vec<_>>().join(" "));
+        if let Some(names) = names {
+            let named: Vec<String> = words
+                .iter()
+                .enumerate()
+                .filter_map(|(i, w)| names.get(w).map(|name| format!("+{:#x} {name}", i * 8)))
+                .collect();
+            if !named.is_empty() {
+                println!("                  {}", named.join("; "));
+            }
+        }
     }
     Ok(())
 }
@@ -3411,6 +3458,163 @@ fn staff_at(session: &Session, addr: u64, len: u64) -> Result<()> {
     Ok(())
 }
 
+/// Every pointer to the members of staff `ids`, their object or person block, in the game's readable memory, each
+/// said what holds it (see `Command::StaffRefs`); counted for each of them, then over all of them.
+fn staff_refs(session: &Session, ids: &[u32], back: u64, show: Option<&str>) -> Result<()> {
+    use std::collections::{HashMap, HashSet};
+    const CHUNK: u64 = 8 << 20;
+    const CLUB_BYTES: u64 = 0x400;
+    const TEAM_BYTES: u64 = 0x800;
+    let (process, layout, plugin) = (&session.process, &session.layout, &session.plugin);
+    let s = &layout.staff;
+    let started = Instant::now();
+    let staff = session.staff()?;
+    let (mut objects, mut persons) = (HashSet::new(), HashSet::new());
+    for m in &staff {
+        objects.insert(m.address);
+        persons.insert(m.address + s.identity() + m.shift);
+    }
+    let mut members = Vec::new();
+    let mut targets: HashMap<u64, (usize, &str)> = HashMap::new();
+    for &id in ids {
+        let m = staff.iter().find(|m| m.uid == id).with_context(|| format!("no member of staff with id {id}"))?;
+        targets.insert(m.address, (members.len(), "object"));
+        targets.insert(m.address + s.identity() + m.shift, (members.len(), "person"));
+        members.push(m);
+    }
+    let low = targets.keys().copied().min().unwrap_or(0);
+    let high = targets.keys().copied().max().unwrap_or(0);
+
+    // The places the editor knows, by where they start: each club's first bytes, its teams', the members' contracts.
+    let mut places: Vec<(u64, u64, String, Option<u32>)> = Vec::new();
+    for club in session.clubs()? {
+        places.push((club.address, club.address + CLUB_BYTES, "club".to_owned(), Some(club.uid)));
+        let (Ok(begin), Ok(end)) = (
+            process.read_u64(club.address + layout.club.teams),
+            process.read_u64(club.address + layout.club.teams + 8),
+        ) else {
+            continue;
+        };
+        if !is_user_pointer(begin) || end < begin || end - begin > 0x1000 {
+            continue;
+        }
+        let teams = process.read_bytes(begin, (end - begin) as usize).unwrap_or_default();
+        for team in teams.as_chunks::<8>().0.iter().map(|w| u64::from_le_bytes(*w)).filter(|&t| is_user_pointer(t)) {
+            let kind = process.read_bytes(team + layout.team.kind, 1).map_or(0, |b| b[0]);
+            places.push((team, team + TEAM_BYTES, format!("team kind {kind}"), Some(club.uid)));
+        }
+    }
+    for m in &members {
+        if let Ok(contract) = process.read_u64(m.address + s.at(s.contract, m.shift))
+            && is_user_pointer(contract)
+        {
+            places.push((contract, contract + layout.contract.size.unwrap_or(0x28), "his contract".to_owned(), None));
+        }
+    }
+    places.sort_unstable_by_key(|p| p.0);
+    #[cfg(windows)]
+    let stacks = fmlibre_mem::thread_stacks(process).unwrap_or_default();
+    #[cfg(not(windows))]
+    let stacks: Vec<std::ops::Range<u64>> = Vec::new();
+    let modules = list_modules(process).context("listing modules")?;
+
+    let what_holds = |at: u64, member: &fmlibre_core::StaffSummary| -> String {
+        if stacks.iter().any(|stack| stack.contains(&at)) {
+            return "a thread's stack".to_owned();
+        }
+        if let Some(module) = modules.iter().find(|m| m.contains(at)) {
+            return format!("{} static +{:#x}", module.name, at - module.base);
+        }
+        let place = places.partition_point(|p| p.0 <= at);
+        if let Some((start, end, what, club)) = place.checked_sub(1).map(|i| &places[i])
+            && at < *end
+        {
+            let whose = match club {
+                Some(club) if Some(*club) == member.club_uid => " of his club",
+                Some(_) => " of another club",
+                None => "",
+            };
+            return format!("{what}{whose} +{:#x}", at - start);
+        }
+        let Ok(entry) = process.read_bytes(at, 16) else { return "unreadable".to_owned() };
+        if entry[0x0A] == 3 && entry[0x0F] == 0xFF {
+            return format!("an entry of someone's relations, relation {}", entry[0x0B]);
+        }
+        let beside = [at - 8, at + 8].map(|n| process.read_u64(n).unwrap_or(0));
+        if beside.iter().any(|w| objects.contains(w)) {
+            return "beside other staff objects".to_owned();
+        }
+        if beside.iter().any(|w| persons.contains(w)) {
+            return "beside other staff persons".to_owned();
+        }
+        if let Ok(before) = process.read_bytes(at - back, back as usize) {
+            for (i, word) in before.as_chunks::<8>().0.iter().enumerate().rev() {
+                let word = u64::from_le_bytes(*word);
+                if !plugin.contains(word) {
+                    continue;
+                }
+                let slot = at - back + i as u64 * 8;
+                if let Some(class) = fmlibre_core::rtti::class_of(process, plugin, slot) {
+                    return format!("{class} +{:#x}", at - slot);
+                }
+            }
+        }
+        "no class found before it".to_owned()
+    };
+
+    let mut found: BTreeMap<(usize, String, &str), Vec<u64>> = BTreeMap::new();
+    let mut scanned = 0u64;
+    for region in regions(process, 0x1_0000, 0x7FFF_FFFF_0000).into_iter().filter(|r| r.is_readable()) {
+        let mut offset = 0;
+        while offset < region.size {
+            let base = region.base + offset;
+            let len = (region.size - offset).min(CHUNK);
+            if let Ok(chunk) = process.read_bytes(base, len as usize) {
+                for (i, word) in chunk.as_chunks::<8>().0.iter().enumerate() {
+                    let value = u64::from_le_bytes(*word);
+                    if value < low || value > high {
+                        continue;
+                    }
+                    let Some(&(member, part)) = targets.get(&value) else { continue };
+                    let at = base + (i * 8) as u64;
+                    found.entry((member, what_holds(at, members[member]), part)).or_default().push(at);
+                }
+            }
+            scanned += len;
+            offset += CHUNK;
+        }
+    }
+
+    let job = |m: &fmlibre_core::StaffSummary| {
+        m.job.map_or_else(|| "-".to_owned(), |j| job_name(j).map_or(format!("job {j}"), str::to_owned))
+    };
+    let mut over_all: BTreeMap<(String, &str), (usize, Vec<String>)> = BTreeMap::new();
+    for (k, m) in members.iter().enumerate() {
+        println!("{} {} ({}, {})", m.name, m.uid, job(m), m.club.as_deref().unwrap_or("-"));
+        for ((member, what, part), at) in found.range((k, String::new(), "")..) {
+            if *member != k {
+                break;
+            }
+            println!("  {:>4}  {what} ({part})", at.len());
+            if show.is_some_and(|text| what.contains(text)) {
+                for &at in at {
+                    println!("          {at:#014x}  {}", neighbours(process, at));
+                }
+            }
+            let entry = over_all.entry((what.clone(), part)).or_default();
+            entry.0 += 1;
+            entry.1.push(m.name.split_whitespace().last().unwrap_or_default().to_owned());
+        }
+    }
+    println!();
+    println!("Over all {} of them:", members.len());
+    for ((what, part), (n, who)) in &over_all {
+        println!("  {n:>3}  {what} ({part})  {}", if *n < members.len() { who.join(", ") } else { String::new() });
+    }
+    println!("Scanned {:.0} MiB in {:.1} s.", scanned as f64 / 1_048_576.0, started.elapsed().as_secs_f64());
+    Ok(())
+}
+
 /// The classes of the players' and the staff's contracts, counted, with a few people of each.
 fn contract_classes(session: &Session) -> Result<()> {
     let (process, layout) = (&session.process, &session.layout);
@@ -3551,6 +3755,135 @@ fn club_slot(session: &Session, offset: u64) -> Result<()> {
     }
     for line in other.iter().take(8) {
         println!("  other: {line}");
+    }
+    Ok(())
+}
+
+/// What one offset of every team holds, by the kind of team: null, a member of staff (by job, and where his contract
+/// is), or another value; then the clubs whose senior team holds no one there although their departments have staff,
+/// best known first.
+fn team_slot(session: &Session, offset: u64, only: Option<u8>) -> Result<()> {
+    let (process, layout) = (&session.process, &session.layout);
+    let staff = session.staff()?;
+    let s = &layout.staff;
+    let mut by_address = std::collections::HashMap::new();
+    for member in &staff {
+        by_address.insert(member.address, member);
+        by_address.insert(member.address + s.identity() + member.shift, member);
+    }
+    let list = |at: u64| -> Vec<u64> {
+        let (Ok(begin), Ok(end)) = (process.read_u64(at), process.read_u64(at + 8)) else { return Vec::new() };
+        if !is_user_pointer(begin) || end < begin || end - begin > 0x10000 {
+            return Vec::new();
+        }
+        let bytes = process.read_bytes(begin, (end - begin) as usize).unwrap_or_default();
+        bytes.as_chunks::<8>().0.iter().map(|w| u64::from_le_bytes(*w)).collect()
+    };
+    /// The people of one job in that place: how many, and by where their contract is, how many and a few of them.
+    #[derive(Default)]
+    struct Job {
+        people: usize,
+        ties: BTreeMap<&'static str, (usize, Vec<String>)>,
+    }
+    #[derive(Default)]
+    struct Kind {
+        teams: usize,
+        null: usize,
+        other: Vec<String>,
+        jobs: BTreeMap<String, Job>,
+    }
+    let mut kinds: BTreeMap<u8, Kind> = BTreeMap::new();
+    let mut vacant: Vec<(u16, fmlibre_core::ClubSummary)> = Vec::new();
+    for club in session.clubs()? {
+        let teams: Vec<u64> =
+            list(club.address + layout.club.teams).into_iter().filter(|&t| is_user_pointer(t)).collect();
+        let senior = teams.first().copied().unwrap_or(0);
+        for (i, &team) in teams.iter().enumerate() {
+            let kind = process.read_bytes(team + layout.team.kind, 1).map_or(255, |b| b[0]);
+            let entry = kinds.entry(kind).or_default();
+            entry.teams += 1;
+            let word = process.read_u64(team + offset)?;
+            if word == 0 {
+                entry.null += 1;
+                let c = &layout.club;
+                let staffed = [c.medical_staff, c.coaching_staff, c.scouting_staff]
+                    .iter()
+                    .any(|&at| !list(club.address + at).is_empty());
+                if i == 0 && staffed {
+                    let reputation = process.read_u32(team + layout.team.reputation).map_or(0, |r| r as u16);
+                    vacant.push((reputation, club.clone()));
+                }
+                continue;
+            }
+            let Some(member) = by_address.get(&word) else {
+                if entry.other.len() < 4 {
+                    entry.other.push(format!("{} {word:#x}", club.name));
+                }
+                continue;
+            };
+            if only.is_some_and(|job| member.job != Some(job)) {
+                continue;
+            }
+            let contract = process.read_u64(member.address + s.at(s.contract, member.shift)).unwrap_or(0);
+            let (team_of, senior_of) = if is_user_pointer(contract) {
+                (
+                    process.read_u64(contract + layout.contract.team).unwrap_or(0),
+                    process.read_u64(contract + layout.contract.senior_team).unwrap_or(0),
+                )
+            } else {
+                (0, 0)
+            };
+            let tie = if contract == 0 {
+                "no contract"
+            } else if team_of == team {
+                "contract with this team"
+            } else if senior_of == senior || team_of == senior {
+                "contract with the senior team"
+            } else if member.club_uid == Some(club.uid) {
+                "contract with another team of the club"
+            } else {
+                "contract elsewhere"
+            };
+            let job = member
+                .job
+                .map_or_else(|| "no contract".to_owned(), |j| job_name(j).map_or(format!("job {j}"), str::to_owned));
+            let held = entry.jobs.entry(job).or_default();
+            held.people += 1;
+            let (n, samples) = held.ties.entry(tie).or_default();
+            *n += 1;
+            if samples.len() < 3 {
+                let works = member.club.as_deref().unwrap_or("-");
+                samples.push(format!("{} -> {} {} ({works})", club.name, member.name, member.uid));
+            }
+        }
+    }
+    println!("+{offset:#x} of every team, by its kind:");
+    for (kind, k) in &kinds {
+        println!("  kind {kind:>3}: {} teams, null {}, someone else {}", k.teams, k.null, k.other.len());
+        for (job, held) in &k.jobs {
+            println!("      {job:<26} {:>5}", held.people);
+            for (tie, (n, samples)) in &held.ties {
+                println!("        {tie:<40} {n:>5}  e.g. {}", samples.join("; "));
+            }
+        }
+        if !k.other.is_empty() {
+            println!("      other: {}", k.other.join("; "));
+        }
+    }
+    vacant.sort_by_key(|(reputation, _)| std::cmp::Reverse(*reputation));
+    // The clubs of the leagues being played keep their finances; the others are not run day by day.
+    let played: Vec<&(u16, fmlibre_core::ClubSummary)> = vacant
+        .iter()
+        .filter(|(_, club)| session.club_details(club).ok().flatten().is_some_and(|d| d.finances.is_some()))
+        .collect();
+    println!(
+        "Senior teams holding no one there although their club's departments have staff: {}, of clubs whose finances \
+         the game keeps {}",
+        vacant.len(),
+        played.len()
+    );
+    for (reputation, club) in played.iter().take(40) {
+        println!("  {reputation:>5}  {} {}", club.name, club.uid);
     }
     Ok(())
 }
@@ -4238,6 +4571,22 @@ fn staff_change(session: &Session, id: u32, action: StaffAction, restore: bool) 
         StaffAction::Sign(to, code, terms) => session.plan_staff_signing(member, club(to)?, code, terms)?,
     };
     let name = |uid: u32| if uid == 0 { "-" } else { clubs.get(uid).map_or("?", |c| c.name.as_str()) };
+    // Who manages the clubs the change is about, where a manager comes or goes.
+    let managers = |label: &str| -> Result<()> {
+        if plan.job.0 != MANAGER && plan.job.1 != MANAGER {
+            return Ok(());
+        }
+        let mut uids = vec![plan.from_club, plan.to_club];
+        uids.dedup();
+        for uid in uids.into_iter().filter(|&uid| uid != 0) {
+            let held = session.club_manager(club(uid)?)?;
+            let who =
+                held.map_or_else(|| "no one".to_owned(), |id| staff.get(id).map_or(id.to_string(), |s| s.name.clone()));
+            println!("  {label} manager of {}: {who}", name(uid));
+        }
+        Ok(())
+    };
+    managers("before:")?;
     println!(
         "{} (id {id}): {} -> {}, {} -> {}",
         member.name,
@@ -4265,9 +4614,11 @@ fn staff_change(session: &Session, id: u32, action: StaffAction, restore: bool) 
         Ok(())
     };
     now("now at")?;
+    managers("now:")?;
     if restore {
         session.undo_staff_change(&done)?;
         now("back at")?;
+        managers("back:")?;
     }
     Ok(())
 }
@@ -5156,6 +5507,17 @@ fn club(session: &Session, uid: u32) -> Result<()> {
     println!("  short name     {}", c.short_name.as_deref().unwrap_or("-"));
     println!("  reputation     {}", c.reputation.map_or_else(|| "-".to_owned(), |r| r.to_string()));
     println!("  founded        {}", c.founded.map_or_else(|| "-".to_owned(), |y| y.to_string()));
+    if session.layout.team.manager.is_some() {
+        let manager = match session.club_manager(summary) {
+            Ok(None) => "no one".to_owned(),
+            Ok(Some(id)) => {
+                let staff = StaffIndex::new(session.staff()?);
+                staff.get(id).map_or_else(|| format!("id {id}"), |s| format!("{} ({id})", s.name))
+            }
+            Err(err) => format!("- ({err})"),
+        };
+        println!("  manager        {manager}");
+    }
     println!("  season tickets {}", d.season_tickets.map_or_else(|| "-".to_owned(), |n| n.to_string()));
     println!("  social media   {}", d.social_media.map_or_else(|| "-".to_owned(), |n| n.to_string()));
     let mix: Vec<String> =
