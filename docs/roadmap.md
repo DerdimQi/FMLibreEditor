@@ -277,7 +277,8 @@ changes many at once, and undo.
     human manager runs it. A manager who is moved or given another job leaves his team's place empty, for the club to
     fill, as the game leaves a club between two managers. Nothing else the game keeps says who manages a club now (see
     the [staff notes](recon/fm27-staff.md#managers)). Checked with the probe on the Steam build, each change undone,
-    and in the game on Steam: a manager signed, one moved and one given the job, kept through a save and a load.
+    and in the game on Steam: a manager signed, one moved and one given the job, kept through a save, a load, a restart
+    of the game and a month of matches; the place the move left empty, the game filled itself.
   - [x] Release a player on a free: he leaves his club's lists, and his team and contract pointers are
     cleared, as the game's own free agents have them. A captaincy he held is left empty; so is one a player
     gives up by moving. Checked on the Mac Steam build and both Windows builds, restored.

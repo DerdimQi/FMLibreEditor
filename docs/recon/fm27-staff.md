@@ -131,7 +131,12 @@ manager on £50,000 a week to 30 June 2029; Xabi Alonso moved from Chelsea to Ex
 Chelsea's place empty; Julian Gray, Crawley Town's assistant coach, made its manager. The user looked at them in the
 game and found nothing wrong. A day on (20 August 2027), after a save and a load (every object at a new address), the
 three were still their clubs' managers, Guardiola under the contract the editor made, and Chelsea's place was still
-empty: whether the game fills a place the editor empties, as it does one it empties itself, was not seen yet.
+empty. A month on (21 September 2027), the game quit and started again in between, the three were still their clubs'
+managers, and the game had filled Chelsea's place itself: Cesc Fàbregas, signed on 19 September on £63,229 a week to
+30 June 2030, held as the editor holds one, by Chelsea's `+0x80` and his contract alone. Lago (Como), which had a
+manager in August, had none now. Of the clubs of the played leagues, eight had an empty place: Lago, and seven of the
+ten the game had left empty in August (Al Taawoun, Laguna, Albacete, US Orléans, Al Faisaly, Ceuta, Quevilly-Rouen),
+which it had not filled in a month either.
 
 ## Checked
 
