@@ -126,6 +126,13 @@ appointment of team doctor"), but nothing that points at a club's own doctors an
 memory: the same department list, the same arrays of people, the team's staff (which the game builds again on
 Continue, the moved one with them).
 
+Managers, left in the Steam save of 19 August 2027 with the probe: Pep Guardiola, who had no club, signed as Parma's
+manager on £50,000 a week to 30 June 2029; Xabi Alonso moved from Chelsea to Exeter City as its manager, which left
+Chelsea's place empty; Julian Gray, Crawley Town's assistant coach, made its manager. The user looked at them in the
+game and found nothing wrong. A day on (20 August 2027), after a save and a load (every object at a new address), the
+three were still their clubs' managers, Guardiola under the contract the editor made, and Chelsea's place was still
+empty: whether the game fills a place the editor empties, as it does one it empties itself, was not seen yet.
+
 ## Checked
 
 With the probe on Steam 26340721 (19 August 2027), each undone, for a manager: Pep Guardiola signed as Parma's manager
