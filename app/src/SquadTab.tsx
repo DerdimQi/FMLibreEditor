@@ -548,9 +548,9 @@ interface TeamFreezesProps {
 }
 
 /**
- * The boxes that freeze the attributes, and the energy and match sharpness, of every player in the shown team. A box
- * is ticked when all of them are frozen that way, and half ticked, with how many are, when some are; ticking it then
- * freezes the others too. Both wait while the game cannot be written to, and say why.
+ * The boxes that freeze the attributes, the energy and match sharpness, and the positions of every player in the shown
+ * team. A box is ticked when all of them are frozen that way, and half ticked, with how many are, when some are;
+ * ticking it then freezes the others too. They wait while the game cannot be written to, and say why.
  */
 function TeamFreezes({ team, editable, busy, onFreeze }: TeamFreezesProps) {
   const { readOnlyNote } = useContext(EditorContext);

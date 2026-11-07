@@ -73,7 +73,7 @@ export class App {
       },
       stdio: "ignore",
     });
-    const app = new App(child, folder);
+    const app = new App(child, folder, { exe, port });
     try {
       await app.attach(await pageUrl(port, child));
       await app.waitFor(LOADED, "the page", 60000);
@@ -95,9 +95,12 @@ export class App {
     return app;
   }
 
-  constructor(child, folder) {
+  constructor(child, folder, { exe, port } = {}) {
     this.child = child;
     this.folder = folder;
+    /** What it was started from and debugs on, for a test that starts a second copy (on another port). */
+    this.exe = exe;
+    this.port = port;
     this.nextId = 1;
     this.pending = new Map();
     /** Errors and warnings the page logged, and exceptions it threw. */

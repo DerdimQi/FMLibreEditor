@@ -130,10 +130,14 @@ async function leaveNothingChanged(app) {
   report.check("every change is undone", failed.length === 0, failed.join("; "));
   for (const uid of await app.must("frozen_players")) await app.invoke("freeze_attributes", { uid, frozen: false });
   for (const uid of await app.must("frozen_fitness")) await app.invoke("freeze_fitness", { uid, frozen: false });
+  for (const uid of await app.must("frozen_positions")) await app.invoke("freeze_positions", { uid, frozen: false });
+  for (const id of await app.must("frozen_staff")) await app.invoke("freeze_staff_attributes", { id, frozen: false });
   for (const club of await app.must("frozen_clubs")) await app.invoke("freeze_money", { club, frozen: false });
   const stillFrozen = [
     ...(await app.must("frozen_players")),
     ...(await app.must("frozen_fitness")),
+    ...(await app.must("frozen_positions")),
+    ...(await app.must("frozen_staff")),
     ...(await app.must("frozen_clubs")),
   ];
   report.check("nothing stays frozen", stillFrozen.length === 0, stillFrozen.join(", "));
