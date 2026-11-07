@@ -301,8 +301,13 @@ const errors: ErrorTexts = {
     `El club ya tiene director de fútbol: ${p.name ?? "otra persona"}. Dale a este miembro del personal otro puesto ` +
     `allí, o mueve antes a ${p.name ?? "esa persona"}.`,
   "staff.noJob": () => "Elige el puesto que ocupará en el club.",
-  "staff.noModel": () =>
-    "El club no tiene ningún miembro del personal con un contrato completo propio en el que basar el nuevo.",
+  "staff.noModel": (p) =>
+    (p.staff === "0"
+      ? "Este club no tiene personal: el juego no lo mantiene en los clubes de ligas que no son jugables en esta " +
+        "partida. "
+      : `Ninguno de los ${p.staff} miembros del personal de este club tiene un contrato completo propio. `) +
+    "Un contrato nuevo se basa en el de alguien del propio personal del club, así que no se puede fichar por él a " +
+    "nadie sin club. Sí se puede mover allí a un miembro del personal que trabaje en otro club.",
   "squad.noTeam": () => `El club no tiene ese equipo o no supera la comprobación; ${reload}.`,
   "captain.notInTeam": () =>
     "El jugador no juega en este equipo; el capitán solo puede ser uno de los jugadores del propio equipo.",
