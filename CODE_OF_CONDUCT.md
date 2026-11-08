@@ -22,8 +22,9 @@ is welcome to ask, report, test and contribute, whatever they know.
 
 ## If something goes wrong
 
-Use GitHub's **Report content** menu on the comment, issue or pull request (the **⋯** button) and
-report it to the repository's maintainers. Reports are read in confidence. The maintainer may edit or hide comments, lock threads, and block
+For something that has to stay private, such as harassment, use GitHub's **Report content** menu on
+the comment, issue or pull request (the **⋯** button), which reaches GitHub's own moderators. For
+anything else, mention the maintainer, @tozmoz, in the thread. The maintainer may edit or hide comments, lock threads, and block
 people who do not follow this code.
 
 This code of conduct takes its spirit from the

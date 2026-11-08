@@ -8,7 +8,6 @@ Works on **Windows** (Xbox / Game Pass and Steam) and **macOS** (Steam).
 [![Latest release](https://img.shields.io/github/v/release/tozmoz/FMLibreEditor?label=release)](https://github.com/tozmoz/FMLibreEditor/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/tozmoz/FMLibreEditor/total)](https://github.com/tozmoz/FMLibreEditor/releases)
 [![License: GPL-3.0](https://img.shields.io/github/license/tozmoz/FMLibreEditor)](LICENSE)
-[![Good first issues](https://img.shields.io/github/issues/tozmoz/FMLibreEditor/good%20first%20issue?label=good%20first%20issues&color=7057ff)](https://github.com/tozmoz/FMLibreEditor/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
 
 **Open source, and open to your help:** fixes, translations, testing on your copy of the game or
 findings about FM27's data are all welcome. See [Contributing](#contributing).
@@ -60,10 +59,11 @@ The game shows a change once you press **Continue** in FM.
 FMLibreEditor is built in the open, and you do not need to know reverse engineering to help.
 A first pull request can be small: a typo, a clearer sentence, one translated screen.
 
-- **Pick up an issue:** the
-  [good first issues](https://github.com/tozmoz/FMLibreEditor/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-  are small and say where to start; [help wanted](https://github.com/tozmoz/FMLibreEditor/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
-  are bigger. Comment on one to take it, so nobody else starts the same work.
+- **Pick up an issue:** the ones labelled
+  [help wanted](https://github.com/tozmoz/FMLibreEditor/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+  are open for anyone. Comment on one to take it, so nobody else starts the same work. Have an
+  idea of your own? Open an issue or ask in
+  [Discussions](https://github.com/tozmoz/FMLibreEditor/discussions).
 - **Work on the interface without the game:** `npm run dev` in `app/` opens it in a browser with
   made-up players (React + TypeScript).
 - **Translate:** the app speaks English, Turkish and Spanish; another language is one file,

@@ -23,10 +23,8 @@ Please follow the [code of conduct](CODE_OF_CONDUCT.md).
 ## Your first pull request
 
 1. Find an issue labelled
-   [good first issue](https://github.com/tozmoz/FMLibreEditor/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-   (small, with a pointer to where to start) or
    [help wanted](https://github.com/tozmoz/FMLibreEditor/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22),
-   and comment that you would like to take it. The maintainer assigns it to you, so nobody else
+   or any open issue you would like to work on, and comment that you would like to take it. The maintainer assigns it to you, so nobody else
    starts the same work. For something without an issue, open one first when it is more than a
    small fix, so we can agree on the approach before you spend time on it.
 2. Fork the repository and make a branch.
