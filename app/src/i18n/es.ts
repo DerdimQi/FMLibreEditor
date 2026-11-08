@@ -138,6 +138,7 @@ const CLAUSE_NAMES_ES: Partial<Record<number, string>> = {
   41: "Prima por objetivo de goles y asistencias en la temporada",
   54: "No se muestra en el juego (54)",
   55: "Cláusula de rescisión por descenso activa",
+  56: "Cláusula de rescisión por no ascender activa",
   58: "No se muestra en el juego (58)",
   63: "No se muestra en el juego (63)",
 };

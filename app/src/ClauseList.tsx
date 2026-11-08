@@ -32,7 +32,13 @@ const KNOWN_CONDITIONS = new Set([3, 10, 15, 19, 22, 40]);
  * The kinds of release clause (see `RELEASE_CLAUSES` in `clauses.rs`): their condition, when they have one, is the days
  * from the contract's start until they expire.
  */
-const RELEASE_CLAUSES = new Set([0, 1, 2, 16, 17, 18, 27, 31, 55]);
+const RELEASE_CLAUSES = new Set([0, 1, 2, 16, 17, 18, 27, 31, 55, 56]);
+
+/**
+ * The most days a release clause's condition is taken to count (see `MOST_RELEASE_CLAUSE_DAYS` in `clauses.rs`): past it,
+ * the condition is a mark, not a day (65,505 would be 2202), and the clause does not expire.
+ */
+const MOST_RELEASE_CLAUSE_DAYS = 7305;
 
 /** The sell-on clause whose amount is a threshold: the selling club gets its percentage of the profit over it. */
 const SELL_ON_PROFIT = 9;
@@ -55,6 +61,9 @@ function conditionText(clause: Clause, signed: FmDate | null): string | null {
     return null;
   }
   if (RELEASE_CLAUSES.has(clause.kind)) {
+    if (clause.condition > MOST_RELEASE_CLAUSE_DAYS) {
+      return null;
+    }
     return signed === null
       ? profileText.clauseExpiresAfter(clause.condition)
       : profileText.clauseExpires(formatDate(plusDays(signed, clause.condition)));

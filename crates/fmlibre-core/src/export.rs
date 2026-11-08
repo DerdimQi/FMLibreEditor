@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize, Serializer};
 
 use crate::{
     ATTRIBUTE_GROUPS, Contract, FmDate, International, PERSONALITY, PlayerDetails, PlayerSummary, RELEASE_CLAUSE,
-    RELEASE_CLAUSES, Reputation, Session, read_player_details, release_clause_expiry,
+    RELEASE_CLAUSES, Reputation, Session, read_player_details, release_clause_expiry, release_clause_never_expires,
 };
 
 /// How an export writes the players.
@@ -364,6 +364,8 @@ fn clause_text(clause: &crate::Clause, signed: Option<FmDate>) -> String {
     let name = clause_name(clause.kind).map_or_else(|| format!("Clause {}", clause.kind), str::to_owned);
     let condition = match (release_clause_expiry(clause, signed), clause.condition) {
         (Some(expires), _) => Some(format!("expires {}", iso(expires))),
+        // A mark, not a day (see `MOST_RELEASE_CLAUSE_DAYS`).
+        (None, Some(_)) if release_clause_never_expires(clause) => None,
         (None, Some(value)) => Some(condition_text(clause.kind, value)),
         (None, None) => None,
     };
@@ -450,7 +452,7 @@ fn clause_name(kind: u16) -> Option<&'static str> {
         16 => "Minimum fee release clause (foreign clubs)",
         17 => "Minimum fee release clause (domestic clubs in higher division)",
         18 => "Minimum fee release clause (domestic clubs)",
-        19 => "Wage after reaching international matches",
+        19 => "Wage after reaching international appearances",
         20 => "Percentage of wages paid by sponsor",
         21 => "Percentage of gate receipts paid to player",
         22 => "Optional contract extension by club",
@@ -472,6 +474,7 @@ fn clause_name(kind: u16) -> Option<&'static str> {
         41 => "Seasonal landmark combined goal and assist bonus",
         54 => "Not shown in the game (54)",
         55 => "Active relegation release clause",
+        56 => "Active non promotion release clause",
         58 => "Not shown in the game (58)",
         63 => "Not shown in the game (63)",
         _ => return None,
@@ -486,7 +489,7 @@ fn condition_text(kind: u16, value: u16) -> String {
         10 => plural("goal", "goals"),
         40 => plural("assist", "assists"),
         41 => format!("{value} goals and assists"),
-        19 => plural("international match", "international matches"),
+        19 => plural("international appearance", "international appearances"),
         11 | 13 | 25 | 26 => plural("league game", "league games"),
         22 | 29 => plural("year", "years"),
         3 | 4 | 5 | 8 | 9 | 14 | 15 | 20 | 21 => format!("{value}%"),
@@ -638,6 +641,13 @@ mod tests {
         );
         assert_eq!(said(10, Some(250_000), Some(1)), "Seasonal landmark goal bonus: 250000 GBP, 1 goal");
         assert_eq!(said(14, None, Some(20)), "Top division promotion wage rise: 20%");
+        assert_eq!(said(56, Some(161_288), None), "Active non promotion release clause: 161288 GBP");
+        assert_eq!(
+            said(19, Some(158_689), Some(5)),
+            "Wage after reaching international appearances: 158689 GBP a week, 5 international appearances"
+        );
+        // Jon Moncayola's 65,505 is a mark, not the day 2202.
+        assert_eq!(said(0, Some(1_000_000), Some(65_505)), "Minimum fee release clause: 1000000 GBP");
         assert_eq!(said(63, None, None), "Not shown in the game (63)");
         assert_eq!(said(99, None, Some(3)), "Clause 99: 3");
     }

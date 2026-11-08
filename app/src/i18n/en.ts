@@ -176,7 +176,7 @@ const CLAUSE_NAMES_EN: Partial<Record<number, string>> = {
   16: "Minimum fee release clause (foreign clubs)",
   17: "Minimum fee release clause (domestic clubs in higher division)",
   18: "Minimum fee release clause (domestic clubs)",
-  19: "Wage after reaching international matches",
+  19: "Wage after reaching international appearances",
   20: "Percentage of wages paid by sponsor",
   21: "Percentage of gate receipts paid to player",
   22: "Optional contract extension by club",
@@ -198,6 +198,7 @@ const CLAUSE_NAMES_EN: Partial<Record<number, string>> = {
   41: "Seasonal landmark combined goal and assist bonus",
   54: "Not shown in the game (54)",
   55: "Active relegation release clause",
+  56: "Active non promotion release clause",
   58: "Not shown in the game (58)",
   63: "Not shown in the game (63)",
 };
@@ -685,7 +686,7 @@ export const en = {
         case 41:
           return `${value} goals and assists`;
         case 19:
-          return value === 1 ? "1 international match" : `${value} international matches`;
+          return value === 1 ? "1 international appearance" : `${value} international appearances`;
         case 11:
         case 13:
         case 25:

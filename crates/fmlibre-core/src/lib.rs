@@ -45,7 +45,7 @@ mod transfer;
 pub use calibrate::{ArrayRef, EntityArrays, calibrate};
 pub use clauses::{
     ClausePlan, ClauseSet, MOST_CLAUSE_AMOUNT, MOST_CLAUSE_CONDITION, RELEASE_CLAUSE, RELEASE_CLAUSES,
-    release_clause_expiry,
+    release_clause_expiry, release_clause_never_expires,
 };
 pub use clubs::{
     ClubDetails, ClubIndex, ClubSummary, Finances, SUPPORTER_MIX, SUPPORTER_TRAITS, read_club_details, read_clubs,

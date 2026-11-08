@@ -31,7 +31,7 @@ condition (`0xFFFF` for none) and a `u16` kind.
 | 16 | Minimum Fee Release Clause (Foreign Clubs) | the fee | expiry | De Arrascaeta |
 | 17 | Minimum Fee Release Clause (Domestic Clubs in Higher Division) | the fee | expiry | Schlicke |
 | 18 | Minimum Fee Release Clause (Domestic Clubs) | the fee | expiry | De Arrascaeta |
-| 19 | a wage after a number of international matches (not seen on either save) | | matches | |
+| 19 | Wage After Reaching International Appearances | the new weekly wage | international appearances | Lukeba: £8.25M p/a after 5 |
 | 20 | Percentage of Wages paid by Sponsor | | % | Ronaldo, Watkins, Bounou |
 | 21 | Percentage of Gate Receipts paid to Player | | % | Gelos |
 | 22 | Optional Contract Extension By Club | | years | |
@@ -52,6 +52,7 @@ condition (`0xFFFF` for none) and a `u16` kind.
 | 40 | Seasonal Landmark Assist Bonus | the bonus | league assists in the season | Orsolini: £86K after 20 |
 | 41 | Seasonal Landmark Combined Goal and Assist Bonus | the bonus | league goals and assists | Kane: £215K after 40 |
 | 55 | Active Relegation Release Clause | the fee | expiry | Jeong |
+| 56 | Active Non Promotion Release Clause | the fee | expiry | Winkler |
 
 - **A release clause's expiry** is its condition: the days from the contract's start (`signed`, `+0x44`) until it
   expires. One without a condition never expires. Ben Schlicke's 17, signed on 3 July 2027 with 791, and Eli Junior
@@ -59,6 +60,17 @@ condition (`0xFFFF` for none) and a `u16` kind.
   taken to hold for every release clause above. The app shows the day; it does not change a release clause's
   condition.
 - **27** is shown as inactive while the player's own club plays in the Champions League.
+- **55 and 56 are the active forms of 1 and 2.** At a season's end the game turns a relegated club's 1 into 55 and
+  a club that was not promoted's 2 into 56, with the same amount: Lennart Winkler (SC Fortuna Köln) had 2 with
+  161,288 until 18 March 2028 and 56 with 161,288 from 31 May 2028, shown in game as £160K (RootTourist, #81).
+- **19** turns into the new wage once the player reaches the caps, and the clause is gone. On the VfB Stuttgart save
+  (Windows Steam) it is on 100 to 155 contracts, always with 5: Castello Lukeba's 158,689 with 5 shows "£8.25M p/a,
+  After 5 international appearances" (#81).
+- **The game deletes expired release clauses:** none of nine exports over a season held one whose expiry had
+  passed (#81).
+- **A condition of 65,505** (Jon Moncayola's kind 0, signed on 31 July 2023) would expire in 2202. The app takes a
+  release clause's condition past 20 years (7,305 days) as a mark, a clause that does not expire, and shows no date.
+  What the game shows for it was not seen.
 - **A release clause of 0** (kind 0, 62 times on the large save) is shown by the game as a release clause of 0.
   Whether the game takes a bid of nothing is not known.
 - **Not shown in the game:** 54 (no values; 31 times: Füllkrug, J. Hofmann), 58 (a condition from 1,262 to 1,433;
@@ -125,7 +137,7 @@ Read with the probe (`histogram 0xC3 --contract`, `histogram 0x54 --contract`, `
   Zambo Anguissa, Çalhanoğlu and Akanji are 22.
 - **Clauses:** the kinds above, and two more. 19 is on 111 contracts (an amount like a weekly wage, from 116 to
   239,865: Soulé, Lukeba, Alex Scott), and 56 on two, with an amount (Charles Vernam 588,000, Mahamadou Dembélé
-  116,930), not named yet. Moussa Sylla's 9 holds 2,147,579 and 7, as on Windows; Kane's 41 holds 214,757.
+  116,930), named since from the Windows readings below. Moussa Sylla's 9 holds 2,147,579 and 7, as on Windows; Kane's 41 holds 214,757.
 - **Release clauses that follow each other:** Nico Schlotterbeck (contract signed on 10 April 2026) has three
   release clauses for foreign clubs: 51,541,912 with 797 days, 51,541,912 with 1,162 and 42,951,596 with 1,527. The
   conditions are 365 days apart and, as expiry dates, fall on 15 June 2028, 2029 and 2030. How the game weighs
