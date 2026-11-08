@@ -352,6 +352,7 @@ const CLAUSE_NAMES_TR: Partial<Record<number, string>> = {
   41: "Sezonluk gol ve asist hedefi primi",
   54: "Oyunda gösterilmiyor (54)",
   55: "Etkin küme düşme serbest kalma maddesi",
+  56: "Etkin üst lige çıkamama serbest kalma maddesi",
   58: "Oyunda gösterilmiyor (58)",
   63: "Oyunda gösterilmiyor (63)",
 };

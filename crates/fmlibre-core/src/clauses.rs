@@ -23,17 +23,28 @@ pub const RELEASE_CLAUSE: u16 = 0;
 
 /// The kinds of release clause, as the game's English contract screen names them (Steam build 26340721): Minimum Fee
 /// (0), Relegation (1), Non Promotion (2), Minimum Fee for foreign clubs (16), domestic clubs in a higher division
-/// (17), domestic clubs (18), clubs in the UEFA Champions League (27) or in a continental competition (31), and an
-/// Active Relegation Release Clause (55). Their condition, when they have one, is when they expire (see
-/// [`release_clause_expiry`]).
-pub const RELEASE_CLAUSES: [u16; 9] = [0, 1, 2, 16, 17, 18, 27, 31, 55];
+/// (17), domestic clubs (18), clubs in the UEFA Champions League (27) or in a continental competition (31), and the
+/// active forms the game turns 1 and 2 into at a season's end, when the club is relegated or not promoted: an Active
+/// Relegation (55) and an Active Non Promotion Release Clause (56). Their condition, when they have one, is when they
+/// expire (see [`release_clause_expiry`]).
+pub const RELEASE_CLAUSES: [u16; 10] = [0, 1, 2, 16, 17, 18, 27, 31, 55, 56];
+
+/// The most days a release clause's condition is taken to count: 20 years. The longest seen was 1,527 days (one of
+/// Nico Schlotterbeck's). Jon Moncayola's kind 0 holds 65,505, which would expire in 2202: a mark rather than a day
+/// (what the game shows for it was not seen), so a condition past this is taken as none, a clause that does not expire.
+pub const MOST_RELEASE_CLAUSE_DAYS: u16 = 7_305;
+
+/// Whether `clause` is a release clause whose condition is a mark past [`MOST_RELEASE_CLAUSE_DAYS`], not a day.
+pub fn release_clause_never_expires(clause: &Clause) -> bool {
+    RELEASE_CLAUSES.contains(&clause.kind) && clause.condition.is_some_and(|days| days > MOST_RELEASE_CLAUSE_DAYS)
+}
 
 /// The day a release clause expires: its condition counts the days from the contract's start (`signed`), and one
-/// without a condition never expires. Ben Schlicke's release clause for domestic clubs in a higher division, signed on
-/// 3 July 2027 with 791, expires on 1 September 2029, as the game's contract screen says. None for another kind of
-/// clause, or when the contract's start is not known.
+/// without a condition, or with one past [`MOST_RELEASE_CLAUSE_DAYS`], never expires. Ben Schlicke's release clause
+/// for domestic clubs in a higher division, signed on 3 July 2027 with 791, expires on 1 September 2029, as the game's
+/// contract screen says. None for another kind of clause, or when the contract's start is not known.
 pub fn release_clause_expiry(clause: &Clause, signed: Option<FmDate>) -> Option<FmDate> {
-    if !RELEASE_CLAUSES.contains(&clause.kind) {
+    if !RELEASE_CLAUSES.contains(&clause.kind) || release_clause_never_expires(clause) {
         return None;
     }
     Some(signed?.plus_days(i64::from(clause.condition?)))
@@ -271,5 +282,13 @@ mod tests {
         assert_eq!(release_clause_expiry(&clause(0, None), Some(date(2027, 7, 3))), None);
         assert_eq!(release_clause_expiry(&clause(3, Some(10)), Some(date(2027, 7, 3))), None);
         assert_eq!(release_clause_expiry(&clause(0, Some(791)), None), None);
+        // The active forms of 1 and 2 are release clauses too.
+        assert_eq!(release_clause_expiry(&clause(56, Some(791)), Some(date(2027, 7, 3))), Some(date(2029, 9, 1)));
+        // Jon Moncayola's 65,505 is no day: it never expires.
+        let moncayola = clause(0, Some(65_505));
+        assert!(release_clause_never_expires(&moncayola));
+        assert_eq!(release_clause_expiry(&moncayola, Some(date(2023, 7, 31))), None);
+        assert!(!release_clause_never_expires(&clause(17, Some(1_527))));
+        assert!(!release_clause_never_expires(&clause(3, Some(65_505))));
     }
 }
