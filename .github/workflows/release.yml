@@ -5,8 +5,7 @@
 #   latest.json and update themselves.
 # - A pull request that changes how releases are built, or a run started by hand, builds the
 #   same files and keeps them as workflow artifacts only.
-# Pull requests are otherwise checked locally before they are opened, which spares the Windows
-# and macOS minutes a private repository pays for (a macOS minute counts as ten).
+# Every pull request is checked by ci.yml (formatting, clippy, tests and the interface's build).
 name: Release
 
 on:

@@ -1,0 +1,87 @@
+# Checks every pull request, and every push to main, on Windows and macOS: the interface builds, the Rust code is
+# formatted, clippy has no warnings and the tests pass. These are the checks CONTRIBUTING.md asks for, so a
+# contributor sees them pass or fail on the pull request itself. They need no game and no secrets, so they run on
+# pull requests from forks too. Building the installers is release.yml's job.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A new push to the same pull request stops the run of the one before.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install the interface's packages
+        working-directory: app
+        run: npm ci
+
+      # The Rust side embeds the built interface, so it is built first.
+      - name: Build the interface
+        working-directory: app
+        run: npm run build
+
+      - name: Formatting
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Tests
+        run: cargo test --workspace
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install the interface's packages
+        working-directory: app
+        run: npm ci
+
+      - name: Build the interface
+        working-directory: app
+        run: npm run build
+
+      # The macOS side of the code; the formatting is checked on Windows.
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Tests
+        run: cargo test --workspace
