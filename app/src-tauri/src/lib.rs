@@ -7,9 +7,9 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use fmlibre_core::{
     ArraySource, Buyer, CaptainRole, CaptainSet, Change, Clause, ClauseSet, ClubDetails, ClubFilter, ClubIndex,
-    ClubMove, ClubSummary, Coded, EditError, Entity, EntityArrays, ExportFormat, ExportHeader, FeePlan, Field, FmDate,
-    GAME_EXE, GAME_PLUGIN, GameInfo, GraphicsCounts, GraphicsIndex, HOMEGROWN_RULES, Healed, Health, Kind,
-    LOAN_EXPIRES, LOAN_OPTION_FEE, Lifted, Listed, Loan, MoveError, MovePlan, MoveTerms, Nation, NewContract,
+    ClubMove, ClubSummary, Coded, EditError, Entity, EntityArrays, ExportFormat, ExportHeader, Exported, FeePlan,
+    Field, FmDate, GAME_EXE, GAME_PLUGIN, GameInfo, GraphicsCounts, GraphicsIndex, HOMEGROWN_RULES, Healed, Health,
+    Kind, LOAN_EXPIRES, LOAN_OPTION_FEE, Lifted, Listed, Loan, MoveError, MovePlan, MoveTerms, Nation, NewContract,
     NewStaffContract, Operation, Paid, Picture, Planned, PlayerDetails, PlayerFilter, PlayerIndex, PlayerOrder,
     PlayerSummary, ROLES, RelationSet, RetirementSet, Role, SCOUT_POSITIONS, ScoutError, ScoutPosition, ScoutRequest,
     Scouted, SearchIndex, Session, SessionError, Skipped, SquadReport, StadiumName, StadiumRename, StaffChange,
@@ -253,8 +253,9 @@ struct ExportReport {
     path: PathBuf,
     file: String,
     folder: PathBuf,
-    players: usize,
-    /// Players whose objects changed while they were read: left out.
+    /// The players or clubs written.
+    count: usize,
+    /// Players or clubs whose objects changed while they were read: left out.
     skipped: usize,
 }
 
@@ -2295,6 +2296,47 @@ async fn export_players(
     order: Option<PlayerOrder>,
     format: ExportFormat,
 ) -> Result<ExportReport, Failure> {
+    export_list(app, "players", format, move |connection, header, out| {
+        let filter = filter.unwrap_or_default();
+        let mut hits = connection.players.search(&query);
+        hits.retain(|player| filter.matches(player));
+        if let Some(order) = order {
+            sort_players(&mut hits, order);
+        }
+        connection.session.export_players(&hits, format, header, out)
+    })
+    .await
+}
+
+/// Writes the clubs `query` and `filter` select, highest reputation first as the list shows them, to a new file in the
+/// exports folder as `format`: what their profiles hold, with the in-game date in the file and in its name
+/// ("clubs-2027-01-02.csv"). Only reads memory.
+#[tauri::command]
+async fn export_clubs(
+    app: tauri::AppHandle,
+    query: String,
+    filter: Option<ClubFilter>,
+    format: ExportFormat,
+) -> Result<ExportReport, Failure> {
+    export_list(app, "clubs", format, move |connection, header, out| {
+        let filter = filter.unwrap_or_default();
+        let mut hits = connection.clubs.search(&query);
+        hits.retain(|club| filter.matches(club));
+        connection.session.export_clubs(&hits, format, header, out)
+    })
+    .await
+}
+
+/// Writes an export of `what` ("players", "clubs") with `write` to a new file in the exports folder, named after it and
+/// the in-game date. Only reads memory.
+async fn export_list(
+    app: tauri::AppHandle,
+    what: &'static str,
+    format: ExportFormat,
+    write: impl FnOnce(&Connection, &ExportHeader, &mut std::io::BufWriter<std::fs::File>) -> std::io::Result<Exported>
+    + Send
+    + 'static,
+) -> Result<ExportReport, Failure> {
     tauri::async_runtime::spawn_blocking(move || -> Result<ExportReport, Failure> {
         let folder = app.state::<ExportsFolder>().0.clone();
         let folder = folder.ok_or_else(|| Failure::new("export.noFolder", "There is no folder to export to."))?;
@@ -2311,35 +2353,32 @@ async fn export_players(
         let state = app.state::<AppState>();
         let guard = state.0.lock()?;
         let connection = guard.as_ref().ok_or_else(not_connected)?;
-        let filter = filter.unwrap_or_default();
-        let mut hits = connection.players.search(&query);
-        hits.retain(|player| filter.matches(player));
-        if let Some(order) = order {
-            sort_players(&mut hits, order);
-        }
         let header = ExportHeader {
             writer: format!("FMLibreEditor {}", app.package_info().version),
             game: connection.session.game.name(),
             game_date: connection.session.game_date(),
         };
         std::fs::create_dir_all(&folder).map_err(failed)?;
-        let (path, file) = new_export_file(&folder, header.game_date, format.extension()).map_err(failed)?;
+        let (path, file) = new_export_file(&folder, what, header.game_date, format.extension()).map_err(failed)?;
         let mut out = std::io::BufWriter::new(file);
-        let exported = connection.session.export_players(&hits, format, &header, &mut out).map_err(failed)?;
+        let exported = write(connection, &header, &mut out).map_err(failed)?;
         std::io::Write::flush(&mut out).map_err(failed)?;
         let file = path.file_name().map(|name| name.to_string_lossy().into_owned()).unwrap_or_default();
-        Ok(ExportReport { path, file, folder, players: exported.players, skipped: exported.skipped })
+        Ok(ExportReport { path, file, folder, count: exported.count, skipped: exported.skipped })
     })
     .await?
 }
 
-/// A new file for an export in `folder`, named after the in-game date: the first of "players-2027-01-02.json",
-/// "players-2027-01-02-2.json", ... that is not there yet.
-fn new_export_file(folder: &Path, date: Option<FmDate>, extension: &str) -> std::io::Result<(PathBuf, std::fs::File)> {
-    let stem = date.map_or_else(
-        || "players".to_owned(),
-        |date| format!("players-{:04}-{:02}-{:02}", date.year, date.month, date.day),
-    );
+/// A new file for an export of `what` ("players", "clubs") in `folder`, named after the in-game date: the first of
+/// "players-2027-01-02.json", "players-2027-01-02-2.json", ... that is not there yet.
+fn new_export_file(
+    folder: &Path,
+    what: &str,
+    date: Option<FmDate>,
+    extension: &str,
+) -> std::io::Result<(PathBuf, std::fs::File)> {
+    let stem = date
+        .map_or_else(|| what.to_owned(), |date| format!("{what}-{:04}-{:02}-{:02}", date.year, date.month, date.day));
     for n in 1.. {
         let name = if n == 1 { format!("{stem}.{extension}") } else { format!("{stem}-{n}.{extension}") };
         let path = folder.join(name);
@@ -3620,6 +3659,7 @@ pub fn run() {
             search_staff,
             search_clubs,
             export_players,
+            export_clubs,
             open_export,
             show_export,
             player_details,

@@ -1350,14 +1350,16 @@ export const es: Strings = {
 
   export: {
     button: "Exportar",
-    buttonTitle:
-      "Escribir los jugadores que muestra la lista en un archivo CSV o JSON, para una hoja de cálculo o un script",
-    title: "Exportar jugadores",
-    scope: (count) =>
+    buttonTitle: {
+      player:
+        "Escribir los jugadores que muestra la lista en un archivo CSV o JSON, para una hoja de cálculo o un script",
+      club: "Escribir los clubes que muestra la lista en un archivo CSV o JSON, para una hoja de cálculo o un script",
+    },
+    title: { player: "Exportar jugadores", club: "Exportar clubes" },
+    scope: (entity, count) =>
       count === 0
-        ? "Ningún jugador coincide con la búsqueda y los filtros."
-        : `${count === 1 ? "1 jugador" : `${format(count)} jugadores`}: lo que seleccionan la búsqueda y los ` +
-          "filtros de la lista, en su orden.",
+        ? `Ningún ${nouns[entity].one} coincide con la búsqueda y los filtros.`
+        : `${entityCount(entity, count)}: lo que seleccionan la búsqueda y los filtros de la lista, en su orden.`,
     formatLabel: "Formato",
     formats: {
       csv: "CSV, separado por comas",
@@ -1367,20 +1369,31 @@ export const es: Strings = {
     formatHints: {
       csv: "Para la mayoría de hojas de cálculo y scripts",
       csvSemicolon: "Para Excel donde los decimales se escriben con coma: en español, turco o alemán, por ejemplo",
-      json: "Para scripts: las posiciones, los atributos y la personalidad como objetos propios",
+      json: {
+        player: "Para scripts: las posiciones, los atributos y la personalidad como objetos propios",
+        club: "Para scripts: la afición, las instalaciones, el estadio y las finanzas como objetos propios",
+      },
     },
-    contents:
-      "De cada jugador: habilidades, posiciones y valoraciones por posición, atributos en la escala de 1 a 20 " +
-      "(también los ocultos), personalidad, reputación, partidos internacionales, y contrato con sus cláusulas, con " +
-      "la fecha del juego. El dinero va en libras, como lo guarda el juego. No cambia nada en el juego.",
+    contents: {
+      player:
+        "De cada jugador: habilidades, posiciones y valoraciones por posición, atributos en la escala de 1 a 20 " +
+        "(también los ocultos), personalidad, reputación, partidos internacionales, y contrato con sus cláusulas, " +
+        "con la fecha del juego. El dinero va en libras, como lo guarda el juego. No cambia nada en el juego.",
+      club:
+        "De cada club: reputación, año de fundación, abonados, seguidores en redes sociales, composición y rasgos de " +
+        "la afición, instalaciones, estadio y finanzas (saldo, presupuesto de fichajes, gasto y presupuesto salarial " +
+        "por semana y precio de la entrada), con la fecha del juego. FM guarda las finanzas solo de los clubes de " +
+        "las ligas en juego. El dinero va en libras, como lo guarda el juego. No cambia nada en el juego.",
+    },
     export: "Exportar",
     exporting: "Exportando…",
-    done: (count, file) =>
-      `${count === 1 ? "1 jugador exportado" : `${format(count)} jugadores exportados`} a ${file}`,
+    done: (entity, count, file) =>
+      `${entityCount(entity, count)} ${count === 1 ? "exportado" : "exportados"} a ${file}`,
     folder: (folder) => `en ${folder}`,
-    skipped: (count) =>
-      `${count === 1 ? "1 jugador cambió" : `${format(count)} jugadores cambiaron`} en el juego mientras se ` +
-      "leían, y se dejaron fuera.",
+    skipped: (entity, count) =>
+      count === 1
+        ? `${entityCount(entity, count)} cambió en el juego mientras se leía, y se dejó fuera.`
+        : `${entityCount(entity, count)} cambiaron en el juego mientras se leían, y se dejaron fuera.`,
     open: "Abrir",
     openTitle: "Abrir el archivo con la aplicación que tu sistema usa para él",
     show: "Mostrar en la carpeta",

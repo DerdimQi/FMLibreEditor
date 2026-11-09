@@ -97,7 +97,7 @@ export function PlayerBrowser({ version, active, genderKnown, comparison }: Play
       }
       toolbarActions={(list) => (
         <>
-          <ExportButton list={list} filter={filter} order={order} />
+          <ExportButton entity="player" list={list} args={{ filter, order: order ?? undefined }} />
           <MassEditButton entity="player" filters={{ playerFilter: filter }} list={list} />
         </>
       )}

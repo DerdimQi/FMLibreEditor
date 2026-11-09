@@ -2872,16 +2872,20 @@ export async function mockInvoke<T>(command: string, args?: Record<string, unkno
       return [...frozenPositions] as T;
     case "freeze_team":
       return freezeTeam(Number(args?.club), Number(args?.team), args?.kind as FreezeKind, Boolean(args?.frozen)) as T;
-    case "export_players": {
+    case "export_players":
+    case "export_clubs": {
       // Nothing is written in a browser: the report names the file a real export would have.
-      const selected = selectTargets("player", String(args?.query ?? ""), {
-        playerFilter: (args?.filter ?? {}) as PlayerFilter,
-      });
+      const query = String(args?.query ?? "");
+      const selected =
+        command === "export_clubs"
+          ? selectTargets("club", query, { clubFilter: (args?.filter ?? {}) as ClubFilter })
+          : selectTargets("player", query, { playerFilter: (args?.filter ?? {}) as PlayerFilter });
+      const what = command === "export_clubs" ? "clubs" : "players";
       const folder = "C:\\Users\\you\\Documents\\FMLibreEditor\\Exports";
       const two = (n: number) => String(n).padStart(2, "0");
-      const stem = gameDate ? `players-${gameDate.year}-${two(gameDate.month)}-${two(gameDate.day)}` : "players";
+      const stem = gameDate ? `${what}-${gameDate.year}-${two(gameDate.month)}-${two(gameDate.day)}` : what;
       const file = `${stem}.${args?.format === "json" ? "json" : "csv"}`;
-      const report: ExportReport = { path: `${folder}\\${file}`, file, folder, players: selected.length, skipped: 0 };
+      const report: ExportReport = { path: `${folder}\\${file}`, file, folder, count: selected.length, skipped: 0 };
       return report as T;
     }
     case "open_export":

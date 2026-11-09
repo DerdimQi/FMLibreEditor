@@ -15,6 +15,7 @@
 import type {
   CheckKey,
   Entity,
+  ExportEntity,
   ExportFormat,
   GraphicsCounts,
   MassOperationKind,
@@ -1410,16 +1411,19 @@ export const en = {
     range: (first: number, last: number, total: number) => `${format(first)}–${format(last)} of ${format(total)}`,
   },
 
-  /** Exporting players to a file: the button in the toolbar of the player list and the dialog it opens. */
+  /** Exporting players or clubs to a file: the button in the toolbar of the player and club lists and its dialog. */
   export: {
     button: "Export",
-    buttonTitle: "Write the players the list shows to a CSV or JSON file, for a spreadsheet or a script",
-    title: "Export players",
+    buttonTitle: {
+      player: "Write the players the list shows to a CSV or JSON file, for a spreadsheet or a script",
+      club: "Write the clubs the list shows to a CSV or JSON file, for a spreadsheet or a script",
+    } satisfies Record<ExportEntity, string>,
+    title: { player: "Export players", club: "Export clubs" } satisfies Record<ExportEntity, string>,
     /** What the export covers: everything the list's search and filters select, in its order. */
-    scope: (count: number) =>
+    scope: (entity: ExportEntity, count: number) =>
       count === 0
-        ? "No player matches the search and the filters."
-        : `${entityCount.player(count)}: what the list's search and filters select, in its order.`,
+        ? `No ${entity} matches the search and the filters.`
+        : `${entityCount[entity](count)}: what the list's search and filters select, in its order.`,
     formatLabel: "Format",
     formats: {
       csv: "CSV, comma-separated",
@@ -1429,20 +1433,34 @@ export const en = {
     formatHints: {
       csv: "For most spreadsheets and scripts",
       csvSemicolon: "For Excel where decimals are written with a comma: in Turkish, Spanish or German, say",
-      json: "For scripts: the positions, attributes and personality as objects of their own",
-    } satisfies Record<ExportFormat, string>,
-    contents:
-      "Each player's abilities, positions and position ratings, attributes on the 1–20 scale (the hidden ones too), " +
-      "personality, reputation, caps, and contract with its clauses, with the in-game date. Money is in pounds, as " +
-      "the game keeps it. Nothing in the game changes.",
+      json: {
+        player: "For scripts: the positions, attributes and personality as objects of their own",
+        club: "For scripts: the supporters, facilities, stadium and finances as objects of their own",
+      } satisfies Record<ExportEntity, string>,
+    },
+    contents: {
+      player:
+        "Each player's abilities, positions and position ratings, attributes on the 1–20 scale (the hidden ones " +
+        "too), personality, reputation, caps, and contract with its clauses, with the in-game date. Money is in " +
+        "pounds, as the game keeps it. Nothing in the game changes.",
+      club:
+        "Each club's reputation, founding year, season tickets, social media followers, supporter mix and traits, " +
+        "facilities, stadium, and finances: balance, transfer budget, weekly wage spend and wage budget, and ticket " +
+        "price, with the in-game date. FM keeps finances only for clubs in the leagues being played. Money is in " +
+        "pounds, as the game keeps it. Nothing in the game changes.",
+    } satisfies Record<ExportEntity, string>,
     export: "Export",
     exporting: "Exporting…",
     /** After the export: what was written, and where. */
-    done: (count: number, file: string) => `Exported ${entityCount.player(count)} to ${file}`,
+    done: (entity: ExportEntity, count: number, file: string) => `Exported ${entityCount[entity](count)} to ${file}`,
     folder: (folder: string) => `in ${folder}`,
-    skipped: (count: number) =>
-      `${entityCount.player(count)} changed in the game while ${count === 1 ? "he was" : "they were"} read, and ` +
-      `${count === 1 ? "was" : "were"} left out.`,
+    skipped: (entity: ExportEntity, count: number) => {
+      const pronoun = count !== 1 ? "they were" : entity === "player" ? "he was" : "it was";
+      return (
+        `${entityCount[entity](count)} changed in the game while ${pronoun} read, and ` +
+        `${count === 1 ? "was" : "were"} left out.`
+      );
+    },
     open: "Open",
     openTitle: "Open the file in the app your system opens it with",
     show: "Show in folder",
