@@ -500,8 +500,8 @@ export const tr: Strings = {
     core: "Çekirdek",
     family: "Aile",
     fair_weather: "Fırsatçı",
+    corporate: "Kurumsal",
     casual: "Ara sıra",
-    other: "Diğer",
   },
 
   jobs: {

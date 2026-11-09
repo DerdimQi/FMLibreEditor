@@ -209,7 +209,7 @@ export interface Finances {
 export interface ClubDetails extends ClubSummary {
   seasonTickets: number | null;
   socialMedia: number | null;
-  /** hardcore, core, family, fair_weather, casual, other → percent; empty when unknown. */
+  /** hardcore, core, family, fair_weather, corporate, casual → percent; empty when unknown. */
   supporterMix: Record<string, number>;
   /** loyalty, passion, patience, affluence, temperament, expectations → 1–20; empty when unknown. */
   supporterTraits: Record<string, number>;

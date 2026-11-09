@@ -503,7 +503,7 @@
       "mix-5": {
         "role": "tertiary",
         "displayName": "Supporter Mix 5",
-        "purpose": "Supporter-mix bar: Casual supporters.",
+        "purpose": "Supporter-mix bar: Corporate supporters.",
         "edition": "day",
         "canonical": "#4f5b6b",
         "oklch": "oklch(46.7% 0.030 256)",
@@ -521,7 +521,7 @@
       "mix-6": {
         "role": "tertiary",
         "displayName": "Supporter Mix 6",
-        "purpose": "Supporter-mix bar: Other supporters.",
+        "purpose": "Supporter-mix bar: Casual supporters.",
         "edition": "day",
         "canonical": "#7c4a6e",
         "oklch": "oklch(48.0% 0.084 338)",
@@ -1053,7 +1053,7 @@
       "night-mix-5": {
         "role": "tertiary",
         "displayName": "Night Supporter Mix 5",
-        "purpose": "Night edition. Supporter-mix bar: Casual supporters.",
+        "purpose": "Night edition. Supporter-mix bar: Corporate supporters.",
         "edition": "night",
         "canonical": "#8d9aab",
         "oklch": "oklch(68.2% 0.029 255)",
@@ -1071,7 +1071,7 @@
       "night-mix-6": {
         "role": "tertiary",
         "displayName": "Night Supporter Mix 6",
-        "purpose": "Night edition. Supporter-mix bar: Other supporters.",
+        "purpose": "Night edition. Supporter-mix bar: Casual supporters.",
         "edition": "night",
         "canonical": "#b87fa8",
         "oklch": "oklch(66.7% 0.089 337)",

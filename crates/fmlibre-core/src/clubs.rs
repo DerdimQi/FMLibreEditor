@@ -8,8 +8,8 @@ use crate::index::{Listed, SearchIndex};
 use crate::profile::{ClubFinanceLayout, Layout, StadiumLayout};
 use crate::text::read_fm_string;
 
-/// Supporter-mix percentages in the order FM stores them.
-pub const SUPPORTER_MIX: [&str; 6] = ["hardcore", "core", "family", "fair_weather", "casual", "other"];
+/// Supporter-mix percentages in the order FM stores them, as the game's Supporter Profile names them.
+pub const SUPPORTER_MIX: [&str; 6] = ["hardcore", "core", "family", "fair_weather", "corporate", "casual"];
 
 /// Supporter traits (1–20) in the order FM stores them.
 pub const SUPPORTER_TRAITS: [&str; 6] = ["loyalty", "passion", "patience", "affluence", "temperament", "expectations"];

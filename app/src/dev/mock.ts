@@ -2400,7 +2400,7 @@ function clubDetails(club: ClubSummary): ClubDetails {
     ...club,
     seasonTickets: Math.round(5000 + next() * 45000),
     socialMedia: Math.round(next() * 9_000_000),
-    supporterMix: Object.fromEntries(["hardcore", "core", "family", "fair_weather", "casual", "other"].map((k, n) => [k, mix[n]])),
+    supporterMix: Object.fromEntries(["hardcore", "core", "family", "fair_weather", "corporate", "casual"].map((k, n) => [k, mix[n]])),
     supporterTraits: Object.fromEntries(
       ["loyalty", "passion", "patience", "affluence", "temperament", "expectations"].map((k) => [k, rating()]),
     ),

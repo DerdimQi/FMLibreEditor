@@ -422,8 +422,8 @@ export const en = {
     core: "Core",
     family: "Family",
     fair_weather: "Fair-weather",
+    corporate: "Corporate",
     casual: "Casual",
-    other: "Other",
   },
 
   /** FM's job codes as stored in contracts. */

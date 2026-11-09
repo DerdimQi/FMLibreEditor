@@ -515,8 +515,8 @@ export const es: Strings = {
     core: "Habituales",
     family: "Familias",
     fair_weather: "Oportunistas",
+    corporate: "Corporativos",
     casual: "Ocasionales",
-    other: "Otros",
   },
 
   jobs: {
