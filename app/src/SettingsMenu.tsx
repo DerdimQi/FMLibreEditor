@@ -16,8 +16,9 @@ const GAP = 4;
 
 /**
  * The flag of each language, in a box of 3:2: the Union Jack for English, as FM is British (cut to 3:2 at the sides,
- * as flag sets do), and the flags of Turkey, Spain and Indonesia whole. Spain's is drawn without the coat of arms, as
- * its civil flag is: at this size the arms would be a smudge. Indonesia's is 2:3 in law; drawn at 3:2 like the others.
+ * as flag sets do), and the flags of Turkey, Spain, Indonesia and Italy whole. Spain's is drawn without the coat of
+ * arms, as its civil flag is: at this size the arms would be a smudge. Indonesia's is 2:3 in law; drawn at 3:2 like the
+ * others. Italy's is the tricolour, three vertical bands.
  */
 const FLAGS: Record<Locale, ReactNode> = {
   en: (
@@ -53,6 +54,13 @@ const FLAGS: Record<Locale, ReactNode> = {
       <rect width="3" height="1" fill="#ce1126" shapeRendering="crispEdges" />
     </svg>
   ),
+  it: (
+    <svg className="language-flag" viewBox="0 0 3 2" aria-hidden="true">
+      <rect width="3" height="2" fill="#fff" />
+      <rect width="1" height="2" fill="#009246" shapeRendering="crispEdges" />
+      <rect x="2" width="1" height="2" fill="#ce2b37" shapeRendering="crispEdges" />
+    </svg>
+  ),
 };
 
 /** The languages on offer, in the order of the menu, each with its own name. */
@@ -61,6 +69,7 @@ const LANGUAGES: readonly { id: Locale; name: string }[] = [
   { id: "tr", name: "Türkçe" },
   { id: "es", name: "Español" },
   { id: "id", name: "Bahasa Indonesia" },
+  { id: "it", name: "Italiano" },
 ];
 
 /** The name and hover text of the button: "Settings: English, Euro". */
