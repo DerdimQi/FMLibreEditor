@@ -246,7 +246,8 @@ pub fn read_club_details(
         let u32_at =
             |offset: u64| u32::from_le_bytes(info[offset as usize..offset as usize + 4].try_into().expect("4 bytes"));
         details.season_tickets = Some(u32_at(i.season_tickets));
-        details.social_media = Some(u32_at(i.social_media));
+        // u32::MAX where the game has no count: most clubs outside the biggest leagues.
+        details.social_media = Some(u32_at(i.social_media)).filter(|&n| n != u32::MAX);
         details.supporter_mix =
             SUPPORTER_MIX.iter().enumerate().map(|(n, &key)| (key, info[i.supporter_mix as usize + n])).collect();
         details.supporter_traits =

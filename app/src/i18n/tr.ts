@@ -1326,9 +1326,9 @@ export const tr: Strings = {
         "kişiliği, itibarı, milli maçları, sözleşmesi ve maddeleri; oyun tarihiyle birlikte. Paralar oyunun tuttuğu " +
         "gibi sterlin. Oyunda hiçbir şey değişmez.",
       club:
-        "Her kulübün itibarı, kuruluş yılı, kombineleri, sosyal medya takipçileri, taraftar dağılımı ve özellikleri, " +
-        "tesisleri, stadyumu ve mali durumu: bakiye, transfer bütçesi, haftalık maaş harcaması ile maaş bütçesi ve " +
-        "bilet fiyatı; oyun tarihiyle birlikte. FM mali durumu yalnızca oynanan liglerdeki kulüpler için tutar. " +
+        "Her kulübün itibarı, kuruluş yılı, kombine bilet sayısı, sosyal medya takipçileri, taraftar dağılımı ve " +
+        "özellikleri, tesisleri, stadyumu ve mali durumu: bakiye, transfer bütçesi, haftalık maaş harcaması ile maaş " +
+        "bütçesi ve bilet fiyatı; oyun tarihiyle birlikte. FM mali durumu yalnızca oynanan liglerdeki kulüpler için tutar. " +
         "Paralar oyunun tuttuğu gibi sterlin. Oyunda hiçbir şey değişmez.",
     },
     export: "Dışa aktar",
