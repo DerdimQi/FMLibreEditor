@@ -6,6 +6,7 @@
 import { saveSnapshot } from "../restore";
 import { en, type Strings } from "./en";
 import { es } from "./es";
+import { id } from "./id";
 import { tr } from "./tr";
 
 /**
@@ -16,6 +17,7 @@ const LANGUAGES = {
   en: { strings: en, intl: "en-GB" },
   tr: { strings: tr, intl: "tr-TR" },
   es: { strings: es, intl: "es-ES" },
+  id: { strings: id, intl: "id-ID" },
 } satisfies Record<string, { strings: Strings; intl: string }>;
 
 export type Locale = keyof typeof LANGUAGES;
@@ -39,7 +41,7 @@ function savedLocale(): Locale | null {
 }
 
 /**
- * The first of the system's languages, most preferred first, that the app has: "es-MX" is Spanish, "tr" Turkish.
+ * The first of the system's languages, most preferred first, that the app has: "es-MX" is Spanish, "tr" Turkish, "id-ID" Indonesian.
  * English when it has none of them. WebView2 lists the languages of Windows; WKWebView only the first one of macOS.
  */
 function systemLocale(): Locale {
