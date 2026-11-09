@@ -1,27 +1,30 @@
-//! Players written to a file that a spreadsheet or a script reads: CSV, a row per player, or JSON, an object per player.
-//! What a profile holds that is worth comparing, across players and over time: abilities, positions, the attributes on
-//! the 1–20 scale the game shows, personality, reputation, caps, and the contract with its clauses, with the in-game
-//! date they were read on. Money is in pounds, as the game keeps it. Only reads memory.
+//! Players or clubs written to a file that a spreadsheet or a script reads: CSV, a row each, or JSON, an object each.
+//! What a profile holds that is worth comparing, across players or clubs and over time. For a player: abilities,
+//! positions, the attributes on the 1–20 scale the game shows, personality, reputation, caps, and the contract with its
+//! clauses. For a club: reputation, supporters, facilities, the stadium and the finances. Each with the in-game date
+//! they were read on. Money is in pounds, as the game keeps it. Only reads memory.
 
 use std::io::{self, Write};
 
 use serde::{Deserialize, Serialize, Serializer};
 
 use crate::{
-    ATTRIBUTE_GROUPS, Contract, FmDate, International, PERSONALITY, PlayerDetails, PlayerSummary, RELEASE_CLAUSE,
-    RELEASE_CLAUSES, Reputation, Session, read_player_details, release_clause_expiry, release_clause_never_expires,
+    ATTRIBUTE_GROUPS, ClubDetails, ClubSummary, Contract, FmDate, International, PERSONALITY, PlayerDetails,
+    PlayerSummary, RELEASE_CLAUSE, RELEASE_CLAUSES, Reputation, SUPPORTER_MIX, SUPPORTER_TRAITS, Session,
+    read_club_details, read_player_details, release_clause_expiry, release_clause_never_expires,
 };
 
-/// How an export writes the players.
+/// How an export writes the players or clubs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ExportFormat {
-    /// Values separated by commas, a row per player.
+    /// Values separated by commas, a row per player or club.
     Csv,
     /// The same, separated by semicolons: what Excel takes where the comma is the decimal mark (in Turkish, Spanish
     /// or German, say).
     CsvSemicolon,
-    /// An object per player, with the position ratings, attributes and personality as objects of their own.
+    /// An object per player or club, with groups of values (a player's attributes, a club's facilities) as objects of
+    /// their own.
     Json,
 }
 
@@ -49,8 +52,9 @@ pub struct ExportHeader {
 /// What an export wrote.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Exported {
-    pub players: usize,
-    /// Players whose objects had changed since the lists were read: left out.
+    /// The players or clubs written.
+    pub count: usize,
+    /// Players or clubs whose objects had changed since the lists were read: left out.
     pub skipped: usize,
 }
 
@@ -71,7 +75,7 @@ impl Session {
         let details =
             players.iter().filter_map(|player| match read_player_details(&self.process, &self.layout, player) {
                 Ok(Some(details)) => {
-                    exported.players += 1;
+                    exported.count += 1;
                     Some(details)
                 }
                 _ => {
@@ -86,28 +90,63 @@ impl Session {
         }
         Ok(exported)
     }
+
+    /// Writes `clubs`, in their order, to `out` as `format`. Each is read again, as its profile is; one whose object
+    /// has changed since the lists were read is left out and counted. Only reads memory.
+    pub fn export_clubs(
+        &self,
+        clubs: &[&ClubSummary],
+        format: ExportFormat,
+        header: &ExportHeader,
+        out: &mut impl Write,
+    ) -> io::Result<Exported> {
+        let mut exported = Exported::default();
+        let details = clubs.iter().filter_map(|club| match read_club_details(&self.process, &self.layout, club) {
+            Ok(Some(details)) => {
+                exported.count += 1;
+                Some(details)
+            }
+            _ => {
+                exported.skipped += 1;
+                None
+            }
+        });
+        match format {
+            ExportFormat::Csv => write_club_csv(out, header, details, b',')?,
+            ExportFormat::CsvSemicolon => write_club_csv(out, header, details, b';')?,
+            ExportFormat::Json => write_club_json(out, header, details)?,
+        }
+        Ok(exported)
+    }
 }
 
-/// A cell of a CSV row, read from a player's profile.
-type Cell = Box<dyn Fn(&PlayerDetails) -> String>;
+/// A cell of a CSV row, read from a player's or a club's profile.
+type Cell<T> = Box<dyn Fn(&T) -> String>;
 
-/// The columns of a CSV export, in order: the name of each, and how it reads a player.
-#[derive(Default)]
-struct Columns(Vec<(String, Cell)>);
+/// The columns of a CSV export, in order: the name of each, and how it reads a profile.
+struct Columns<T>(Vec<(String, Cell<T>)>);
 
-impl Columns {
-    fn add(&mut self, name: impl Into<String>, cell: impl Fn(&PlayerDetails) -> String + 'static) {
+impl<T> Default for Columns<T> {
+    fn default() -> Self {
+        Self(Vec::new())
+    }
+}
+
+impl<T> Columns<T> {
+    fn add(&mut self, name: impl Into<String>, cell: impl Fn(&T) -> String + 'static) {
         self.0.push((name.into(), Box::new(cell)));
     }
+}
 
+impl Columns<PlayerDetails> {
     /// A column read from the contract: empty for a player without one.
     fn contract(&mut self, name: &str, cell: fn(&Contract) -> String) {
         self.add(name, move |d| d.contract.as_ref().map(cell).unwrap_or_default());
     }
 }
 
-fn csv_columns(game_date: Option<FmDate>) -> Columns {
-    let mut columns = Columns::default();
+fn csv_columns(game_date: Option<FmDate>) -> Columns<PlayerDetails> {
+    let mut columns = Columns::<PlayerDetails>::default();
     columns.add("game_date", move |_| game_date.map(iso).unwrap_or_default());
     columns.add("uid", |d| d.summary.uid.to_string());
     columns.add("name", |d| d.summary.name.clone());
@@ -157,6 +196,54 @@ fn csv_columns(game_date: Option<FmDate>) -> Columns {
     columns
 }
 
+/// The facilities a club export has, in the order of the club profile; corporate only where the club has the full
+/// finance record.
+const FACILITIES: [&str; 5] = ["training", "youth_facilities", "youth_coaching", "youth_recruitment", "corporate"];
+
+/// The columns of a club export. `decimal_mark` is what the ticket price, the one value with a fraction, is written
+/// with: a comma beside a semicolon separator, for the Excel that takes the comma as the decimal mark.
+fn club_columns(game_date: Option<FmDate>, decimal_mark: char) -> Columns<ClubDetails> {
+    let mut columns = Columns::<ClubDetails>::default();
+    columns.add("game_date", move |_| game_date.map(iso).unwrap_or_default());
+    columns.add("uid", |d| d.summary.uid.to_string());
+    columns.add("name", |d| d.summary.name.clone());
+    columns.add("short_name", |d| d.summary.short_name.clone().unwrap_or_default());
+    columns.add("women", |d| d.summary.women.to_string());
+    columns.add("reputation", |d| text(d.summary.reputation));
+    columns.add("founded", |d| text(d.summary.founded));
+    columns.add("season_tickets", |d| text(d.season_tickets));
+    columns.add("social_media_followers", |d| text(d.social_media));
+    for key in SUPPORTER_MIX {
+        columns.add(format!("supporters_{key}_pct"), move |d| text(d.supporter_mix.get(key)));
+    }
+    for key in SUPPORTER_TRAITS {
+        columns.add(format!("supporter_{key}"), move |d| text(d.supporter_traits.get(key)));
+    }
+    for (key, name) in [
+        ("training", "training_facilities"),
+        ("youth_facilities", "youth_facilities"),
+        ("youth_coaching", "youth_coaching"),
+        ("youth_recruitment", "youth_recruitment"),
+        ("corporate", "corporate_facilities"),
+    ] {
+        columns.add(name, move |d| text(d.facilities.get(key)));
+    }
+    columns.add("stadium", |d| d.stadium.as_ref().and_then(|s| s.name.clone()).unwrap_or_default());
+    columns.add("stadium_capacity", |d| text(d.stadium.as_ref().map(|s| s.capacity)));
+    columns.add("stadium_seating", |d| text(d.stadium.as_ref().map(|s| s.seating)));
+    columns.add("stadium_capacity_used", |d| text(d.stadium.as_ref().map(|s| s.used)));
+    columns.add("stadium_expansion", |d| text(d.stadium.as_ref().map(|s| s.expansion)));
+    columns.add("balance_gbp", |d| text(d.finances.map(|f| f.balance)));
+    columns.add("transfer_budget_gbp", |d| text(d.finances.map(|f| f.transfer_budget)));
+    columns.add("wage_spend_per_week_gbp", |d| text(d.finances.map(|f| f.wage_budget)));
+    columns.add("wage_budget_per_week_gbp", |d| text(d.finances.map(|f| f.total_wage_budget)));
+    columns.add("ticket_price_gbp", move |d| {
+        let price = d.finances.map(|f| format!("{:.2}", f.ticket_price));
+        price.map_or_else(String::new, |price| price.replace('.', &decimal_mark.to_string()))
+    });
+    columns
+}
+
 /// Writes the players as CSV: a row of column names, then a row per player, each cell apart by `separator`.
 fn write_csv(
     out: &mut impl Write,
@@ -164,12 +251,32 @@ fn write_csv(
     players: impl Iterator<Item = PlayerDetails>,
     separator: u8,
 ) -> io::Result<()> {
-    let columns = csv_columns(header.game_date);
+    write_rows(out, &csv_columns(header.game_date), players, separator)
+}
+
+/// Writes the clubs as CSV: a row of column names, then a row per club, each cell apart by `separator`.
+fn write_club_csv(
+    out: &mut impl Write,
+    header: &ExportHeader,
+    clubs: impl Iterator<Item = ClubDetails>,
+    separator: u8,
+) -> io::Result<()> {
+    let decimal_mark = if separator == b';' { ',' } else { '.' };
+    write_rows(out, &club_columns(header.game_date, decimal_mark), clubs, separator)
+}
+
+/// Writes a CSV file: a row of the names of `columns`, then a row per profile, each cell apart by `separator`.
+fn write_rows<T>(
+    out: &mut impl Write,
+    columns: &Columns<T>,
+    rows: impl Iterator<Item = T>,
+    separator: u8,
+) -> io::Result<()> {
     // The byte order mark tells Excel the file is UTF-8, so that the accents in names come through.
     out.write_all("\u{FEFF}".as_bytes())?;
     write_csv_row(out, columns.0.iter().map(|(name, _)| name.as_str()), separator)?;
-    for details in players {
-        let cells: Vec<String> = columns.0.iter().map(|(_, cell)| cell(&details)).collect();
+    for row in rows {
+        let cells: Vec<String> = columns.0.iter().map(|(_, cell)| cell(&row)).collect();
         write_csv_row(out, cells.iter().map(String::as_str), separator)?;
     }
     Ok(())
@@ -197,11 +304,7 @@ fn write_json(
     header: &ExportHeader,
     players: impl Iterator<Item = PlayerDetails>,
 ) -> io::Result<()> {
-    writeln!(out, "{{")?;
-    writeln!(out, "  \"writer\": {},", serde_json::to_string(&header.writer)?)?;
-    writeln!(out, "  \"game\": {},", serde_json::to_string(&header.game)?)?;
-    writeln!(out, "  \"gameDate\": {},", serde_json::to_string(&header.game_date.map(iso))?)?;
-    writeln!(out, "  \"currency\": \"GBP\",")?;
+    write_json_header(out, header)?;
     writeln!(out, "  \"attributeScale\": \"1-20\",")?;
     write!(out, "  \"players\": [")?;
     for (i, details) in players.enumerate() {
@@ -209,6 +312,30 @@ fn write_json(
         serde_json::to_writer(&mut *out, &JsonPlayer::from(&details))?;
     }
     writeln!(out, "\n  ]\n}}")
+}
+
+/// Writes the clubs as JSON: where they come from, then the clubs, one object to a line.
+fn write_club_json(
+    out: &mut impl Write,
+    header: &ExportHeader,
+    clubs: impl Iterator<Item = ClubDetails>,
+) -> io::Result<()> {
+    write_json_header(out, header)?;
+    write!(out, "  \"clubs\": [")?;
+    for (i, details) in clubs.enumerate() {
+        out.write_all(if i == 0 { b"\n    " } else { b",\n    " })?;
+        serde_json::to_writer(&mut *out, &JsonClub::from(&details))?;
+    }
+    writeln!(out, "\n  ]\n}}")
+}
+
+/// The start of a JSON export: where it comes from, and the currency of its money.
+fn write_json_header(out: &mut impl Write, header: &ExportHeader) -> io::Result<()> {
+    writeln!(out, "{{")?;
+    writeln!(out, "  \"writer\": {},", serde_json::to_string(&header.writer)?)?;
+    writeln!(out, "  \"game\": {},", serde_json::to_string(&header.game)?)?;
+    writeln!(out, "  \"gameDate\": {},", serde_json::to_string(&header.game_date.map(iso))?)?;
+    writeln!(out, "  \"currency\": \"GBP\",")
 }
 
 /// A player as a JSON export writes him.
@@ -322,6 +449,95 @@ impl<'a> From<&'a PlayerDetails> for JsonPlayer<'a> {
     }
 }
 
+/// A club as a JSON export writes it.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct JsonClub<'a> {
+    uid: u32,
+    name: &'a str,
+    short_name: Option<&'a str>,
+    women: bool,
+    /// 0–10000, of the senior team.
+    reputation: Option<u16>,
+    founded: Option<u16>,
+    season_tickets: Option<u32>,
+    social_media_followers: Option<u32>,
+    /// Percentages, by kind of supporter; empty when not known.
+    supporter_mix: InOrder<&'static str, u8>,
+    /// 1–20; empty when not known.
+    supporter_traits: InOrder<&'static str, u8>,
+    /// 1–20; corporate only with the full finance record.
+    facilities: InOrder<&'static str, u8>,
+    stadium: Option<JsonStadium<'a>>,
+    /// None for a club without the full finance record: FM keeps finances only for clubs in the leagues being played.
+    finances: Option<JsonFinances>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct JsonStadium<'a> {
+    name: Option<&'a str>,
+    capacity: u32,
+    seating: u32,
+    /// The capacity in use when it is limited; 0 when it is not.
+    capacity_used: u32,
+    /// The most it can be expanded to.
+    expansion: u32,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct JsonFinances {
+    /// Pounds.
+    balance: i32,
+    /// Pounds.
+    transfer_budget: i32,
+    /// What the club pays in wages now, pounds a week (the game's "Spending Wage"). Read from the
+    /// finance record's `wage_budget`.
+    wage_spend_per_week: i32,
+    /// The wage limit, pounds a week; minus the spend it is the game's available wage budget. Read
+    /// from the finance record's `total_wage_budget`.
+    wage_budget_per_week: i32,
+    /// The average match ticket, pounds.
+    ticket_price: f32,
+}
+
+impl<'a> From<&'a ClubDetails> for JsonClub<'a> {
+    fn from(d: &'a ClubDetails) -> Self {
+        let c = &d.summary;
+        let in_order = |keys: &[&'static str], values: &std::collections::BTreeMap<&'static str, u8>| {
+            InOrder(keys.iter().filter_map(|&key| Some((key, *values.get(key)?))).collect())
+        };
+        Self {
+            uid: c.uid,
+            name: &c.name,
+            short_name: c.short_name.as_deref(),
+            women: c.women,
+            reputation: c.reputation,
+            founded: c.founded,
+            season_tickets: d.season_tickets,
+            social_media_followers: d.social_media,
+            supporter_mix: in_order(&SUPPORTER_MIX, &d.supporter_mix),
+            supporter_traits: in_order(&SUPPORTER_TRAITS, &d.supporter_traits),
+            facilities: in_order(&FACILITIES, &d.facilities),
+            stadium: d.stadium.as_ref().map(|s| JsonStadium {
+                name: s.name.as_deref(),
+                capacity: s.capacity,
+                seating: s.seating,
+                capacity_used: s.used,
+                expansion: s.expansion,
+            }),
+            finances: d.finances.map(|f| JsonFinances {
+                balance: f.balance,
+                transfer_budget: f.transfer_budget,
+                wage_spend_per_week: f.wage_budget,
+                wage_budget_per_week: f.total_wage_budget,
+                ticket_price: pence(f.ticket_price),
+            }),
+        }
+    }
+}
+
 /// Keys and values written as one JSON object, in their order.
 struct InOrder<K, V>(Vec<(K, V)>);
 
@@ -334,6 +550,11 @@ impl<K: Serialize, V: Serialize> Serialize for InOrder<K, V> {
 /// "2027-01-02".
 fn iso(date: FmDate) -> String {
     format!("{:04}-{:02}-{:02}", date.year, date.month, date.day)
+}
+
+/// Pounds rounded to the penny.
+fn pence(pounds: f32) -> f32 {
+    (pounds * 100.0).round() / 100.0
 }
 
 /// A value as text; nothing for none.
@@ -503,7 +724,8 @@ mod tests {
     use std::collections::BTreeMap;
 
     use super::*;
-    use crate::{Attribute, Clause, POSITIONS};
+    use crate::clubs::Stadium;
+    use crate::{Attribute, Clause, Finances, POSITIONS};
 
     fn saka() -> PlayerDetails {
         let summary = PlayerSummary {
@@ -578,6 +800,52 @@ mod tests {
             clause_room: 0,
             loan: None,
         }
+    }
+
+    /// A club with everything a profile can hold, and one outside the leagues being played: no finances, no stadium.
+    fn ajax() -> ClubDetails {
+        ClubDetails {
+            summary: ClubSummary {
+                uid: 1013,
+                name: "AFC Ajax".to_owned(),
+                short_name: Some("Ajax".to_owned()),
+                women: false,
+                reputation: Some(7_200),
+                founded: Some(1900),
+                address: 0,
+            },
+            season_tickets: Some(42_000),
+            social_media: Some(9_500_000),
+            supporter_mix: SUPPORTER_MIX.iter().zip([10, 30, 25, 15, 15, 5]).map(|(&key, pct)| (key, pct)).collect(),
+            supporter_traits: SUPPORTER_TRAITS.iter().map(|&key| (key, 14)).collect(),
+            facilities: FACILITIES.iter().map(|&key| (key, 17)).collect(),
+            finances: Some(Finances {
+                balance: 61_250_000,
+                transfer_budget: 35_180_000,
+                wage_budget: 975_000,
+                total_wage_budget: 1_060_000,
+                ticket_price: 31.456,
+            }),
+            stadium: Some(Stadium {
+                name: Some("Johan Cruijff ArenA".to_owned()),
+                capacity: 55_865,
+                seating: 55_865,
+                used: 0,
+                expansion: 60_000,
+            }),
+        }
+    }
+
+    fn amateurs() -> ClubDetails {
+        let mut club = ajax();
+        club.summary.uid = 99;
+        club.summary.name = "Amateurs, Zaterdag".to_owned();
+        club.summary.short_name = None;
+        club.summary.reputation = None;
+        club.facilities.remove("corporate");
+        club.finances = None;
+        club.stadium = None;
+        club
     }
 
     fn header() -> ExportHeader {
@@ -691,5 +959,89 @@ mod tests {
         let line = text.lines().find(|line| line.contains("28122642")).unwrap();
         assert!(line.trim_start().starts_with("{\"uid\":28122642,\"name\":\"Bukayo Saka\""));
         assert!(line.find("\"corners\"").unwrap() < line.find("\"finishing\"").unwrap());
+    }
+
+    #[test]
+    fn club_csv_has_a_header_and_a_row_of_the_same_length() {
+        let mut out = Vec::new();
+        write_club_csv(&mut out, &header(), [ajax(), amateurs()].into_iter(), b';').unwrap();
+        let text = String::from_utf8(out).unwrap();
+        let text = text.strip_prefix('\u{FEFF}').expect("a byte order mark");
+        let lines: Vec<&str> = text.split("\r\n").filter(|line| !line.is_empty()).collect();
+        assert_eq!(lines.len(), 3);
+        let header: Vec<&str> = lines[0].split(';').collect();
+        assert_eq!(&header[..4], ["game_date", "uid", "name", "short_name"]);
+        let row: Vec<&str> = lines[1].split(';').collect();
+        assert_eq!(row.len(), header.len());
+        let cell = |row: &[&str], name: &str| row[header.iter().position(|&column| column == name).unwrap()].to_owned();
+        assert_eq!(cell(&row, "game_date"), "2027-01-02");
+        assert_eq!(cell(&row, "short_name"), "Ajax");
+        assert_eq!(cell(&row, "women"), "false");
+        assert_eq!(cell(&row, "supporters_hardcore_pct"), "10");
+        assert_eq!(cell(&row, "supporter_loyalty"), "14");
+        assert_eq!(cell(&row, "training_facilities"), "17");
+        assert_eq!(cell(&row, "corporate_facilities"), "17");
+        assert_eq!(cell(&row, "stadium"), "Johan Cruijff ArenA");
+        assert_eq!(cell(&row, "transfer_budget_gbp"), "35180000");
+        assert_eq!(cell(&row, "wage_spend_per_week_gbp"), "975000");
+        assert_eq!(cell(&row, "wage_budget_per_week_gbp"), "1060000");
+        assert_eq!(cell(&row, "ticket_price_gbp"), "31,46");
+        // Without finances or a stadium, their cells are empty, and the row is as long as the header.
+        let row: Vec<&str> = lines[2].split(';').collect();
+        assert_eq!(row.len(), header.len());
+        assert_eq!(cell(&row, "balance_gbp"), "");
+        assert_eq!(cell(&row, "corporate_facilities"), "");
+        assert_eq!(cell(&row, "stadium_capacity"), "");
+        assert_eq!(cell(&row, "reputation"), "");
+    }
+
+    #[test]
+    fn club_csv_quotes_a_name_with_a_comma() {
+        let mut out = Vec::new();
+        write_club_csv(&mut out, &header(), std::iter::once(amateurs()), b',').unwrap();
+        let text = String::from_utf8(out).unwrap();
+        assert!(text.contains(",\"Amateurs, Zaterdag\","));
+    }
+
+    #[test]
+    fn club_csv_writes_the_ticket_price_to_the_penny_with_a_point_beside_commas() {
+        let mut out = Vec::new();
+        write_club_csv(&mut out, &header(), std::iter::once(ajax()), b',').unwrap();
+        let text = String::from_utf8(out).unwrap();
+        assert!(text.trim_end().ends_with(",31.46"));
+    }
+
+    #[test]
+    fn club_json_reads_back_in_order() {
+        let mut out = Vec::new();
+        write_club_json(&mut out, &header(), [ajax(), amateurs()].into_iter()).unwrap();
+        let text = String::from_utf8(out).unwrap();
+        let value: serde_json::Value = serde_json::from_str(&text).unwrap();
+        assert_eq!(value["gameDate"], "2027-01-02");
+        assert_eq!(value["currency"], "GBP");
+        assert!(value.get("attributeScale").is_none());
+        assert_eq!(value["clubs"].as_array().unwrap().len(), 2);
+        let club = &value["clubs"][0];
+        assert_eq!(club["shortName"], "Ajax");
+        assert_eq!(club["socialMediaFollowers"], 9_500_000);
+        assert_eq!(club["supporterMix"]["fair_weather"], 15);
+        assert_eq!(club["supporterMix"]["corporate"], 15);
+        assert_eq!(club["supporterMix"]["casual"], 5);
+        assert_eq!(club["facilities"]["corporate"], 17);
+        assert_eq!(club["stadium"]["capacityUsed"], 0);
+        assert_eq!(club["finances"]["transferBudget"], 35_180_000);
+        assert_eq!(club["finances"]["wageSpendPerWeek"], 975_000);
+        assert_eq!(club["finances"]["wageBudgetPerWeek"], 1_060_000);
+        assert_eq!(club["finances"]["ticketPrice"], 31.46);
+        let amateurs = &value["clubs"][1];
+        assert_eq!(amateurs["finances"], serde_json::Value::Null);
+        assert_eq!(amateurs["stadium"], serde_json::Value::Null);
+        assert!(amateurs["facilities"].get("corporate").is_none());
+        // The object keeps the order it was written in: the UID first, the supporters in the order the game keeps them.
+        let line = text.lines().find(|line| line.contains("\"uid\":1013")).unwrap();
+        assert!(line.trim_start().starts_with("{\"uid\":1013,\"name\":\"AFC Ajax\""));
+        assert!(line.find("\"hardcore\"").unwrap() < line.find("\"casual\"").unwrap());
+        let facilities = line.find("\"facilities\"").unwrap();
+        assert!(line[facilities..].find("\"training\"").unwrap() < line[facilities..].find("\"corporate\"").unwrap());
     }
 }

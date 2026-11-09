@@ -2284,11 +2284,11 @@ input::placeholder {
   --seg: var(--mix-4);
 }
 
-.mix-casual {
+.mix-corporate {
   --seg: var(--mix-5);
 }
 
-.mix-other {
+.mix-casual {
   --seg: var(--mix-6);
 }
 

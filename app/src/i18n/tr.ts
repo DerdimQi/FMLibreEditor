@@ -500,8 +500,8 @@ export const tr: Strings = {
     core: "Çekirdek",
     family: "Aile",
     fair_weather: "Fırsatçı",
+    corporate: "Kurumsal",
     casual: "Ara sıra",
-    other: "Diğer",
   },
 
   jobs: {
@@ -1297,12 +1297,15 @@ export const tr: Strings = {
 
   export: {
     button: "Dışa aktar",
-    buttonTitle: "Listedeki oyuncuları bir tablo programı ya da betik için CSV veya JSON dosyasına yaz",
-    title: "Oyuncuları dışa aktar",
-    scope: (count) =>
+    buttonTitle: {
+      player: "Listedeki oyuncuları bir tablo programı ya da betik için CSV veya JSON dosyasına yaz",
+      club: "Listedeki kulüpleri bir tablo programı ya da betik için CSV veya JSON dosyasına yaz",
+    },
+    title: { player: "Oyuncuları dışa aktar", club: "Kulüpleri dışa aktar" },
+    scope: (entity, count) =>
       count === 0
-        ? "Arama ve filtrelere uyan oyuncu yok."
-        : `${format(count)} oyuncu: listenin arama ve filtrelerinin seçtikleri, listedeki sırayla.`,
+        ? `Arama ve filtrelere uyan ${nouns[entity].plain} yok.`
+        : `${entityCount(entity, count)}: listenin arama ve filtrelerinin seçtikleri, listedeki sırayla.`,
     formatLabel: "Biçim",
     formats: {
       csv: "CSV, virgülle ayrılmış",
@@ -1312,17 +1315,27 @@ export const tr: Strings = {
     formatHints: {
       csv: "Çoğu tablo programı ve betik için",
       csvSemicolon: "Ondalıkları virgülle yazan Excel için: Türkçe, İspanyolca ya da Almanca Excel gibi",
-      json: "Betikler için: pozisyonlar, özellikler ve kişilik ayrı nesneler olarak",
+      json: {
+        player: "Betikler için: pozisyonlar, özellikler ve kişilik ayrı nesneler olarak",
+        club: "Betikler için: taraftarlar, tesisler, stadyum ve mali durum ayrı nesneler olarak",
+      },
     },
-    contents:
-      "Her oyuncunun yetenekleri, pozisyonları ve pozisyon puanları, 1–20 ölçeğinde özellikleri (gizliler dahil), " +
-      "kişiliği, itibarı, milli maçları, sözleşmesi ve maddeleri; oyun tarihiyle birlikte. Paralar oyunun tuttuğu " +
-      "gibi sterlin. Oyunda hiçbir şey değişmez.",
+    contents: {
+      player:
+        "Her oyuncunun yetenekleri, pozisyonları ve pozisyon puanları, 1–20 ölçeğinde özellikleri (gizliler dahil), " +
+        "kişiliği, itibarı, milli maçları, sözleşmesi ve maddeleri; oyun tarihiyle birlikte. Paralar oyunun tuttuğu " +
+        "gibi sterlin. Oyunda hiçbir şey değişmez.",
+      club:
+        "Her kulübün itibarı, kuruluş yılı, kombine bilet sayısı, sosyal medya takipçileri, taraftar dağılımı ve " +
+        "özellikleri, tesisleri, stadyumu ve mali durumu: bakiye, transfer bütçesi, haftalık maaş harcaması ile maaş " +
+        "bütçesi ve bilet fiyatı; oyun tarihiyle birlikte. FM mali durumu yalnızca oynanan liglerdeki kulüpler için tutar. " +
+        "Paralar oyunun tuttuğu gibi sterlin. Oyunda hiçbir şey değişmez.",
+    },
     export: "Dışa aktar",
     exporting: "Dışa aktarılıyor…",
-    done: (count, file) => `${format(count)} oyuncu ${file} dosyasına aktarıldı`,
+    done: (entity, count, file) => `${entityCount(entity, count)} ${file} dosyasına aktarıldı`,
     folder: (folder) => `Klasör: ${folder}`,
-    skipped: (count) => `${format(count)} oyuncu okunurken oyunda değişti ve dışarıda bırakıldı.`,
+    skipped: (entity, count) => `${entityCount(entity, count)} okunurken oyunda değişti ve dışarıda bırakıldı.`,
     open: "Aç",
     openTitle: "Dosyayı sisteminizin onu açtığı uygulamada aç",
     show: "Klasörde göster",

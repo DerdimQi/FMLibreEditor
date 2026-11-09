@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ClubProfile, readTab, type ClubTab } from "./ClubProfile";
+import { ExportButton } from "./ExportDialog";
 import { clubListText, profileText } from "./labels";
 import { ListBrowser } from "./ListBrowser";
 import { MassEditButton } from "./MassEditDialog";
@@ -48,7 +49,12 @@ export function ClubBrowser({ version, active }: { version: number; active: bool
           </div>
         </div>
       }
-      toolbarActions={(list) => <MassEditButton entity="club" filters={{ clubFilter: filter }} list={list} />}
+      toolbarActions={(list) => (
+        <>
+          <ExportButton entity="club" list={list} args={{ filter }} />
+          <MassEditButton entity="club" filters={{ clubFilter: filter }} list={list} />
+        </>
+      )}
       tableClass="club-grid"
       header={
         <>

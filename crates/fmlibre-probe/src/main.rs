@@ -13,7 +13,7 @@ use anyhow::{Context, Result, anyhow, bail, ensure};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use fmlibre_core::{
     ATTRIBUTE_GROUPS, ArrayCandidate, ArrayRvas, ArraySource, AttributeBound, BuildProfile, Buyer, CaptainRole,
-    ClubIndex, Entity, ExportFormat, ExportHeader, Field, FmDate, Found, GAME_EXE, GAME_PLUGIN, GameInfo,
+    ClubIndex, Entity, ExportFormat, ExportHeader, Exported, Field, FmDate, Found, GAME_EXE, GAME_PLUGIN, GameInfo,
     GraphicsIndex, Kind, Loan, MANAGER, MoveTerms, PERSONALITY, POSITIONS, Picture, PlayerFilter, PlayerIndex,
     PlayerOrder, PlayerSort, ProfileNotes, Purpose, STAFF_ATTRIBUTE_GROUPS, SUPPORTER_MIX, SUPPORTER_TRAITS, Scale,
     ScanOptions, ScoutOrder, ScoutRequest, Session, SessionError, StaffIndex, Target, Tie, TieTarget, find_game,
@@ -111,6 +111,13 @@ enum Command {
         /// How many to print.
         #[arg(long, default_value_t = 25)]
         limit: usize,
+        /// Also write every matching club, not only the ones printed, to this file: what their profiles hold, as CSV,
+        /// or as JSON for a name ending in .json.
+        #[arg(long, value_name = "FILE")]
+        export: Option<PathBuf>,
+        /// In the CSV file, semicolons between the values instead of commas, as Excel takes them in many languages.
+        #[arg(long, requires = "export")]
+        semicolon: bool,
     },
     /// Show everything FMLibreEditor reads for the club with this UID.
     Club {
@@ -1060,20 +1067,15 @@ fn run(cli: Cli) -> Result<()> {
         Command::StaffRefs { ids, back, show } => {
             staff_refs(&connect(process, ArraySource::ProfileFirst)?, &ids, parse_hex(&back)?, show.as_deref())
         }
-        Command::Clubs { text, limit } => clubs(&connect(process, ArraySource::ProfileFirst)?, text.as_deref(), limit),
+        Command::Clubs { text, limit, export, semicolon } => {
+            let session = connect(process, ArraySource::ProfileFirst)?;
+            let export = export.as_deref().map(|path| (path, export_format(path, semicolon)));
+            clubs(&session, text.as_deref(), limit, export)
+        }
         Command::Club { uid } => club(&connect(process, ArraySource::ProfileFirst)?, uid),
         Command::Players { text, limit, filter, export, semicolon } => {
             let session = connect(process, ArraySource::ProfileFirst)?;
-            let format = export.as_deref().map(|path| {
-                if path.extension().is_some_and(|extension| extension.eq_ignore_ascii_case("json")) {
-                    ExportFormat::Json
-                } else if semicolon {
-                    ExportFormat::CsvSemicolon
-                } else {
-                    ExportFormat::Csv
-                }
-            });
-            let export = export.as_deref().zip(format);
+            let export = export.as_deref().map(|path| (path, export_format(path, semicolon)));
             players(&session, text.as_deref(), limit, &filter, export)
         }
         Command::Fields { entity, stats } => {
@@ -3116,6 +3118,48 @@ fn hex_or_none(rva: Option<u64>) -> String {
     rva.map_or_else(|| "none".to_owned(), |rva| format!("{rva:#x}"))
 }
 
+/// The format of an export to `path`: JSON for a name ending in .json, CSV otherwise, with semicolons if asked.
+fn export_format(path: &Path, semicolon: bool) -> ExportFormat {
+    if path.extension().is_some_and(|extension| extension.eq_ignore_ascii_case("json")) {
+        ExportFormat::Json
+    } else if semicolon {
+        ExportFormat::CsvSemicolon
+    } else {
+        ExportFormat::Csv
+    }
+}
+
+/// Writes an export of `what` ("players", "clubs") to `path` with `write`, and says how it went.
+fn export_to(
+    session: &Session,
+    path: &Path,
+    what: &str,
+    write: impl FnOnce(&ExportHeader, &mut std::io::BufWriter<std::fs::File>) -> std::io::Result<Exported>,
+) -> Result<()> {
+    let header = ExportHeader {
+        writer: format!("fmlibre-probe {}", env!("CARGO_PKG_VERSION")),
+        game: session.game.name(),
+        game_date: session.game_date(),
+    };
+    let started = Instant::now();
+    let file = std::fs::File::create(path).with_context(|| format!("creating {}", path.display()))?;
+    let mut out = std::io::BufWriter::new(file);
+    let exported = write(&header, &mut out)?;
+    std::io::Write::flush(&mut out)?;
+    println!(
+        "Exported {} {what} to {} in {:.1} s{}.",
+        exported.count,
+        path.display(),
+        started.elapsed().as_secs_f64(),
+        if exported.skipped > 0 {
+            format!("; {} changed while read, left out", exported.skipped)
+        } else {
+            String::new()
+        }
+    );
+    Ok(())
+}
+
 fn players(
     session: &Session,
     text: Option<&str>,
@@ -3133,27 +3177,7 @@ fn players(
         sort_players(&mut hits, order);
     }
     if let Some((path, format)) = export {
-        let header = ExportHeader {
-            writer: format!("fmlibre-probe {}", env!("CARGO_PKG_VERSION")),
-            game: session.game.name(),
-            game_date: session.game_date(),
-        };
-        let started = Instant::now();
-        let file = std::fs::File::create(path).with_context(|| format!("creating {}", path.display()))?;
-        let mut out = std::io::BufWriter::new(file);
-        let exported = session.export_players(&hits, format, &header, &mut out)?;
-        std::io::Write::flush(&mut out)?;
-        println!(
-            "Exported {} players to {} in {:.1} s{}.",
-            exported.players,
-            path.display(),
-            started.elapsed().as_secs_f64(),
-            if exported.skipped > 0 {
-                format!("; {} changed while read, left out", exported.skipped)
-            } else {
-                String::new()
-            }
-        );
+        export_to(session, path, "players", |header, out| session.export_players(&hits, format, header, out))?;
     }
     println!(
         "Read {} players in {:.1} s; {} shown of {} matching.",
@@ -5468,11 +5492,14 @@ fn captain(
     Ok(())
 }
 
-fn clubs(session: &Session, text: Option<&str>, limit: usize) -> Result<()> {
+fn clubs(session: &Session, text: Option<&str>, limit: usize, export: Option<(&Path, ExportFormat)>) -> Result<()> {
     let started = Instant::now();
     let index = ClubIndex::new(session.clubs()?);
     let elapsed = started.elapsed();
     let hits = index.search(text.unwrap_or(""));
+    if let Some((path, format)) = export {
+        export_to(session, path, "clubs", |header, out| session.export_clubs(&hits, format, header, out))?;
+    }
     println!(
         "Read {} clubs in {:.1} s; {} shown of {} matching.",
         index.len(),
