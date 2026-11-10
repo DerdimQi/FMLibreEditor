@@ -16,7 +16,7 @@ use crate::date::FmDate;
 use crate::details::{PERSONALITY, POSITIONS};
 use crate::health::Lock;
 use crate::players::PlayerSummary;
-use crate::profile::Layout;
+use crate::profile::{Layout, StadiumLayout};
 use crate::session::Session;
 use crate::staff::StaffSummary;
 
@@ -525,6 +525,25 @@ fn club_fields(layout: &Layout) -> Vec<Field> {
     fields
 }
 
+/// What `field` of a stadium that holds `capacity` and seats `seating` may be set to, within `(min, max)`, so that it
+/// still seats no more than it holds (see `crate::clubs::stadium_looks_real`): the seating up to the capacity, the
+/// capacity down to the seating. `None` for the stadium's other fields, which nothing ties to the rest.
+fn stadium_limits(
+    stadium: &StadiumLayout,
+    field: &Field,
+    (min, max): (i64, i64),
+    capacity: i64,
+    seating: i64,
+) -> Option<(i64, i64)> {
+    if field.offset == stadium.seating {
+        Some((min, max.min(capacity)))
+    } else if field.offset == stadium.capacity {
+        Some((min.max(seating), max))
+    } else {
+        None
+    }
+}
+
 /// The object an edit lands in, as found when the lists were read.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Target {
@@ -907,7 +926,9 @@ impl Session {
             }
         }
         self.check_target(target, field)?;
-        let address = self.locate(target, field)?.ok_or_else(|| EditError::NoRecord { field: field.key.clone() })?;
+        let record =
+            self.record(target, field.place)?.ok_or_else(|| EditError::NoRecord { field: field.key.clone() })?;
+        let address = field.address(record, target);
         let old_bytes = self.process.read_bytes(address, field.kind.size())?;
         let old = field.decode(&old_bytes);
         if let Some(expected) = expected
@@ -927,6 +948,18 @@ impl Session {
         }
         if field.kind == Kind::Pointer && !self.same_class(old, value)? {
             return Err(EditError::Unsupported { field: field.key.clone(), reason: OTHER_CLASS });
+        }
+        // A stadium seats no more than it holds. A seating above its capacity, or a capacity below its seating, would
+        // leave a record the editor no longer takes for a stadium: neither shown nor changed again, not even undone.
+        if let (Place::Stadium, Some(stadium)) = (field.place, &self.layout.stadium) {
+            let seats = |offset: u64| -> Result<i64, EditError> { Ok(self.process.read_u32(record + offset)?.into()) };
+            let bounds = if restoring { field.plausible.clone().into_inner() } else { (field.min, field.max) };
+            if let Some((min, max)) =
+                stadium_limits(stadium, field, bounds, seats(stadium.capacity)?, seats(stadium.seating)?)
+                && !(min..=max).contains(&value)
+            {
+                return Err(EditError::OutOfRange { field: field.key.clone(), value, min, max });
+            }
         }
         // Two players of a team on the pitch with one number would confuse the game; the players it has lent out
         // keep theirs, so they do not count.
@@ -1145,6 +1178,26 @@ mod tests {
         assert_eq!(transfer.encode(1, &byte), [0b0100_0011]);
         assert_eq!(loan.encode(0, &byte), [0b0100_0000]);
         assert_eq!(transfer.kind.size(), 1);
+    }
+
+    #[test]
+    fn a_stadium_seats_no_more_than_it_holds() {
+        let layout = crate::layout_for(27).expect("FM27 layout");
+        let stadium = layout.stadium.as_ref().expect("stadiums are placed");
+        let clubs = fields(&layout, Entity::Club);
+        let field = |key: &str| clubs.iter().find(|f| f.key == key).cloned().expect(key);
+        let limits =
+            |key: &str, capacity, seating| stadium_limits(stadium, &field(key), (0, 250_000), capacity, seating);
+        // The Emirates holds 60,704, all seated: no more seats, and no less room.
+        assert_eq!(limits("stadium.seating", 60_704, 60_704), Some((0, 60_704)));
+        assert_eq!(limits("stadium.capacity", 60_704, 60_704), Some((60_704, 250_000)));
+        // One that holds 74,879 with 70,000 seated can hold no fewer than 70,000.
+        assert_eq!(limits("stadium.capacity", 74_879, 70_000), Some((70_000, 250_000)));
+        // Nothing ties how many come, or how far it can grow, to the rest.
+        assert_eq!(limits("stadium.used", 60_704, 60_704), None);
+        assert_eq!(limits("stadium.expansion", 60_704, 60_704), None);
+        // Past the range the editor writes, the range still bounds them.
+        assert_eq!(limits("stadium.seating", 300_000, 0), Some((0, 250_000)));
     }
 
     #[test]
