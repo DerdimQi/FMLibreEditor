@@ -11,6 +11,7 @@ mod clubs;
 mod coded;
 mod date;
 mod details;
+mod diagnostics;
 mod edit;
 mod export;
 mod filter;
@@ -57,6 +58,7 @@ pub use details::{
     ATTRIBUTE_GROUPS, Attribute, Clause, Contract, International, PERSONALITY, POSITIONS, PlayerDetails, Reputation,
     read_player_details,
 };
+pub use diagnostics::{date_line, diagnostics_report, retirement_line};
 pub use edit::{Change, EditError, Entity, Field, Kind, LOAN_EXPIRES, LOAN_OPTION_FEE, Scale, Target, fields};
 pub use export::{ExportFormat, ExportHeader, Exported};
 pub use filter::{
