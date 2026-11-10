@@ -169,10 +169,20 @@ before trusting them.
     sharpness to 100%), each undone as one batch.
 - [ ] Next: suspensions ("Unban All"), and the squad status codes past 5 (youth and
   backup roles), once the game's own data names them.
-- [ ] Team cohesion and tactical familiarity (FMLE's "Max Cohesion" and "Max
-  Tactics"). Set aside: no single stored value matched ten clubs' readings, so they
-  look derived (see the Steam notes). The probe's `related`, `nearby` and
-  `team-average` searches are there for another try.
+- [x] Team cohesion: Max cohesion in the squad tab, and each player's cohesion in its
+  table, guarded by the `cohesion` check. No single stored value matched ten clubs'
+  readings because the game works the team's cohesion out from each player's: his entry
+  for the club in the second list of his record of relations, as FM27 Editor found it on
+  Windows (see `cohesion.rs` and the Steam macOS notes). On the Mac Steam save the
+  Dynamics page showed Poor with those entries as they were (a mean of 26), Excellent with
+  all at 100, and fell the day after all were set to 1. Checked on Game Pass 0.9.2409.0
+  too (#140).
+- [ ] Cohesion for players without an entry for their club, such as some moved by an
+  editor: adding one means growing the list, as ties do, since every list read was full.
+  First, whether the game gives them one later.
+- [ ] Tactical familiarity (FMLE's "Max Tactics"): the game's tactical areas, a team's
+  block that FM27 Editor reads at an address found by hand. What FM27 Editor edits as a
+  player's tactical familiarity is his versatility.
 
 ## Phase 7: what FMRTE, FM Live Editor and FM27€0 users reach for (in progress)
 
@@ -350,5 +360,5 @@ changes many at once, and undo.
     has room: 384 of 53,356 contracts on the Game Pass save. Checked there with Kane, Mbappé and Bisseck, restored.
     The competition bonuses (`+0x80`) are not named or edited yet.
   - [x] Keep a player from retiring (see Wave 2 above).
-  - [ ] Team cohesion and tactical familiarity (see Phase 6).
+  - [x] Team cohesion (see Phase 6); tactical familiarity still to do.
   - [ ] Epic.

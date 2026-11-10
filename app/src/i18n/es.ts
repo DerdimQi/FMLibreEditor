@@ -586,6 +586,7 @@ export const es: Strings = {
     "tie.workPermit": "Sin permiso de trabajo en",
     club: "Club",
     injuries: "Lesiones",
+    cohesion: "Cohesión",
     bans: "Sanciones",
     retirement: "Retirada",
     clause: "Cláusula del contrato",
@@ -1232,6 +1233,7 @@ export const es: Strings = {
     teams: "los equipos",
     staff: "el personal",
     clubs: "los clubes",
+    cohesion: "la cohesión con los clubes",
   },
 
   update: {
@@ -1895,6 +1897,15 @@ export const es: Strings = {
     liftNone: "Nadie en este equipo está sancionado",
     inspireAll: "Motivar a todos",
     inspireAllTitle: "Poner la moral de todos los jugadores de este equipo en 20, la más alta",
+    maxCohesion: "Máxima cohesión",
+    maxCohesionTitle:
+      "Poner en 100, la más alta, la cohesión con el club de todos los jugadores de este equipo. El juego la muestra en la página de Dinámicas cuando avanza: pulsa Continuar en el juego",
+    cohesionNone:
+      "El editor no puede leer la cohesión de este equipo: esta versión del juego no se ha comprobado, o ninguno de sus jugadores tiene cohesión con el club",
+    cohesionWithout: (count: number) =>
+      count === 1
+        ? "1 jugador aún no tiene cohesión con el club"
+        : `${format(count)} jugadores aún no tienen cohesión con el club`,
     refreshAll: "Recuperar a todos",
     refreshAllTitle:
       "Poner la energía y el ritmo de competición de todos los jugadores de este equipo al 100 % y dejarlos " +
@@ -1978,6 +1989,7 @@ export const es: Strings = {
       matchSharpness: "Ritmo",
       jadedness: "Fatiga",
       morale: "Moral",
+      cohesion: "Cohesión",
       actions: "Capitanía",
     },
     sortBy: (by) => `Ordenar por ${by}`,
@@ -1991,6 +2003,7 @@ export const es: Strings = {
       matchSharpness: "ritmo de competición",
       jadedness: "fatiga",
       morale: "moral",
+      cohesion: "cohesión",
     },
 
     // Las etiquetas tras un nombre

@@ -500,6 +500,8 @@ export const en = {
     club: "Club",
     // Healing a player, which the change log keeps as a change of his injuries.
     injuries: "Injuries",
+    // Setting a player's cohesion with his club, which the change log keeps as a change of it.
+    cohesion: "Cohesion",
     // Lifting a player's bans, which the change log keeps as a change of his bans.
     bans: "Bans",
     // Keeping a player from retiring, which the change log keeps as a change of the date he was to retire on.
@@ -1250,6 +1252,7 @@ export const en = {
     teams: "teams",
     staff: "staff",
     clubs: "clubs",
+    cohesion: "cohesion with clubs",
   } satisfies Record<CheckKey, string>,
 
   /** New versions: the notice under the masthead, and the version and Check for updates at the foot of the window. */
@@ -2088,6 +2091,17 @@ export const en = {
     liftNone: "Nobody in this team is banned",
     inspireAll: "Inspire all",
     inspireAllTitle: "Set the morale of every player in this team to 20, the highest, and remove their reasons to be unhappy",
+    maxCohesion: "Max cohesion",
+    maxCohesionTitle:
+      "Set the cohesion with the club of every player in this team to 100, the highest. The game shows the team's cohesion on its Dynamics page once it moves on: press Continue in the game",
+    /** Hover text of Max cohesion while no player's cohesion with the club can be read. */
+    cohesionNone:
+      "The editor cannot read this team's cohesion: this version of the game has not been checked for it, or none of its players has an entry for the club",
+    /** After Max cohesion: how many players of the team have no entry for the club yet, and were left out. */
+    cohesionWithout: (count: number) =>
+      count === 1
+        ? "1 player has no cohesion with the club yet"
+        : `${format(count)} players have no cohesion with the club yet`,
     refreshAll: "Refresh all",
     refreshAllTitle: "Set the energy and match sharpness of every player in this team to 100%, and rest them fully (jadedness -500)",
     maxAll: "Max attributes",
@@ -2170,6 +2184,7 @@ export const en = {
       matchSharpness: "Sharpness",
       jadedness: "Jaded.",
       morale: "Morale",
+      cohesion: "Cohesion",
       /** The last column has no heading but this one, for assistive technology: it holds the captaincy menus. */
       actions: "Captaincy",
     } satisfies Record<SquadSort | "actions", string>,
@@ -2185,6 +2200,7 @@ export const en = {
       matchSharpness: "match sharpness",
       jadedness: "jadedness",
       morale: "morale",
+      cohesion: "cohesion",
     } satisfies Record<SquadSort, string>,
 
     // The tags after a name, with what each means as hover text
