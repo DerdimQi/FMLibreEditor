@@ -53,7 +53,12 @@ export interface BridgeInfo {
 export interface ArrayRef {
   pairRva: number;
   count: number;
+  /** Share of the sampled elements that decoded as the expected entity: by a name, or in the profile's place by their other fields. */
   confidence: number;
+  /** Share of the sampled elements with a name that reads as one. */
+  named: number;
+  /** Whether the build profile gave the place; otherwise a scan found it. */
+  fromProfile: boolean;
 }
 
 export interface EntityArrays {
