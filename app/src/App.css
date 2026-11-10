@@ -707,6 +707,18 @@ dd,
   color: var(--text);
 }
 
+/* Copy diagnostics, in the colophon and in the compatibility notice: why the report could not be copied, beside it. */
+.copy-diagnostics {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.copy-diagnostics-error {
+  color: var(--danger);
+}
+
 /* Connect */
 
 .connect {

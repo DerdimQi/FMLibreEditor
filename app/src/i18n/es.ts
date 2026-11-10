@@ -1214,11 +1214,19 @@ export const es: Strings = {
     reloadHint: "Si una partida aún se estaba cargando, «Recargar datos» vuelve a comprobarlo.",
     noDate: "La fecha del juego no ha superado las comprobaciones, así que no se muestran las edades.",
     failed: (names) => `Quedan en solo lectura: ${names}.`,
+    failedCheck: (name, fit, sampled) => `${name} (${format(fit)} of ${format(sampled)} fit)`,
     join: (names) =>
       names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} y ${names[names.length - 1]}`,
     allow: "Editar de todos modos",
     allowTitle:
       "Activa la edición hasta que se cierre FMLibreEditor o se vuelva a conectar. Haz antes una copia de tu partida.",
+  },
+
+  diagnostics: {
+    copy: "Copy diagnostics",
+    copyTitle: "Copy what FMLibreEditor found in the game, to paste into a bug report. It holds no names or paths.",
+    copied: "Copied",
+    failed: (reason) => `Could not copy the diagnostics: ${reason}`,
   },
 
   checks: {

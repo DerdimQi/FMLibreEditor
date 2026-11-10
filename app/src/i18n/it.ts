@@ -1251,12 +1251,22 @@ export const it: Strings = {
     reloadHint: "Se un salvataggio era ancora in caricamento, Ricarica i dati controlla di nuovo.",
     noDate: "La data del gioco non ha superato i controlli, quindi le età non sono mostrate.",
     failed: (names) => `In sola lettura: ${names}.`,
+    failedCheck: (name, fit, sampled) => `${name} (${format(fit)} su ${format(sampled)} in regola)`,
     join: (names) =>
       names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} e ${names[names.length - 1]}`,
     allow: "Modifica comunque",
     allowTitle:
       "Attiva la modifica finché FMLibreEditor non viene chiuso o non si connette di nuovo. Fai prima un backup del " +
       "salvataggio.",
+  },
+
+  diagnostics: {
+    copy: "Copia diagnostica",
+    copyTitle:
+      "Copia quello che FMLibreEditor ha trovato nel gioco, da incollare in una segnalazione di bug. Non contiene " +
+      "nomi né percorsi.",
+    copied: "Copiato",
+    failed: (reason) => `Non è stato possibile copiare la diagnostica: ${reason}`,
   },
 
   checks: {
