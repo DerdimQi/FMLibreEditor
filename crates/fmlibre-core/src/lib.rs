@@ -42,6 +42,7 @@ mod squad_report;
 mod stadium_name;
 mod staff;
 mod staff_move;
+mod tactical_areas;
 mod text;
 mod transfer;
 
@@ -85,7 +86,8 @@ pub use prize_money::{
 };
 pub use profile::{
     ArrayRvas, BuildProfile, ContractLayout, GameLayout, Layout, PlayerLayout, PluginFingerprint, ProfileNotes,
-    SelectionLayout, StaffLayout, TacticLayout, built_in_profiles, layout_for, profile_for, profile_text,
+    SelectionLayout, StaffLayout, TacticLayout, TacticsLayout, built_in_profiles, layout_for, profile_for,
+    profile_text,
 };
 pub use relations::{HOMEGROWN_RULES, Relation, RelationPlan, RelationSet, Tie, TieTarget};
 pub use retirement::{PlannedRetirement, RetirementPlan, RetirementSet};
@@ -107,5 +109,6 @@ pub use staff::{
 pub use staff_move::{
     DIRECTOR_OF_FOOTBALL, Department, MANAGER, NewStaffContract, Post, STAFF_JOBS, StaffChange, StaffPlan, post_of,
 };
+pub use tactical_areas::area_options;
 pub use text::{fold, is_name_like, read_fm_string, read_name_entry};
 pub use transfer::{Amounts, ClubMoney, ClubMove, FeePlan, MAX_FEE, MoveError, MovePlan, MoveTerms, Paid, RoomMaker};

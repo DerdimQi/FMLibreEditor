@@ -13,6 +13,11 @@ current_date = 0x56B1DB8
 # Benzema among the planned retirements.
 retirement_manager = 0x56A82A8
 
+# The static pointer to the tactics the human managers keep for their teams (layout-macos.toml, [tactics]): read on a
+# Benevento save (24 August 2026), where it held the manager's Tiki-Taka for the senior team, the B team and the
+# under-19s.
+tactics_manager = 0x56A8310
+
 # game_plugin as mapped in memory: its LC_UUID identifies the build and the architecture.
 [plugin]
 uuid = "F4540355-2186-39CB-9119-C706A6A35346"

@@ -37,6 +37,9 @@ pub struct Layout {
     /// The tactic a selection plays; only in the layouts it has been checked in.
     #[serde(default)]
     pub tactic: Option<TacticLayout>,
+    /// The tactics each human manager keeps for each of his teams; only in the layouts they have been checked in.
+    #[serde(default)]
+    pub tactics: Option<TacticsLayout>,
     /// Where a player on loan keeps his loan contract; only in the layouts it has been checked in.
     #[serde(default)]
     pub loan: Option<LoanLayout>,
@@ -177,6 +180,30 @@ pub struct TacticLayout {
     pub role: u64,
     /// `u32` code of the style the tactic was made from, as text backwards (`CONT`, `TIKI`, `DIRE`).
     pub style: u64,
+}
+
+/// The tactics each human manager keeps for each of his teams, as the game reads them to tell how well the players
+/// know the tactic in use (see `crate::tactical_areas`). The build's static pointer ([`BuildProfile::tactics_manager`])
+/// leads to an object with a list `(begin, end)` at `managers`, one object per human manager; each has a map, its root
+/// at `teams`, from a team's id to the team's tactics: nodes laid out as the C++ library's (left child, then right),
+/// the id at `key` and the team's tactics at `value`. There, `tactics` holds the list `(begin, end)` of pointers to the
+/// tactics and `current` the index of the one in use. A tactic keeps its team instructions at `instructions`.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TacticsLayout {
+    pub managers: u64,
+    pub teams: u64,
+    /// In a node: the `u32` id of the team.
+    pub key: u64,
+    pub value: u64,
+    /// In a team: its `u32` id.
+    pub team_id: u64,
+    pub tactics: u64,
+    /// The `i8` index of the tactic in use.
+    pub current: u64,
+    /// In a tactic: the two `u64` words of its team instructions, from which the game works out the option it plays
+    /// in each tactical area (see `crate::area_options`).
+    pub instructions: u64,
 }
 
 /// Where a player on loan keeps his loan contract: his `record` pointer (shifted like the person block) leads to a
@@ -834,6 +861,9 @@ pub struct BuildProfile {
     /// RVA in the game plugin of a static pointer to the game's own object ([`GameLayout`]), whose count of the saves
     /// loaded tells a load from a save: 0x3C80 before the players pair on Game Pass 0.9.2409.0 and Steam build 26340721.
     pub game_ui: Option<u64>,
+    /// RVA in the game plugin of the static pointer to the tactics the human managers keep for their teams
+    /// ([`TacticsLayout`]).
+    pub tactics_manager: Option<u64>,
 }
 
 /// Identifies a build of the game plugin from its headers as mapped in memory.
@@ -982,6 +1012,9 @@ pub fn profile_text(profile: &BuildProfile, notes: &ProfileNotes) -> String {
     }
     if let Some(rva) = profile.game_ui {
         text += &format!("\n{}game_ui = {rva:#X}\n", comments(&notes.game_ui));
+    }
+    if let Some(rva) = profile.tactics_manager {
+        text += &format!("\ntactics_manager = {rva:#X}\n");
     }
     text += "\n# game_plugin as mapped in memory; these values identify the build.\n[plugin]\n";
     match profile.plugin {
@@ -1234,6 +1267,7 @@ mod tests {
         let profile = profile_for(PluginFingerprint::MachO { uuid }).expect("27.0.0's arm64 half");
         assert_eq!(profile.arrays.players, 0x56D_2E18);
         assert_eq!(profile.current_date, Some(0x56B_1DB8));
+        assert_eq!(profile.tactics_manager, Some(0x56A_8310));
         let uuid = [0x09, 0x81, 0xAB, 0x31, 0xAC, 0x3B, 0x3D, 0x93, 0x94, 0x4F, 0x47, 0xFE, 0x4B, 0x59, 0xCD, 0x9E];
         let profile = profile_for(PluginFingerprint::MachO { uuid }).expect("27.0.0's Intel half");
         assert_eq!(profile.arrays.players, 0x5C8_91C8);

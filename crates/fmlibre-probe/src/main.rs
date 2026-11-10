@@ -687,9 +687,10 @@ enum Command {
     TrainingHistory {
         /// The club's UID.
         club: u32,
-        /// The options the tactic in use takes in areas 0–5, as `familiarity` shows them, e.g. 5 17 10 4 20 10.
-        #[arg(long, num_args = 6, required = true)]
-        options: Vec<i8>,
+        /// The options the tactic takes in areas 0–5, e.g. 5 17 10 4 20 10; by default those of the tactic the human
+        /// manager plays with the senior team, where the build profile and the layout place it.
+        #[arg(long, num_args = 6)]
+        options: Option<Vec<i8>>,
         /// Only this player (UID).
         #[arg(long)]
         player: Option<u32>,
@@ -1370,8 +1371,10 @@ fn run(cli: Cli) -> Result<()> {
         }
         Command::TrainingHistory { club, options, player, max, entries, restore } => {
             let session = connect(process, ArraySource::ProfileFirst)?;
-            let options: [i8; 6] = options.try_into().map_err(|_| anyhow::anyhow!("give six options"))?;
-            training_history(&session, club, &options, player, max, entries, restore)
+            let options = options
+                .map(|options| <[i8; 6]>::try_from(options).map_err(|_| anyhow::anyhow!("give six options")))
+                .transpose()?;
+            training_history(&session, club, options, player, max, entries, restore)
         }
         Command::Familiarity { club, record, set, restore } => {
             let session = connect(process, ArraySource::ProfileFirst)?;
@@ -3204,6 +3207,8 @@ fn profile(session: &Session, out: Option<&Path>) -> Result<()> {
         current_date: date.map(|place| place.rva),
         retirement_manager: retirement.map(|place| place.rva),
         game_ui: game_ui.map(|place| place.rva),
+        // Not looked for: kept from the built-in profile.
+        tactics_manager: session.profile.as_ref().and_then(|profile| profile.tactics_manager),
     };
 
     let failed = health.failed();
@@ -6547,7 +6552,7 @@ fn training_areas(entries: &[[u8; 12]], options: &[i8; 6], shapes: [Option<u16>;
 fn training_history(
     session: &Session,
     uid: u32,
-    options: &[i8; 6],
+    options: Option<[i8; 6]>,
     only: Option<u32>,
     max: bool,
     show_entries: bool,
@@ -6560,6 +6565,16 @@ fn training_history(
     let players = PlayerIndex::new(session.players()?);
     let clubs = ClubIndex::new(session.clubs()?);
     let club = clubs.get(uid).with_context(|| format!("no club with UID {uid}"))?;
+    let (options, source) = match options {
+        Some(options) => (options, "given"),
+        None => (
+            session.senior_area_options(club)?.with_context(|| {
+                format!("the tactic {} plays was not found; give its options with --options", club.name)
+            })?,
+            "of the tactic in use",
+        ),
+    };
+    let options = &options;
     // The club's players by person id, with the team each plays for.
     let mut people: HashMap<u32, (u32, String, usize)> = HashMap::new();
     for (index, team) in session.club_teams(club, &players)?.iter().enumerate() {
@@ -6625,7 +6640,7 @@ fn training_history(
     };
     let show = |label: &str, histories: &[(u32, u64, Vec<[u8; 12]>)]| {
         println!(
-            "{} ({uid}), {label}: day {today} of the year, options {options:?}; areas 0–5, then the shapes",
+            "{} ({uid}), {label}: day {today} of the year, options {options:?} ({source}); areas 0–5, then the shapes",
             club.name
         );
         let mut totals = [0u32; 8];

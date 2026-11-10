@@ -308,6 +308,25 @@ slots = 0x28
 count = 26
 player_person = 0x390
 
+# The tactics each human manager keeps for each of his teams, which the game reads to tell how well the players know
+# the tactic in use (game_plugin+0x2039c64 and +0x2ce4aec, Steam build 26340721). The build profile's tactics_manager
+# leads to an object listing one object per human manager; each has a map from a team's id (the team's u32 at +0x08)
+# to its tactics: the pointers to up to three tactics, and the index of the one in use. On the Benevento save
+# (24 August 2026) it held the senior team (1728), the B team and the under-19s, each with the same Tiki-Taka. A tactic
+# keeps its team instructions in two words at `instructions`, the line of engagement in the top byte of the first: 0x82
+# with a low block, 0x22 with a high press. The game works out the tactical areas' options from them
+# (game_plugin+0x4845f0c, see tactical_areas.rs): 5, 17, 10, 4, 20 and 10 here, the options it wrote into the
+# players' training history when the team trained.
+[tactics]
+managers = 0x20           # (begin, end) of pointers, one per human manager
+teams = 0x08              # in one: the map's root; nodes left, right, parent, colour
+key = 0x20                # in a node: u32, the team's id
+value = 0x28              # in a node: the team's tactics
+team_id = 0x08            # in a team: u32
+tactics = 0x1000          # in the team's tactics: (begin, end) of pointers to tactic blocks
+current = 0x1018          # in the team's tactics: i8, the index of the one in use
+instructions = 0xE0       # in a tactic: two u64 words
+
 # As on Windows, right after the contract pointer (+0x2F0 here, +0x330 there): a record of the player's other
 # contracts, whose first slot points at his loan contract (db::LOAN_CONTRACT), laid out as a contract up to the squad
 # number. On the Arsenal save (5 July 2027), 92 players had one, all passing the class and owner checks (Maxim De

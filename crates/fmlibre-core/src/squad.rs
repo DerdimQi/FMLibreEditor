@@ -197,7 +197,7 @@ impl Session {
     }
 
     /// The teams of `club`, each pointing back at it.
-    fn team_objects(&self, club: &ClubSummary) -> Result<Vec<u64>, MoveError> {
+    pub(crate) fn team_objects(&self, club: &ClubSummary) -> Result<Vec<u64>, MoveError> {
         let (c, t) = (&self.layout.club, &self.layout.team);
         let not_a_club = || MoveError::NotAClub { uid: club.uid };
         if self.process.read_u32(club.address + c.uid)? != club.uid {
