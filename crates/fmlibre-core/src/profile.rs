@@ -832,8 +832,10 @@ const LAYOUTS: &[&str] = &[include_str!("../../../profiles/fm27/layout-macos.tom
 const BUILDS: &[&str] = &[
     include_str!("../../../profiles/fm27/gamepass-0.9.2355.0.toml"),
     include_str!("../../../profiles/fm27/gamepass-0.9.2409.0.toml"),
+    include_str!("../../../profiles/fm27/gamepass-0.9.2435.0.toml"),
     include_str!("../../../profiles/fm27/steam-26227640.toml"),
     include_str!("../../../profiles/fm27/steam-26340721.toml"),
+    include_str!("../../../profiles/fm27/steam-26385295.toml"),
     include_str!("../../../profiles/fm27/steam-26227640-macos-x86_64.toml"),
     include_str!("../../../profiles/fm27/steam-26227640-macos-arm64.toml"),
     include_str!("../../../profiles/fm27/steam-26340721-macos-x86_64.toml"),
@@ -1067,6 +1069,18 @@ mod tests {
         assert_eq!(profile.current_date, Some(0x562_57C8));
         assert_eq!(profile.retirement_manager, Some(profile.arrays.players - 0xED60));
 
+        // The full release on Game Pass (0.9.2435.0): the statics no longer quite as far from each other as before.
+        let fingerprint = PluginFingerprint::Pe { size_of_image: 0x1796_9000, link_timestamp: 0x6AE8_CF77 };
+        let profile = profile_for(fingerprint).expect("Game Pass 0.9.2435.0 profile");
+        assert_eq!(profile.storefront, Storefront::GamePass);
+        assert_eq!(profile.package_version.as_deref(), Some("0.9.2435.0"));
+        assert_eq!(
+            (profile.arrays.players, profile.arrays.staff, profile.arrays.clubs),
+            (0x53B_7DE0, 0x53B_7E28, 0x53B_7F98)
+        );
+        assert_eq!(profile.current_date, Some(0x535_97C8));
+        assert_eq!(profile.retirement_manager, Some(profile.arrays.players - 0xED70));
+
         // The same version on Steam, packaged differently: another fingerprint and other RVAs, the manager's static
         // 0xDAC0 before the players pair.
         let fingerprint = PluginFingerprint::Pe { size_of_image: 0x19E6_9000, link_timestamp: 0x6ADF_B11C };
@@ -1085,6 +1099,17 @@ mod tests {
             (0x570_57D0, 0x570_5818, 0x570_5988)
         );
         assert_eq!(profile.current_date, Some(0x56A_F378));
+        assert_eq!(profile.retirement_manager, Some(profile.arrays.players - 0xDAC0));
+
+        // 27.0.1 on Steam (build 26385295), the full release: every static 0x11B040 further than in build 26340721.
+        let fingerprint = PluginFingerprint::Pe { size_of_image: 0x17CB_9000, link_timestamp: 0x6AE8_B5A4 };
+        let profile = profile_for(fingerprint).expect("Steam build 26385295 profile");
+        assert_eq!(profile.storefront, Storefront::Steam);
+        assert_eq!(
+            (profile.arrays.players, profile.arrays.staff, profile.arrays.clubs),
+            (0x570_57D0 + 0x11_B040, 0x570_5818 + 0x11_B040, 0x570_5988 + 0x11_B040)
+        );
+        assert_eq!(profile.current_date, Some(0x56A_F378 + 0x11_B040));
         assert_eq!(profile.retirement_manager, Some(profile.arrays.players - 0xDAC0));
 
         // On macOS, the Intel half of the same build: told apart by its LC_UUID.
