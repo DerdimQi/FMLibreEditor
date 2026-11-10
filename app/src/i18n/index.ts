@@ -9,6 +9,7 @@ import { es } from "./es";
 import { id } from "./id";
 import { it } from "./it";
 import { tr } from "./tr";
+import { zhCN } from "./zh-CN";
 
 /**
  * The languages of the UI: the text of each, and the tag its dates and numbers are formatted by (see `format.ts`).
@@ -20,6 +21,7 @@ const LANGUAGES = {
   es: { strings: es, intl: "es-ES" },
   id: { strings: id, intl: "id-ID" },
   it: { strings: it, intl: "it-IT" },
+  "zh-CN": { strings: zhCN, intl: "zh-CN" },
 } satisfies Record<string, { strings: Strings; intl: string }>;
 
 export type Locale = keyof typeof LANGUAGES;
@@ -43,13 +45,25 @@ function savedLocale(): Locale | null {
 }
 
 /**
- * The first of the system's languages, most preferred first, that the app has: "es-MX" is Spanish, "tr" Turkish, "id-ID" Indonesian.
+ * The first of the system's languages, most preferred first, that the app has: "es-MX" is Spanish, "tr" Turkish, "id-ID" Indonesian,
+ * and "zh-CN" or "zh-Hans" Simplified Chinese.
  * English when it has none of them. WebView2 lists the languages of Windows; WKWebView only the first one of macOS.
  */
 function systemLocale(): Locale {
   const { languages, language } = window.navigator;
   for (const tag of languages?.length ? languages : [language]) {
-    const primary = tag?.split("-")[0].toLowerCase();
+    const normalized = tag?.replace(/_/g, "-").toLowerCase();
+    if (
+      normalized === "zh" ||
+      normalized === "zh-cn" ||
+      normalized?.startsWith("zh-cn-") ||
+      normalized === "zh-sg" ||
+      normalized === "zh-hans" ||
+      normalized?.startsWith("zh-hans-")
+    ) {
+      return "zh-CN";
+    }
+    const primary = normalized?.split("-")[0];
     if (isLocale(primary)) {
       return primary;
     }
