@@ -2933,16 +2933,27 @@ fn calibrate(session: &Session) -> Result<()> {
 }
 
 fn print_arrays(session: &Session) {
-    let source = if session.arrays.from_profile { "from the build profile, checked" } else { "found by scanning" };
-    println!("Entity arrays ({source}):");
     let arrays = &session.arrays;
+    if arrays.from_profile {
+        println!("Entity arrays (from the build profile, checked):");
+    } else {
+        println!("Entity arrays:");
+    }
     for (label, array) in [("players", &arrays.players), ("staff", &arrays.staff), ("clubs", &arrays.clubs)] {
         match array {
             Some(a) => println!(
-                "  {label:<8} {GAME_PLUGIN}+{:#x}  {:>7} elements  {:>3.0}% of samples decoded",
+                "  {label:<8} {GAME_PLUGIN}+{:#x}  {:>7} elements  {:>3.0}% of samples decoded, {:>3.0}% by a name{}",
                 a.pair_rva,
                 a.count,
-                a.confidence * 100.0
+                a.confidence * 100.0,
+                a.named * 100.0,
+                if arrays.from_profile {
+                    ""
+                } else if a.from_profile {
+                    " (from the build profile)"
+                } else {
+                    " (found by scanning)"
+                }
             ),
             None => println!("  {label:<8} not found"),
         }

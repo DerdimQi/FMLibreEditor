@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex, OnceLock, PoisonError};
 
 use fmlibre_mem::{Module, Process, find_processes, is_user_pointer, list_modules};
 
-use crate::calibrate::{EntityArrays, calibrate};
+use crate::calibrate::{EntityArrays, calibrate, find_missing};
 use crate::clubs::{ClubDetails, ClubSummary, full_finance_class, read_club_details, read_clubs, stadium_class};
 use crate::coded::Coded;
 use crate::date::FmDate;
@@ -278,6 +278,20 @@ impl Session {
         let fresh = Arc::new(crate::health::check(self));
         *self.health.lock().unwrap_or_else(PoisonError::into_inner) = Some(fresh.clone());
         fresh
+    }
+
+    /// Looks again for the entity arrays not found when the editor connected, e.g. the staff while a save was still
+    /// loading: in the places the build profile gives, then by scanning. What was worked out from the clubs is worked
+    /// out afresh once they are found. Returns whether an array was found. Only reads memory.
+    pub fn find_missing_arrays(&mut self) -> bool {
+        let had_clubs = self.arrays.clubs.is_some();
+        let hint = self.profile.as_ref().filter(|_| !self.search_all).map(|profile| &profile.arrays);
+        let found = find_missing(&self.process, &self.plugin, &self.layout, hint, &mut self.arrays);
+        if !had_clubs && self.arrays.clubs.is_some() {
+            self.finance_class = OnceLock::new();
+            self.stadium_class = OnceLock::new();
+        }
+        found
     }
 
     /// Why `field` may not be written now, if it may not: an unknown build not allowed, another save than the one the
