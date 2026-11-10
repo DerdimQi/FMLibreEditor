@@ -1,5 +1,6 @@
-// A player opened from a club's squad, as a dialog over it: focus kept in it, Escape, the Transfer dialog over it, and
-// the question before unapplied edits are thrown away. Writes nothing.
+// A player opened from a club's squad, as a dialog over it: focus kept in it, Escape (on an (i) button the note's
+// first, then the dialog's), the Transfer dialog over it, and the question before unapplied edits are thrown away.
+// Writes nothing.
 import { SHOWN, VIS, sleep } from "../lib/app.mjs";
 import { topClubs } from "../lib/witness.mjs";
 
@@ -39,6 +40,27 @@ export async function run({ app, report }) {
   }
   report.check("Tab keeps the focus in the dialog", outside === 0, `${outside} of 25 outside`);
   await app.shot("dialog");
+
+  // Where the Tabs end depends on how many buttons the player's dialog has. On an (i) button, whose note shows while
+  // the button has the keyboard's focus, the first Escape is the note's: it hides the note and nothing else, as a note
+  // shown on focus must go away without the focus moving (WCAG 1.4.13; see InfoTip and useModal). So Tab on to the
+  // first (i) button there is, and check both Escapes from there: the note's, then the dialog's.
+  const onTip = `${POPUP}.contains(document.activeElement) && document.activeElement.matches(".info-tip-button")`;
+  const stops = await app.js(`${POPUP}.querySelectorAll("a[href], button, input, select, textarea, summary, [tabindex]").length`);
+  for (let i = 0; i < stops && !(await app.js(onTip)); i++) {
+    await app.press("Tab");
+  }
+  if (await app.js(onTip)) {
+    const tip = await app.js(`document.activeElement.getAttribute("aria-label")`);
+    report.check("an (i) button shows its note while it has the focus",
+      await app.js(`!!document.activeElement.closest(".info-tip[data-open-tip]")`), tip);
+    await app.press("Escape");
+    await sleep(300);
+    report.check("Escape there hides only the note: the dialog and the focus stay",
+      await app.js(`!!${POPUP} && !${POPUP}.querySelector("[data-open-tip]") && ${onTip}`), tip);
+  } else {
+    report.skip("Escape on an (i) button hides only its note", "Tab reaches no (i) button in the dialog");
+  }
 
   await app.press("Escape");
   await app.waitFor(`!${POPUP}`, "the dialog to close", 5000);
