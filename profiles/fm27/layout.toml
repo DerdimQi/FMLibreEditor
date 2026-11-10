@@ -469,3 +469,34 @@ corporate = 0x8A9         # u8 1..20, corporate facilities
 [nation]
 uid = 0x0C                # u32 (Argentina: 1649, as graphics packs map its flag)
 name = 0x18               # FM string pointer
+
+# A competition (db::COMP). Its UID sits where clubs and nations keep theirs, and the next u32 holds it again. The
+# names are in the game's language (a German game calls the CAF Champions League "Afrikas Champions League"), so a
+# competition is matched by its UID.
+[competition]
+uid = 0x0C                # u32
+name = 0x40               # FM string pointer
+short_name = 0x48         # FM string pointer
+
+# The prize money a competition's stages pay (#123: found by RootTourist on the Windows Steam build, checked by
+# Reckbeg on the Mac against the game's Competition Stages screens). A stage played as a league (a league, a league
+# phase, a group) points at its competition and at its settings, which hold the amounts in pounds: a list by final
+# position, the first place first, and the amounts per win, draw and loss. A stage that has not started yet points at
+# the settings it will be played with, whatever their class (a cup stage's are sicomps::CUP_SETTINGS). Nothing else
+# the editor reads leads to them: they are found by their class (see prize_money.rs). Read on the Game Pass save (9
+# August 2027, the Turkish leagues loaded): 315 league stages, 3 future ones and 318 settings, 0x2F0 bytes apart. The
+# Champions League's league phase, not started yet, pays 10,222,480 down to 236,234 by position, 1,803,967 per win and
+# 601,323 per draw, as on RootTourist's save of 2028/29; the Süper Lig pays nothing by position, but 114,699 per win,
+# 57,964 per draw and 1,229 per loss. Whether the game pays from these amounts is not known yet.
+[prize_money]
+stage = "sicomps::LEAGUE_STAGE"
+future_stage = "sicomps::FUTURE_STAGE"
+settings = "sicomps::LEAGUE_SETTINGS"
+competition = 0x70        # in either stage: pointer to its competition
+stage_settings = 0xF0     # in a league stage: pointer to its settings
+future_settings = 0x90    # in a stage that has not started yet: pointer to its settings, of whichever class
+by_position = 0x1E0       # in the settings: (begin, end, capacity) of u32 pounds, the first place first
+win = 0x148               # u32 pounds per win
+win_again = 0x14C         # u32, the same as `win` in every settings seen
+draw = 0x150              # u32 pounds per draw
+loss = 0x154              # u32 pounds per loss

@@ -402,3 +402,26 @@ corporate = 0x8A9
 [nation]
 uid = 0x0C                # Argentina: 1649
 name = 0x18
+
+# As on Windows (#123). Reckbeg read the competition's names and the prize money on the Mac Steam build, with the
+# same offsets, against the game's Competition Stages screens. The UID and the future stage's pointer to its settings,
+# taken from Windows, read right on the Mac too (Steam build 26385295, Apple silicon, a save of 12 July 2027): the
+# Premier League 11, the Champions League 1301394, whose league phase, not started yet, pays what it pays on Windows.
+# A pointer that does not lead to a league's settings is ignored.
+[competition]
+uid = 0x0C
+name = 0x40
+short_name = 0x48
+
+[prize_money]
+stage = "sicomps::LEAGUE_STAGE"
+future_stage = "sicomps::FUTURE_STAGE"
+settings = "sicomps::LEAGUE_SETTINGS"
+competition = 0x70
+stage_settings = 0xF0
+future_settings = 0x90
+by_position = 0x1E0
+win = 0x148
+win_again = 0x14C
+draw = 0x150
+loss = 0x154
