@@ -25,6 +25,7 @@ mod medical;
 mod object_pool;
 mod own_memory;
 mod players;
+mod prize_money;
 mod profile;
 mod relations;
 mod retirement;
@@ -75,6 +76,9 @@ pub use mass::{Operation, Plan, Planned, Skipped};
 pub use medical::{Ban, HealPlan, Healed, Injury, LiftPlan, Lifted};
 pub use object_pool::ObjectPool;
 pub use players::{Nation, PLAYABLE_RATING, PlayerIndex, PlayerSummary, is_woman, nations, read_players};
+pub use prize_money::{
+    Competition, MOST_PRIZE, PrizeAmount, PrizeChange, PrizeEdit, PrizeError, PrizeMoney, PrizeStage,
+};
 pub use profile::{
     ArrayRvas, BuildProfile, ContractLayout, GameLayout, Layout, PlayerLayout, PluginFingerprint, ProfileNotes,
     SelectionLayout, StaffLayout, TacticLayout, built_in_profiles, layout_for, profile_for, profile_text,
