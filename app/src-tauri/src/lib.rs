@@ -2208,15 +2208,18 @@ fn allow_editing(state: State<'_, AppState>) -> Result<ConnectionInfo, Failure> 
     Ok(connection.info(0))
 }
 
-/// Reads everything again, e.g. after the game has moved on. Drops the connection when that fails. What is frozen
-/// stays frozen, unless the game has loaded another save: then what was frozen in that one before is frozen instead.
+/// Reads everything again, e.g. after the game has moved on. A list not found when the app connected, as while the
+/// game was still loading a save, is looked for again. Drops the connection when that fails. What is frozen stays
+/// frozen, unless the game has loaded another save: then what was frozen in that one before is frozen instead.
 #[tauri::command]
 async fn reload(state: State<'_, AppState>, file: State<'_, FrozenFile>) -> Result<ReloadInfo, Failure> {
     let old = state.0.lock()?.take().ok_or_else(not_connected)?;
     let path = file.0.clone();
     let (connection, refrozen) = tauri::async_runtime::spawn_blocking(move || -> Result<_, Failure> {
         let (save, frozen) = (old.save, old.frozen);
-        let mut connection = Connection::load(old.session, old.log)?;
+        let mut session = old.session;
+        session.find_missing_arrays();
+        let mut connection = Connection::load(session, old.log)?;
         if connection.save == save {
             connection.frozen = frozen;
             // A save loaded again has its stadiums' own names back: the ones the editor gave are given again now.

@@ -861,6 +861,8 @@ const BUILDS: &[&str] = &[
     include_str!("../../../profiles/fm27/steam-26227640-macos-arm64.toml"),
     include_str!("../../../profiles/fm27/steam-26340721-macos-x86_64.toml"),
     include_str!("../../../profiles/fm27/steam-26340721-macos-arm64.toml"),
+    include_str!("../../../profiles/fm27/steam-26385295-macos-x86_64.toml"),
+    include_str!("../../../profiles/fm27/steam-26385295-macos-arm64.toml"),
 ];
 
 /// The built-in object layout for `edition`, if there is one.
@@ -1132,6 +1134,24 @@ mod tests {
         let profile = profile_for(PluginFingerprint::MachO { uuid }).expect("27.0.0's Intel half");
         assert_eq!(profile.arrays.players, 0x5C8_91C8);
         assert_eq!(profile.current_date, Some(0x5C6_9700));
+
+        // 27.0.1 (Steam build 26385295): new UUIDs again, every place moved on with __DATA and the arrays a little more.
+        let uuid = [0x2A, 0x2D, 0x0E, 0xD6, 0x32, 0x4E, 0x3D, 0x0D, 0xA2, 0x7D, 0x10, 0xAE, 0xDB, 0xD0, 0xE2, 0x70];
+        let profile = profile_for(PluginFingerprint::MachO { uuid }).expect("27.0.1's arm64 half");
+        assert_eq!(
+            (profile.arrays.players, profile.arrays.staff, profile.arrays.clubs),
+            (0x576_EE50, 0x576_EE98, 0x576_F008)
+        );
+        assert_eq!(profile.current_date, Some(0x574_DDB8));
+        assert_eq!(profile.retirement_manager, Some(0x574_42A8));
+        let uuid = [0x94, 0xCD, 0xDC, 0x80, 0x84, 0x74, 0x32, 0x7A, 0x85, 0xE0, 0xE4, 0xFF, 0x95, 0xDC, 0x68, 0x93];
+        let profile = profile_for(PluginFingerprint::MachO { uuid }).expect("27.0.1's Intel half");
+        assert_eq!(
+            (profile.arrays.players, profile.arrays.staff, profile.arrays.clubs),
+            (0x5D0_31E8, 0x5D0_3230, 0x5D0_33A0)
+        );
+        assert_eq!(profile.current_date, Some(0x5CE_3700));
+        assert_eq!(profile.retirement_manager, Some(0x5CD_9EF0));
 
         // On Windows the Launch Preview's date sits with the arrays.
         let fingerprint = PluginFingerprint::Pe { size_of_image: 0x19E6_9000, link_timestamp: 0x6ADF_B11C };
