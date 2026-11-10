@@ -44,6 +44,47 @@ pub struct Layout {
     /// checked in.
     #[serde(default)]
     pub pool: Option<PoolLayout>,
+    /// A competition; only in the layouts it has been checked in.
+    #[serde(default)]
+    pub competition: Option<CompetitionLayout>,
+    /// The prize money a competition's stages pay (see `prize_money.rs`); only in the layouts it has been checked in.
+    #[serde(default)]
+    pub prize_money: Option<PrizeMoneyLayout>,
+}
+
+/// A competition (`db::COMP`).
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CompetitionLayout {
+    /// `u32`.
+    pub uid: u64,
+    /// FM string pointers, to names in the game's language.
+    pub name: u64,
+    pub short_name: u64,
+}
+
+/// The prize money a competition's stages pay, which their settings hold (see `prize_money.rs`).
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PrizeMoneyLayout {
+    /// The classes, as written in C++: a stage played as a league, a stage that has not started yet, and a league's
+    /// settings.
+    pub stage: String,
+    pub future_stage: String,
+    pub settings: String,
+    /// In either kind of stage: the pointer to its competition.
+    pub competition: u64,
+    /// In a stage played as a league, and in one that has not started yet: the pointer to its settings.
+    pub stage_settings: u64,
+    pub future_settings: u64,
+    /// In the settings: a list `(begin, end, capacity)` of `u32` amounts in pounds by final position, the first
+    /// place first.
+    pub by_position: u64,
+    /// In the settings: `u32` amounts in pounds per win (kept twice), per draw and per loss.
+    pub win: u64,
+    pub win_again: u64,
+    pub draw: u64,
+    pub loss: u64,
 }
 
 /// One of the game's pools of objects (see `object_pool.rs`), a static of the game plugin, from where it keeps the
@@ -956,6 +997,11 @@ mod tests {
         assert_eq!(mac.staff.attributes, windows.staff.attributes);
         assert_eq!(mac.staff.current_ability, windows.staff.current_ability);
         assert_eq!(mac.staff.uid - mac.staff.identity(), windows.staff.uid - windows.staff.identity());
+
+        // Competitions and their prize money are laid out alike.
+        assert!(windows.prize_money.is_some() && windows.competition.is_some());
+        assert_eq!(mac.prize_money, windows.prize_money);
+        assert_eq!(mac.competition, windows.competition);
         assert_eq!(mac.player.identity() - mac.player.person_block, mac.staff.identity() - mac.staff.person_block);
 
         // The records the people point at are laid out alike. The kind of contract is left out of a layout until it
