@@ -436,7 +436,9 @@ of football moved.
 
 The object of the class `game_plugin::GAME_UI` (see `layout.toml`'s `[game]`) is laid out as on Windows: at `+0x100`
 the count of the saves the game has loaded since it started, 1 on the Arsenal save (Steam build 26385295, Apple
-silicon) after one load. Two statics of the plugin point at it, as on Windows:
+silicon) after one load. Loading the same save again raised it to 2: the editor's core, watching meanwhile, said the
+save had changed within half a second and refused every write (`SaveChanged`), and after `recheck` (what Reload data
+runs) every check passed and writes were allowed again. Two statics of the plugin point at the object, as on Windows:
 
 | | arm64 | Intel (in the file) | Loaded at |
 |---|---|---|---|

@@ -70,7 +70,7 @@ clubs again where they moved, and only then gives the names back (`Session::vouc
 
 The build profiles place the static (`game_ui`, 0x3C80 before the players pair on both Windows builds of November
 2026); a build without a profile finds it as it finds the retirement manager's (below). The Mac keeps the count in the
-same object at the same place (read on Steam build 26385295).
+same object at the same place (read on Steam build 26385295, where loading the save again raised it from 1 to 2).
 
 ### After an update of the game
 
