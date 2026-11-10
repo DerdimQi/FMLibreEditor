@@ -44,6 +44,28 @@ pub struct Layout {
     /// checked in.
     #[serde(default)]
     pub pool: Option<PoolLayout>,
+    /// A player's cohesion with each club (see `cohesion.rs`); only in the layouts it has been checked in.
+    #[serde(default)]
+    pub cohesion: Option<CohesionLayout>,
+}
+
+/// A player's cohesion entries: the second list of the record his `relations` pointer leads to, after his ties (see
+/// [`RelationLayout`]).
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CohesionLayout {
+    /// Where the list `(begin, end, capacity)` starts in the record.
+    pub list: u64,
+    /// Bytes per entry.
+    pub size: u64,
+    /// `i32`: the index of the club or nation the entry is for.
+    pub index: u64,
+    /// `u8`: what the entry is for, 1 a club and 2 a nation.
+    pub kind: u64,
+    /// `i8`: the cohesion, 1..100.
+    pub value: u64,
+    /// `i32` in the club object: the index its entries name it by.
+    pub club_index: u64,
 }
 
 /// One of the game's pools of objects (see `object_pool.rs`), a static of the game plugin, from where it keeps the
@@ -365,6 +387,7 @@ impl PlayerLayout {
             self.potential_ability + 2,
             self.nation + 8,
             self.team + 8,
+            self.relations + 8,
             self.height + 2,
             self.asking_price + 4,
             self.world_reputation + 2,

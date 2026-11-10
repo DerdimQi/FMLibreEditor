@@ -400,3 +400,59 @@ With the arm64 profile, on a save dated 15 November 2026, the checks the editor 
 - **Staff:** goalkeeping 45, physiotherapy 49, judging potential 32.
 - **Contracts:** 1,790 of 1,790 pointed back at their players, and 727 were signed after the player joined.
 - **Date:** none of the 3,580 contract dates came after it; the latest came 4 days before it.
+
+## Team cohesion
+
+The roadmap had set team cohesion aside, as no stored value matched ten clubs' readings in FM Live Editor (see the
+Steam notes). The game works a team's cohesion out from each player's cohesion with his club, which [FM27
+Editor](https://github.com/Jackhamerp24/Football-Manager-27-Editor) (GPL-3.0) found on Windows. It reads the same on
+the Mac:
+
+- The record a player's `relations` pointer leads to (`+0x2C0`; `+0x300` on Windows) starts with the list of his
+  ties (`[relation]`), and holds a second list at `+0x18`. Its entries are 8 bytes: the `i32` index of a club or a
+  nation, a `u8` kind at `+4` (1 a club, 2 a nation) and the `i8` cohesion at `+5`, from 1 to 100.
+- An entry names a club by the `i32` at club `+0x8`. On the Steam save (25 July 2026): Arsenal 331, Manchester United
+  408, Barcelona 1152, Juventus 738, Benevento 1522.
+- Kobbie Mainoo's list there reads `98010000015b0000 8b00000002470000`: 91 with Manchester United, and 71 with
+  England (139). FM27 Editor's tests hold the same entries from a Windows save, at 87 and 67.
+- A player keeps an entry for each club he has played for: Saka 99 with Arsenal, and 13 to 17 for clubs players had
+  left.
+
+`fmlibre-probe cohesion <club> [--raw]` lists each senior player's entries:
+
+| Club | Mean with the club | With an entry | Without |
+|---|---|---|---|
+| Arsenal | 56.1 | 20 | 4 |
+| Manchester United | 64.6 | 22 | 4 |
+| Barcelona | 62.1 | 21 | 6 |
+| Juventus | 46.1 | 19 | 9 |
+| Benevento | 26.4 | 28 | 2 |
+
+The game uses them. On one Benevento save the Dynamics page read the team's cohesion as:
+
+- Poor, on loading the save, with the entries as they were;
+- Excellent, "significantly improved", with all 28 at 100;
+- fallen, on a copy, a day after all 28 were set to 1. The day did not change the entries: they were still at 1.
+
+The page shows the cohesion as the game last worked it out, and works it out again once the game moves on
+(Continue). After the entries were put back from 100, it still read Excellent.
+
+**Who has no entry.** The game gives a player an entry for his club when it signs him. On Game Pass two players had
+one at 2 two days after joining (#140), and Piero Hincapié, whose move the game made on 1 July 2026, had 27 here.
+Those without one had all joined in the save's first weeks (1 to 20 July 2026), and two at least by an editor's move:
+Nick Woltemade and Kamil Grabara are at Juventus with the joined dates of their real moves to Newcastle (30 August
+2025) and Wolfsburg (1 July 2024). The app's own move skips the game's transfer code too. Whether the game gives
+such a player an entry later is not known yet. Players here on loan, such as Pape Matar Sarr at Juventus, have only
+their own club's.
+
+The `cohesion` check (`fmlibre-probe health`) asks that nearly all the lists it samples hold only kinds 1 and 2 with
+values of 1 to 100, and that at least half the players have an entry for their club. On this save 1,663 of 1,663
+lists held, and 1,259 had one.
+
+**Tactical familiarity is not found.** What FM27 Editor edits as a player's tactical familiarity, player `+0x190` on
+Windows (`+0x188` here), is his versatility: Saliba's 35 and Saka's 90 there are `attribute.versatility`. FM27's
+Tactical Effectiveness screen has four parts, and its familiarity is the first, the team's tactical knowledge. That
+covers eight tactical areas: the shape in and out of possession, passing style, build-up, chance creation, line of
+engagement, pressing intensity and pressing trap. FM27 Editor reads six of them in a team block at an address found
+by hand: `dword`s every `0x10` from `+0xC0` to `+0x110`, the value × 100 in their low 14 bits. Where a team keeps
+that block is not known.
