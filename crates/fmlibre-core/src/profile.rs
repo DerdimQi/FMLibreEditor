@@ -1016,11 +1016,12 @@ mod tests {
             (r.planned, r.by_person, r.person, r.date, r.player_person - l.player.identity())
         };
         assert_eq!(retirement(&mac), retirement(&windows));
-        // The game's count of the saves it loaded has been read on Windows only: until it is read on macOS, the editor
-        // there tells a load only by the empty lists of the main menu.
-        let game = windows.game.as_ref().expect("the game's own object");
-        assert_eq!((game.class.as_str(), game.loads), ("game_plugin::GAME_UI", 0x100));
-        assert!(mac.game.is_none());
+        // The game's count of the saves it loaded: in the same object, at the same place, on both systems (read on the
+        // Mac on Steam build 26385295).
+        let game =
+            |l: &Layout| l.game.as_ref().map(|game| (game.class.clone(), game.loads)).expect("the game's object");
+        assert_eq!(game(&windows), ("game_plugin::GAME_UI".to_owned(), 0x100));
+        assert_eq!(game(&mac), game(&windows));
         // The game's own allocator, with the same size classes on both systems; the Mac's go on to 4,096 bytes, read
         // from the allocator itself.
         assert!(mac.heap.block_sizes.starts_with(&windows.heap.block_sizes));
@@ -1153,6 +1154,7 @@ mod tests {
         );
         assert_eq!(profile.current_date, Some(0x574_DDB8));
         assert_eq!(profile.retirement_manager, Some(0x574_42A8));
+        assert_eq!(profile.game_ui, Some(0x574_0B60));
         let uuid = [0x94, 0xCD, 0xDC, 0x80, 0x84, 0x74, 0x32, 0x7A, 0x85, 0xE0, 0xE4, 0xFF, 0x95, 0xDC, 0x68, 0x93];
         let profile = profile_for(PluginFingerprint::MachO { uuid }).expect("27.0.1's Intel half");
         assert_eq!(
@@ -1161,16 +1163,25 @@ mod tests {
         );
         assert_eq!(profile.current_date, Some(0x5CE_3700));
         assert_eq!(profile.retirement_manager, Some(0x5CD_9EF0));
+        assert_eq!(profile.game_ui, Some(0x5D0_4CA8));
 
         // On Windows the Launch Preview's date sits with the arrays.
         let fingerprint = PluginFingerprint::Pe { size_of_image: 0x19E6_9000, link_timestamp: 0x6ADF_B11C };
         assert_eq!(profile_for(fingerprint).and_then(|profile| profile.current_date), None);
 
-        // Only the builds of November 2026 on Windows place the game's own object; on the others the editor looks for
-        // it as far from the players pair as there, or else for a pointer to it.
+        // The builds of November 2026 on Windows and 27.0.1 on the Mac place the game's own object; on the others the
+        // editor looks for it as far from the players pair as there, or else for a pointer to it.
         let placed: Vec<String> =
             built_in_profiles().filter(|profile| profile.game_ui.is_some()).map(|profile| profile.name).collect();
-        assert_eq!(placed, ["FM27 0.9.2409.0 (Game Pass)", "FM27 Steam build 26340721 (27.0.0)"]);
+        assert_eq!(
+            placed,
+            [
+                "FM27 0.9.2409.0 (Game Pass)",
+                "FM27 Steam build 26340721 (27.0.0)",
+                "FM27 Steam build 26385295 (27.0.1, macOS, Intel)",
+                "FM27 Steam build 26385295 (27.0.1, macOS, Apple silicon)",
+            ]
+        );
     }
 
     /// A profile file left out of [`BUILDS`] would leave its build unknown to the editor.

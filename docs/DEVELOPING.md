@@ -68,9 +68,9 @@ with Reload data. The names of stadiums renamed in the editor are the one except
 load: their hold checks for itself that the game has a save of the same career (the same human managers), reads the
 clubs again where they moved, and only then gives the names back (`Session::vouch_for_save`).
 
-The build profiles place the static (`game_ui`, 0x3C80 before the players pair on both builds of November 2026); a
-build without a profile finds it as it finds the retirement manager's (below). On macOS the count has not been read
-yet, so there only the main menu tells.
+The build profiles place the static (`game_ui`, 0x3C80 before the players pair on both Windows builds of November
+2026); a build without a profile finds it as it finds the retirement manager's (below). The Mac keeps the count in the
+same object at the same place (read on Steam build 26385295).
 
 ### After an update of the game
 

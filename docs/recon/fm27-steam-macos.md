@@ -431,3 +431,22 @@ ban lifted, a retirement called off; a stadium renamed in place, into a string o
 ties changed, added (a full list grown), and removed; a release clause changed and one removed; captains; a coach moved
 into a full department, new jobs, a member of staff with no club signed, a manager moved and one signed, and a director
 of football moved.
+
+## The game's own object and its count of saves loaded
+
+The object of the class `game_plugin::GAME_UI` (see `layout.toml`'s `[game]`) is laid out as on Windows: at `+0x100`
+the count of the saves the game has loaded since it started, 1 on the Arsenal save (Steam build 26385295, Apple
+silicon) after one load. Two statics of the plugin point at it, as on Windows:
+
+| | arm64 | Intel (in the file) | Loaded at |
+|---|---|---|---|
+| Among other singletons' (the multiplayer manager's, the match coordinator's) | `0x5740B60` | not told apart | 5 places |
+| The one the code goes through | `0x57708F0` | `0x5D04CA8` | 470 (arm64), 527 (Intel) |
+
+A search finds the first one first, so the arm64 profile places it. In the Intel half the second one's neighbours are
+loaded as the arm64 one's, 0x20 further from the players' pair: 12, 20 or 24 times, then the static, then 23, 19 and 5.
+
+The class's name was not found at first: the editor took a name to start only where no letter came before it, as one
+that ends a longer name ("P15X" is a pointer's) would. In this plugin `N11game_plugin7GAME_UIE` follows random-looking
+text with no NUL between. The type info that points at a name tells where it starts, so the editor now goes by that
+(`rtti::vtables`), and so does the probe's `types`: it lists 5,364 class names where it listed 4,748.
