@@ -2432,27 +2432,32 @@ fn type_infos(process: &Process, plugin: &Module) -> Vec<(u64, String)> {
             }
         }
     };
-    // Strings that read as a class's name, each after the NUL that ends the string before it.
-    let mut names: std::collections::HashMap<u64, String> = std::collections::HashMap::new();
-    chunks(&mut |base, chunk, limit| {
-        for nul in memchr::memchr_iter(0, &chunk[..limit]) {
-            if let Some(name) = chunk.get(nul + 1..).and_then(demangle) {
-                names.insert(base + nul as u64 + 1, name);
-            }
-        }
-    });
-    // Those a type info points at: the word before is a pointer out of the plugin, into the runtime.
-    let mut found = Vec::new();
+    // What may be a type info: a pointer out of the plugin, into the runtime, then a pointer into the plugin.
+    let mut infos: Vec<(u64, u64)> = Vec::new();
     chunks(&mut |base, chunk, limit| {
         let words: Vec<u64> = chunk[..limit].as_chunks::<8>().0.iter().map(|w| u64::from_le_bytes(*w)).collect();
         for (i, pair) in words.windows(2).enumerate() {
             let name = pair[1] & !NON_UNIQUE;
-            if is_user_pointer(pair[0]) && !plugin.contains(pair[0]) && names.contains_key(&name) {
-                found.push((base + (i * 8) as u64, names[&name].clone()));
+            if is_user_pointer(pair[0]) && !plugin.contains(pair[0]) && plugin.contains(name) {
+                infos.push((base + (i * 8) as u64, name));
             }
         }
     });
-    found
+    // The class names they point at, read where they start whatever comes before: some names follow other bytes with
+    // no NUL between (`game_plugin::GAME_UI` on Steam build 26385295).
+    let mut wanted: Vec<u64> = infos.iter().map(|&(_, name)| name).collect();
+    wanted.sort_unstable();
+    wanted.dedup();
+    let mut names: std::collections::HashMap<u64, String> = std::collections::HashMap::new();
+    chunks(&mut |base, chunk, limit| {
+        let first = wanted.partition_point(|&name| name < base);
+        for &name in wanted[first..].iter().take_while(|&&name| name < base + limit as u64) {
+            if let Some(class) = demangle(&chunk[(name - base) as usize..]) {
+                names.insert(name, class);
+            }
+        }
+    });
+    infos.into_iter().filter_map(|(info, name)| Some((info, names.get(&name)?.clone()))).collect()
 }
 
 fn types(process: &Process, modules: &[Module], text: &str, max: usize) -> Result<()> {

@@ -66,16 +66,14 @@ pub fn msvc_name(class: &str) -> String {
 pub fn vtables(process: &Process, plugin: &Module, class: &str) -> Vec<u64> {
     let name = itanium_name(class);
     let needle: Vec<u8> = name.bytes().chain([0]).collect();
+    // Every place the name ends with its NUL. What comes before it does not tell whether it starts there: the linker
+    // puts some names right after other bytes, with no NUL between (`game_plugin::GAME_UI` follows random-looking
+    // text on Steam build 26385295), and a name can end a longer one ("P15X" is a pointer's). The type info that
+    // points at it tells: a longer name's points at where that one starts.
     let mut names = Vec::new();
     each_chunk(process, plugin.base, plugin.end(), needle.len(), |base, bytes, limit| {
         let finder = memchr::memmem::Finder::new(&needle);
-        for at in finder.find_iter(bytes).filter(|&at| at < limit) {
-            // The name must start there, not end a longer one ("P15X" is a pointer's, "N2db15X…E" a nested one's).
-            let before = at.checked_sub(1).map_or(0, |i| bytes[i]);
-            if !before.is_ascii_alphanumeric() && before != b'_' {
-                names.push(base + at as u64);
-            }
-        }
+        names.extend(finder.find_iter(bytes).filter(|&at| at < limit).map(|at| base + at as u64));
     });
     if names.is_empty() {
         return Vec::new();
@@ -281,5 +279,33 @@ mod tests {
             msvc_name("simatch::PREPARED_TACTICS_CREATOR_ARRAY"),
             ".?AVPREPARED_TACTICS_CREATOR_ARRAY@simatch@@"
         );
+    }
+
+    /// A class's name right after other bytes, as game_plugin keeps `game_plugin::GAME_UI`'s, is found by the type
+    /// info that points at it; the same name ending a pointer's name, whose type info points at its start, is not.
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn a_name_right_after_other_bytes_is_found_by_its_type_info() {
+        // A page of the test's own memory stands in for the plugin: a region of its own, so that what is searched is
+        // only what is laid out below, as a plugin's regions hold only the plugin.
+        let process = Process::open_read_write(std::process::id()).expect("open this process");
+        let base = process.allocate(4096).expect("a page of its own");
+        let mut bytes = vec![0u8; 24 * 8];
+        let mut put = |at: usize, data: &[u8]| bytes[at..at + data.len()].copy_from_slice(data);
+        put(0, b"lzm9LpyN4test7GAME_UIE\0"); // the class's name at 7
+        put(32, b"PN4test7GAME_UIE\0"); // a pointer's name at 32, ending with the same bytes
+        // The class's type info at 64 and the pointer's at 80: a pointer out of the plugin, then the name. A vtable of
+        // each, at 96 and 128: the offset to the top of the object, the type info, then a function.
+        let runtime = 0x1_0000_0000_u64;
+        for (at, word) in [(64, runtime), (72, base + 7), (80, runtime), (88, base + 32)] {
+            put(at, &word.to_le_bytes());
+        }
+        for (at, word) in [(96, 0), (104, base + 64), (112, runtime), (128, 0), (136, base + 80), (144, runtime)] {
+            put(at, &word.to_le_bytes());
+        }
+        process.write_bytes(base, &bytes).expect("lay the bytes out");
+        let plugin = Module { name: "test".to_owned(), base, size: 4096, path: std::path::PathBuf::new() };
+        // The vtable's address point, after its type info.
+        assert_eq!(vtables(&process, &plugin, "test::GAME_UI"), vec![base + 112]);
     }
 }
