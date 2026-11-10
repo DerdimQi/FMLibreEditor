@@ -261,6 +261,9 @@ pub enum Lock {
     UnknownBuild,
     /// A check the change needs did not pass on this game.
     Failed(Check),
+    /// The game has loaded a save, or gone back to its main menu, since the editor read it (see
+    /// [`crate::Session::save_changed`]): what the editor read may be another save's.
+    SaveChanged,
 }
 
 impl Lock {
@@ -268,12 +271,13 @@ impl Lock {
         match self {
             Lock::UnknownBuild => "guard.unknownBuild",
             Lock::Failed(_) => "guard.failed",
+            Lock::SaveChanged => "guard.saveChanged",
         }
     }
 
     pub(crate) fn params(self) -> Vec<(&'static str, String)> {
         match self {
-            Lock::UnknownBuild => Vec::new(),
+            Lock::UnknownBuild | Lock::SaveChanged => Vec::new(),
             Lock::Failed(check) => vec![("check", check.key().to_owned())],
         }
     }
@@ -289,6 +293,10 @@ impl fmt::Display for Lock {
             Lock::Failed(check) => {
                 write!(f, "{check} did not check out in this version of the game, so the editor leaves them unchanged")
             }
+            Lock::SaveChanged => f.write_str(
+                "the game has loaded a save, or gone back to its main menu, since the editor read it, so the editor \
+                 writes nothing until it reads the game again",
+            ),
         }
     }
 }

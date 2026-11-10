@@ -146,6 +146,9 @@ const errors: ErrorTexts = {
     "düzenlemeyi açar.",
   "guard.failed": (p) =>
     `${checkName(p.check)} oyunun bu sürümünde denetimden geçmedi, bu yüzden FMLibreEditor onları değiştirmiyor.`,
+  "guard.saveChanged": () =>
+    "FMLibreEditor oyunu okuduktan sonra oyun bir kayıt yükledi ya da ana menüye döndü, bu yüzden “Verileri yeniden " +
+    "oku”ya basana kadar hiçbir şeyi değiştirmiyor.",
   "retirement.none": () => "Oyun bu oyuncunun emekliliğini planlamamış ve oyuncu zaten oynamaya devam etmek istiyor.",
   "clause.noContract": () => "Oyuncunun sözleşmesi yok.",
   "clause.missing": () => `Sözleşmede bu madde artık yok; ${reload}.`,
@@ -1085,6 +1088,13 @@ export const tr: Strings = {
     detecting: "Football Manager aranıyor…",
     connecting: "Oyuncular, personel ve kulüpler okunuyor…",
     reloading: "Oyuncular, personel ve kulüpler yeniden okunuyor…",
+
+    saveChanged: {
+      title: "Oyundaki kayıt değişti",
+      text:
+        "FMLibreEditor oyunu okuduktan sonra oyun bir kayıt yükledi ya da ana menüye döndü. “Verileri yeniden oku”ya " +
+        "basana kadar oyunda hiçbir şeyi değiştirmez ve dondurulanları tutmaz: gösterdikleri başka bir kayda ait olabilir.",
+    },
 
     refrozen: {
       title: "Geçen seferden yeniden donduruldu",

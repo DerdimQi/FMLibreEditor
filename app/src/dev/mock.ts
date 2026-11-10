@@ -2586,6 +2586,11 @@ const unknownBuild = new URLSearchParams(window.location.search).has("unknownbui
 const failedChecks = new URLSearchParams(window.location.search).has("failedchecks");
 /** `?refrozen` previews connecting to a save in which players and a club were frozen the last time. */
 const refrozen = new URLSearchParams(window.location.search).has("refrozen");
+/**
+ * `?savechanged` previews the game having loaded a save since the data was read: `save_changed` says so until the data
+ * is read again.
+ */
+let saveChanged = new URLSearchParams(window.location.search).has("savechanged");
 const CHECKS: CheckKey[] = [
   "gameDate",
   "players",
@@ -2730,7 +2735,10 @@ export async function mockInvoke<T>(command: string, args?: Record<string, unkno
     case "current_connection":
       // Like the real command after a window reload; here a reload starts the fixtures afresh, so it is null then.
       return (mockConnection && { ...mockConnection, loadMs: 0 }) as T;
+    case "save_changed":
+      return (mockConnection !== null && saveChanged) as T;
     case "reload": {
+      saveChanged = false;
       const reloaded: ReloadInfo = {
         players: players.length,
         staff: staff.length,

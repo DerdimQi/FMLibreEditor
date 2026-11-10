@@ -296,6 +296,15 @@ person = 0x00             # in an entry: u32 person id
 date = 0x0C               # in an entry: the date he retires
 player_person = 0x290     # in a player: u32, the game's id of the person (Ronaldo 0x0A30, Wass 0x0E69)
 
+# The game's one object of the class game_plugin::GAME_UI, made when the game starts and kept until it quits: the
+# build profiles place a static of the plugin that points at it (`game_ui`). It counts the saves the game has loaded
+# since it started: loading a save adds one, saving does not, nor does starting a new game (issue #122, read on Steam
+# build 26340721; 1 on Game Pass 0.9.2409.0 after the first load). The editor reads it to tell whether the game has
+# loaded a save since the editor read its lists.
+[game]
+class = "game_plugin::GAME_UI"
+loads = 0x100             # u64, the saves loaded since the game started
+
 # What a human manager has picked for his club, laid out as on macOS (see layout-macos.toml): the match engine's
 # prepared tactics, objects whose 26 slots hold the game's person ids (a player's `player_person`), the starting
 # eleven in the order of the formation's positions, then the substitutes; an empty slot holds 0xFFFFFFFF. Each object

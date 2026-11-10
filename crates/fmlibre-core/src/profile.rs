@@ -44,6 +44,22 @@ pub struct Layout {
     /// checked in.
     #[serde(default)]
     pub pool: Option<PoolLayout>,
+    /// The game's own object, which counts the saves it has loaded; only in the layouts it has been checked in.
+    #[serde(default)]
+    pub game: Option<GameLayout>,
+}
+
+/// The game's one object of its class (`game_plugin::GAME_UI` in FM27), made when the game starts and kept until it
+/// quits, which a static of the game plugin points at: each build profile places it ([`BuildProfile::game_ui`]). It
+/// counts the saves the game has loaded since it started, which tells the editor when the game has loaded a save since
+/// the editor read its lists: a save leaves the count as it is.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GameLayout {
+    /// Its class, as written in C++, which tells it apart.
+    pub class: String,
+    /// The `u64` count of the saves the game has loaded since it started.
+    pub loads: u64,
 }
 
 /// One of the game's pools of objects (see `object_pool.rs`), a static of the game plugin, from where it keeps the
@@ -751,6 +767,9 @@ pub struct BuildProfile {
     /// the same distance from the arrays in every build: 0xED60 before the players pair on Game Pass, 0xDAC0 on
     /// Steam.
     pub retirement_manager: Option<u64>,
+    /// RVA in the game plugin of a static pointer to the game's own object ([`GameLayout`]), whose count of the saves
+    /// loaded tells a load from a save: 0x3C80 before the players pair on Game Pass 0.9.2409.0 and Steam build 26340721.
+    pub game_ui: Option<u64>,
 }
 
 /// Identifies a build of the game plugin from its headers as mapped in memory.
@@ -864,9 +883,11 @@ fn parse<T: serde::de::DeserializeOwned>(text: &str) -> T {
 pub struct ProfileNotes {
     /// Lines at the top of the file.
     pub header: Vec<String>,
-    /// Lines above the in-game date and above the static pointer to the retirement manager.
+    /// Lines above the in-game date, above the static pointer to the retirement manager and above the one to the
+    /// game's own object.
     pub current_date: Vec<String>,
     pub retirement_manager: Vec<String>,
+    pub game_ui: Vec<String>,
 }
 
 /// The text of a build profile file, laid out as the built-in ones, with `notes` as comments.
@@ -890,6 +911,9 @@ pub fn profile_text(profile: &BuildProfile, notes: &ProfileNotes) -> String {
     }
     if let Some(rva) = profile.retirement_manager {
         text += &format!("\n{}retirement_manager = {rva:#X}\n", comments(&notes.retirement_manager));
+    }
+    if let Some(rva) = profile.game_ui {
+        text += &format!("\n{}game_ui = {rva:#X}\n", comments(&notes.game_ui));
     }
     text += "\n# game_plugin as mapped in memory; these values identify the build.\n[plugin]\n";
     match profile.plugin {
@@ -990,6 +1014,11 @@ mod tests {
             (r.planned, r.by_person, r.person, r.date, r.player_person - l.player.identity())
         };
         assert_eq!(retirement(&mac), retirement(&windows));
+        // The game's count of the saves it loaded has been read on Windows only: until it is read on macOS, the editor
+        // there tells a load only by the empty lists of the main menu.
+        let game = windows.game.as_ref().expect("the game's own object");
+        assert_eq!((game.class.as_str(), game.loads), ("game_plugin::GAME_UI", 0x100));
+        assert!(mac.game.is_none());
         // The game's own allocator, with the same size classes on both systems; the Mac's go on to 4,096 bytes, read
         // from the allocator itself.
         assert!(mac.heap.block_sizes.starts_with(&windows.heap.block_sizes));
@@ -1064,6 +1093,8 @@ mod tests {
         );
         assert_eq!(profile.current_date, Some(0x562_57C8));
         assert_eq!(profile.retirement_manager, Some(profile.arrays.players - 0xED60));
+        // The static pointer to the game's own object, as far from the players pair as on Steam.
+        assert_eq!(profile.game_ui, Some(profile.arrays.players - 0x3C80));
 
         // The same version on Steam, packaged differently: another fingerprint and other RVAs, the manager's static
         // 0xDAC0 before the players pair.
@@ -1084,6 +1115,7 @@ mod tests {
         );
         assert_eq!(profile.current_date, Some(0x56A_F378));
         assert_eq!(profile.retirement_manager, Some(profile.arrays.players - 0xDAC0));
+        assert_eq!(profile.game_ui, Some(profile.arrays.players - 0x3C80));
 
         // On macOS, the Intel half of the same build: told apart by its LC_UUID.
         let uuid = [0x22, 0xCF, 0xE5, 0xC3, 0xB5, 0xCF, 0x3C, 0x00, 0x80, 0x43, 0x1E, 0xA1, 0x90, 0xA6, 0x9B, 0x89];
@@ -1113,6 +1145,12 @@ mod tests {
         // On Windows the Launch Preview's date sits with the arrays.
         let fingerprint = PluginFingerprint::Pe { size_of_image: 0x19E6_9000, link_timestamp: 0x6ADF_B11C };
         assert_eq!(profile_for(fingerprint).and_then(|profile| profile.current_date), None);
+
+        // Only the builds of November 2026 on Windows place the game's own object; on the others the editor looks for
+        // it as far from the players pair as there, or else for a pointer to it.
+        let placed: Vec<String> =
+            built_in_profiles().filter(|profile| profile.game_ui.is_some()).map(|profile| profile.name).collect();
+        assert_eq!(placed, ["FM27 0.9.2409.0 (Game Pass)", "FM27 Steam build 26340721 (27.0.0)"]);
     }
 
     /// A profile file left out of [`BUILDS`] would leave its build unknown to the editor.
@@ -1145,6 +1183,7 @@ mod tests {
             header: vec!["FM27 Steam build 1 \"test\"".to_owned()],
             current_date: vec!["13 August 2027 on the save.".to_owned()],
             retirement_manager: vec!["0xDAC0 before the players pair.".to_owned()],
+            game_ui: vec!["0x3C80 before the players pair.".to_owned()],
         };
         for profile in built_in_profiles() {
             let text = profile_text(&profile, &notes);
@@ -1156,6 +1195,7 @@ mod tests {
         let text = profile_text(&steam, &notes);
         assert!(text.starts_with("# FM27 Steam build 1 \"test\"\nname = \"FM27 Steam build 26340721 (27.0.0)\"\n"));
         assert!(text.contains("# 13 August 2027 on the save.\ncurrent_date = 0x56AF378\n"), "{text}");
+        assert!(text.contains("# 0x3C80 before the players pair.\ngame_ui = 0x5701B50\n"), "{text}");
         assert!(text.contains("\n[plugin]\nsize_of_image = 0x1821C000\nlink_timestamp = 0x6AE565AF\n"), "{text}");
         assert!(text.ends_with("[arrays]\nplayers = 0x57057D0\nstaff = 0x5705818\nclubs = 0x5705988\n"), "{text}");
     }

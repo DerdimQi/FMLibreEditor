@@ -22,6 +22,9 @@ export async function run({ app, report, connection: c }) {
   const masthead = await app.js(`document.querySelector(".masthead")?.textContent ?? ""`);
   report.check("the masthead shows the date", masthead.includes(year), masthead.replace(/\s+/g, " ").slice(0, 120));
   report.check("no notice about the build or the checks", !(await app.js(`!!document.querySelector(".compatibility-notice")`)));
+  // The game's count of the saves it loaded is where the editor read it: it has the save the lists were read from.
+  report.check("the game has the save it was read from", (await app.must("save_changed")) === false);
+  report.check("no notice that the save has changed", !(await app.js(`!!document.querySelector(".save-changed-notice")`)));
 
   // The players' list and a profile.
   await app.openTab("Players");

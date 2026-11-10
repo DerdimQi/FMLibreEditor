@@ -68,15 +68,16 @@ pub use health::{Check, CheckResult, DateEvidence, DateFit, Health, Lock, STRUCT
 pub use index::{Listed, SearchIndex};
 pub use loans::{LoanDetails, LoanEnd, LoanTerms};
 pub use locate::{
-    DatePlace, Found, Place, date_candidates, holds_retirement_manager, retirement_guesses, search_retirement_manager,
+    DatePlace, Found, Place, date_candidates, game_ui_guesses, holds_game_ui, holds_retirement_manager,
+    retirement_guesses, search_game_ui, search_retirement_manager,
 };
 pub use mass::{Operation, Plan, Planned, Skipped};
 pub use medical::{Ban, HealPlan, Healed, Injury, LiftPlan, Lifted};
 pub use object_pool::ObjectPool;
 pub use players::{Nation, PLAYABLE_RATING, PlayerIndex, PlayerSummary, is_woman, nations, read_players};
 pub use profile::{
-    ArrayRvas, BuildProfile, ContractLayout, Layout, PlayerLayout, PluginFingerprint, ProfileNotes, SelectionLayout,
-    StaffLayout, TacticLayout, built_in_profiles, layout_for, profile_for, profile_text,
+    ArrayRvas, BuildProfile, ContractLayout, GameLayout, Layout, PlayerLayout, PluginFingerprint, ProfileNotes,
+    SelectionLayout, StaffLayout, TacticLayout, built_in_profiles, layout_for, profile_for, profile_text,
 };
 pub use relations::{HOMEGROWN_RULES, Relation, RelationPlan, RelationSet, Tie, TieTarget};
 pub use retirement::{PlannedRetirement, RetirementPlan, RetirementSet};
@@ -86,7 +87,7 @@ pub use scouting::{
     ScoutError, ScoutOrder, ScoutPosition, ScoutRequest, Scouted, Side, Suggestion, TacticSlot, role, role_of_mask,
     scout_position,
 };
-pub use session::{ArraySource, IGNORE_PROFILES, Session, SessionError, find_game, profiles_ignored};
+pub use session::{ArraySource, IGNORE_PROFILES, SaveVouched, Session, SessionError, find_game, profiles_ignored};
 pub use signing::NewContract;
 pub use squad::{CaptainPlan, CaptainRole, CaptainSet, ClubTeam, Loan, SquadMember};
 pub use squad_report::{Departure, DepartureAction, DepartureReason, DepthLine, DepthPlayer, DepthStatus, SquadReport};
