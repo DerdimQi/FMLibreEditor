@@ -3,7 +3,9 @@
 Notes behind the probe's `prizes` (#123). The layout was found by RootTourist on the Windows Steam build
 (26340721, a VfB Stuttgart save in 2028/29) and checked by Reckbeg on the Mac Steam build (a Brentford save on
 17 August 2026) against the game's Competition Stages screens. It was read again on the Windows Game Pass build
-(0.9.2409.0, a save loaded on 9 August 2027, with the Turkish leagues).
+(0.9.2409.0, a save loaded on 9 August 2027, with the Turkish leagues), and on the Mac Steam build 26385295 (Apple
+silicon, a save of 12 July 2027): 386 league settings, 384 held by a stage being played or played and 2 by one not
+started yet (the Champions League's and the Europa League's league phases), as the Windows offsets place them.
 
 ## Finding them
 
@@ -56,7 +58,11 @@ pointers, perhaps promotion and relegation.
 one competition hold (both words of a win), up to £200M an amount, and reads them back. `--restore` puts back what it
 found, provided each stage still holds its settings and they still hold what was written. Settings no stage holds are
 never changed. Checked on the Game Pass save with `--restore`: the Süper Lig's money per win and per draw, and the
-Champions League's first and last places.
+Champions League's first and last places. Checked on the Mac save too: the Premier League's first and last places,
+the Libertadores' money per win in all nine settings its stages hold (one of them paid nothing per win, and took the
+new amount too), the African Champions League's per draw and per loss, and the Champions League's first place before
+its league phase started; each read back, put back, and every competition then read as before. The refusals held: a
+21st place of a 20-team league, more than £200M, and "League", which 18 competitions match.
 
 Not known yet:
 - whether the game pays from these amounts: a per-match amount is the quick test (change it, win a match, and look
