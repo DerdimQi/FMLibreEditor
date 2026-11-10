@@ -400,3 +400,34 @@ With the arm64 profile, on a save dated 15 November 2026, the checks the editor 
 - **Staff:** goalkeeping 45, physiotherapy 49, judging potential 32.
 - **Contracts:** 1,790 of 1,790 pointed back at their players, and 727 were signed after the player joined.
 - **Date:** none of the 3,580 contract dates came after it; the latest came 4 days before it.
+
+## 27.0.1 (Steam build 26385295)
+
+The update of 10 November 2026 (version 27.0.1.2494769) gave both halves of `game_plugin` new UUIDs again: arm64
+`2A2D0ED6-…`, Intel `94CDDC80-…`. Unlike 27.0.0 it moved every place: the code grew, so `__DATA` starts 0x9C000
+further on in the arm64 half (`0x5740000`) and 0x7A000 further on in the Intel half (`0x5CD6000`). The editor still
+found everything without a profile, as it is meant to: the arrays by scanning, the date and the retirement manager by
+searching. The retirement manager's guess from the players' array missed, as the arrays moved a little more than the
+other variables. Until Edit anyway, the game stayed read-only.
+
+- **arm64:** read on the maintainer's save (Arsenal, 12 July 2027) with `fmlibre-probe profile`. The date at
+  `0x574DDB8` and the retirement manager's static at `0x57442A8` sit as far into `__DATA` as in 27.0.0 (0xDDB8 and
+  0x42A8). The arrays sit at `0x576EE50`, `0x576EE98` and `0x576F008`, 0x38 further on. Of the 25 values in the
+  plugin's writable data that read as a date, only the date fitted the contracts and the current injuries. The
+  allocators' classes, the pools (the contracts' at `0x574BE10`) and the fields of the Mac layout read as before:
+  `fields --stats` found no implausible value in any field of the players, staff and clubs, besides the youth
+  facilities of 255 known before.
+- **Intel:** not run; checked in the file. Its code's RIP-relative loads peak as they did in 27.0.0, 0x7A000 further
+  on: 7,625 at the date `0x5CE3700`, 185 and 173 at the players' begin and end `0x5D031E8`, 18 and 18 at the staff's,
+  105 and 93 at the clubs'. The arrays moved 0x20 more than the date. The retirement manager's static `0x5CD9EF0`
+  is loaded 63 times and still sits 0x9810 before the date.
+
+With the arm64 profile all ten checks passed (35 ms). With the probe, each of these writes was made and undone, and the
+objects then read as before: 59 fields of players, staff and clubs (attributes, positions, personality, contract and
+loan terms, a club's budgets, facilities and stadium capacity); moves to a club with room, into a full squad (grown),
+with a player released to make room, and out of the human manager's club (7 selections); a swap, a release, a loan made
+permanent, two free agents signed (one into a full squad, each in a slot of the contracts' pool); an injury healed, a
+ban lifted, a retirement called off; a stadium renamed in place, into a string of the editor's own, and a shared name;
+ties changed, added (a full list grown), and removed; a release clause changed and one removed; captains; a coach moved
+into a full department, new jobs, a member of staff with no club signed, a manager moved and one signed, and a director
+of football moved.
