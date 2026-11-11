@@ -51,8 +51,8 @@ with the merge; do not let that stop you.
 ## Translating
 
 The interface's text lives in `app/src/i18n/`: `en.ts` is English, with a comment on what each
-string is for; `tr.ts`, `es.ts`, `id.ts`, `it.ts` and `ko.ts` are Turkish, Spanish, Indonesian,
-Italian and Korean. To add a language:
+string is for; `tr.ts`, `es.ts`, `id.ts`, `it.ts`, `ko.ts` and `zh-CN.ts` are Turkish, Spanish,
+Indonesian, Italian, Korean and Simplified Chinese. To add a language:
 
 1. Copy `en.ts` to a file named after the language's code (`de.ts` for German) and translate
    the strings. The build fails if a key is missing or extra, so you cannot miss one.
