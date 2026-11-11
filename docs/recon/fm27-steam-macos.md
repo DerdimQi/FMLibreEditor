@@ -448,6 +448,20 @@ runs) every check passed and writes were allowed again. Two statics of the plugi
 A search finds the first one first, so the arm64 profile places it. In the Intel half the second one's neighbours are
 loaded as the arm64 one's, 0x20 further from the players' pair: 12, 20 or 24 times, then the static, then 23, 19 and 5.
 
+**In the app, with a renamed stadium** (11 November 2026, main after #142, the Arsenal save of 12 July 2027).
+Brentford's stadium was renamed in the app to "Gtech Community Stadium FMLibre Test" (36 bytes, so a string of the
+editor's own), then the same save was loaded again in the game:
+
+- The app said the save had changed as soon as the count read 2, and the notice showed 5 seconds later (its 3-second
+  poll). `read_values` gave no field, and an edit of the value already there was refused with `guard.saveChanged`.
+- The game let go of the old stadium without a crash. The count of holders of the editor's string went from
+  `0x40000000` to `0x3FFFFFFF`, so the game never frees it.
+- Within 2 seconds of the count changing, the hold had found the same human manager and given the new stadium the name
+  again, in a second string of the editor's own. Nothing points at the first one any more.
+- Reload data took the notice away in 0.6 seconds and edits were allowed again. Undo then named the stadium Gtech
+  Community Stadium again, by renaming it back.
+- After it, `fmlibre-probe health` passed every check.
+
 The class's name was not found at first: the editor took a name to start only where no letter came before it, as one
 that ends a longer name ("P15X" is a pointer's) would. In this plugin `N11game_plugin7GAME_UIE` follows random-looking
 text with no NUL between. The type info that points at a name tells where it starts, so the editor now goes by that

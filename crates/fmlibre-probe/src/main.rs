@@ -18,7 +18,7 @@ use fmlibre_core::{
     PlayerOrder, PlayerSort, PrizeAmount, PrizeMoney, PrizeStage, ProfileNotes, Purpose, STAFF_ATTRIBUTE_GROUPS,
     SUPPORTER_MIX, SUPPORTER_TRAITS, Scale, ScanOptions, ScoutOrder, ScoutRequest, Session, SessionError, StaffIndex,
     Target, Tie, TieTarget, date_line, diagnostics_report, find_game, job_name, nations, profile_text, retirement_line,
-    scan_object_arrays, sort_players,
+    saves_loaded_line, scan_object_arrays, sort_players,
 };
 #[cfg(target_os = "macos")]
 use fmlibre_mem::MachImage;
@@ -2994,25 +2994,6 @@ fn print_checks(health: &fmlibre_core::Health) {
     }
 }
 
-/// Where the static pointer to the game's own object is, how it was found, and the saves the game has loaded since it
-/// started, which that object counts.
-fn game_ui_line(session: &Session) -> String {
-    if session.layout.game.is_none() {
-        return "not read on this system yet".to_owned();
-    }
-    match (session.game_place(), session.loads()) {
-        (Some(place), Some(loads)) => {
-            format!(
-                "{GAME_PLUGIN}+{:#x} ({}): {loads} loaded since the game started",
-                place.rva,
-                place.found.describe()
-            )
-        }
-        (Some(place), None) => format!("{GAME_PLUGIN}+{:#x} ({}), count unreadable", place.rva, place.found.describe()),
-        (None, _) => "not found".to_owned(),
-    }
-}
-
 fn calibrate(session: &Session) -> Result<()> {
     println!("{GAME_PLUGIN} build: {}", session.fingerprint);
     match &session.profile {
@@ -3021,7 +3002,7 @@ fn calibrate(session: &Session) -> Result<()> {
     }
     println!("In-game date: {}", date_line(session));
     println!("Retirement manager: {}", retirement_line(session));
-    println!("Saves loaded: {}", game_ui_line(session));
+    println!("Saves loaded: {}", saves_loaded_line(session));
     print_arrays(session);
     Ok(())
 }
@@ -3132,7 +3113,7 @@ fn profile(session: &Session, out: Option<&Path>) -> Result<()> {
             if guessed.first().is_some_and(|rva| !searched.contains(rva)) {
                 println!("  note: the guess is not among the pointers the search found");
             }
-            println!("  -> {}", game_ui_line(session));
+            println!("  -> {}", saves_loaded_line(session));
             session.game_place()
         }
         None => {
