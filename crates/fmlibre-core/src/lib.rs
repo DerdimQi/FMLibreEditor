@@ -9,6 +9,7 @@ mod calibrate;
 mod clauses;
 mod clubs;
 mod coded;
+mod cohesion;
 mod date;
 mod details;
 mod diagnostics;
@@ -53,6 +54,7 @@ pub use clubs::{
     ClubDetails, ClubIndex, ClubSummary, Finances, SUPPORTER_MIX, SUPPORTER_TRAITS, read_club_details, read_clubs,
 };
 pub use coded::Coded;
+pub use cohesion::{COHESION_RANGE, CohesionPlan, CohesionSet};
 pub use date::FmDate;
 pub use details::{
     ATTRIBUTE_GROUPS, Attribute, Clause, Contract, International, PERSONALITY, POSITIONS, PlayerDetails, Reputation,

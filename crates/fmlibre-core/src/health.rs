@@ -19,8 +19,12 @@ use crate::date::FmDate;
 use crate::edit::{Entity, Field};
 use crate::game::GAME_PLUGIN;
 use crate::locate::{DatePlace, Found, date_candidates};
-use crate::profile::Layout;
+use crate::profile::{CohesionLayout, Layout};
 use crate::session::Session;
+
+/// The share of the players sampled who have an entry for their club in their list of cohesion entries, at least. On
+/// the macOS Steam save (25 July 2026) most senior players had one; those who had only just joined did not.
+const MOST_WITH_COHESION: f64 = 0.5;
 
 /// How many players, members of staff and clubs each check looks at, spread evenly over their arrays.
 const SAMPLES: u64 = 2_000;
@@ -67,6 +71,9 @@ pub enum Check {
     Staff,
     /// A club's senior team points back at the club.
     Clubs,
+    /// Players' lists of cohesion entries hold only clubs and nations, with values of 1–100, and most players have
+    /// an entry for their club (see `cohesion.rs`). Guards Max cohesion.
+    Cohesion,
 }
 
 /// The checks a change to the game's lists and records needs (moves, swaps, healing, captains, ties, clauses,
@@ -74,7 +81,7 @@ pub enum Check {
 pub const STRUCTURE: [Check; 4] = [Check::Contracts, Check::Teams, Check::Staff, Check::Clubs];
 
 impl Check {
-    pub const ALL: [Check; 10] = [
+    pub const ALL: [Check; 11] = [
         Check::GameDate,
         Check::Players,
         Check::Positions,
@@ -85,6 +92,7 @@ impl Check {
         Check::Teams,
         Check::Staff,
         Check::Clubs,
+        Check::Cohesion,
     ];
 
     /// The name of the check in error codes' parameters and in the app: `gameDate`, `liveValues`, ...
@@ -100,6 +108,7 @@ impl Check {
             Check::Teams => "teams",
             Check::Staff => "staff",
             Check::Clubs => "clubs",
+            Check::Cohesion => "cohesion",
         }
     }
 
@@ -134,6 +143,7 @@ impl fmt::Display for Check {
             Check::Teams => "the teams",
             Check::Staff => "the staff",
             Check::Clubs => "the clubs",
+            Check::Cohesion => "the cohesion with clubs",
         })
     }
 }
@@ -493,6 +503,8 @@ pub(crate) fn check(session: &Session) -> Health {
     // Contracts signed after the player joined: renewals, which a date read in place of the other cannot show.
     let mut renewed = Tally::default();
     let mut teams = Tally::default();
+    // Lists of cohesion entries that hold, and those with an entry for the player's club.
+    let (mut cohesion_lists, mut cohesion_own) = (Tally::default(), Tally::default());
     // Goalkeeping by goalkeepers and by the rest; finishing and tackling by strikers and by centre-backs.
     let (mut keepers, mut outfield) = (Mean::default(), Mean::default());
     let (mut striker_finishing, mut defender_finishing) = (Mean::default(), Mean::default());
@@ -574,6 +586,21 @@ pub(crate) fn check(session: &Session) -> Health {
         if is_user_pointer(team) {
             teams.add(team_lists(process, layout, team, player.object));
         }
+
+        // His cohesion entries are for clubs and nations, from 1 to 100, and one is for his club.
+        let record = player.u64(layout, p.relations);
+        if let Some(c) = &layout.cohesion
+            && is_user_pointer(team)
+            && is_user_pointer(record)
+            && let Some(club) = club_cohesion_index(process, layout, c, team)
+        {
+            let list = crate::cohesion::read_list(process, c, record).ok().flatten();
+            let holds = list.map(|(_, bytes)| crate::cohesion::list_holds(c, &bytes, club));
+            cohesion_lists.add(holds.is_some_and(|(holds, _)| holds));
+            if let Some((true, own)) = holds {
+                cohesion_own.add(own);
+            }
+        }
     }
 
     let gap = |high: Mean, low: Mean| high.value().zip(low.value()).map(|(high, low)| high - low);
@@ -585,6 +612,12 @@ pub(crate) fn check(session: &Session) -> Health {
     let (date, date_result) = find_date(session, &evidence);
     let staff = check_staff(session);
     let clubs = check_clubs(session);
+    let mut cohesion = cohesion_lists.result(Check::Cohesion, 0.99, String::new());
+    cohesion.passed &= cohesion_own.holds(MOST_WITH_COHESION);
+    cohesion.note = match layout.cohesion {
+        Some(_) => format!("{} of {} have an entry for their club", cohesion_own.fit, cohesion_own.sampled),
+        None => "the layout does not place it".to_owned(),
+    };
 
     let mut attributes = attributes.result(Check::Attributes, 0.99, String::new());
     attributes.passed &= signature;
@@ -616,10 +649,19 @@ pub(crate) fn check(session: &Session) -> Health {
             teams.result(Check::Teams, 0.95, String::new()),
             staff,
             clubs,
+            cohesion,
         ],
         date,
         evidence,
     }
+}
+
+/// The index the cohesion entries of the players of the team at `team` name its club by; `None` where the team leads
+/// to no club.
+fn club_cohesion_index(process: &Process, layout: &Layout, c: &CohesionLayout, team: u64) -> Option<i32> {
+    let club = process.read_u64(team + layout.team.club).ok().filter(|&club| is_user_pointer(club))?;
+    let bytes = process.read_bytes(club + c.club_index, 4).ok()?;
+    Some(i32::from_le_bytes(bytes.try_into().ok()?))
 }
 
 /// The current injuries that the injury record at `record` lists: the day each began, and the day he is back at the

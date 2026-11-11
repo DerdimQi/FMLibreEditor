@@ -572,6 +572,7 @@ export const tr: Strings = {
     "tie.workPermit": "Çalışma izni gerekmeyen ülke",
     club: "Kulüp",
     injuries: "Sakatlıklar",
+    cohesion: "Uyum",
     bans: "Cezalar",
     retirement: "Emeklilik",
     clause: "Sözleşme maddesi",
@@ -1198,6 +1199,7 @@ export const tr: Strings = {
     teams: "takımlar",
     staff: "personel",
     clubs: "kulüpler",
+    cohesion: "kulüplerle uyum",
   },
 
   update: {
@@ -1836,6 +1838,12 @@ export const tr: Strings = {
     liftNone: "Bu takımda cezalı oyuncu yok",
     inspireAll: "Hepsine moral ver",
     inspireAllTitle: "Bu takımdaki her oyuncunun moralini en yüksek değer olan 20'ye ayarla; mutsuzluk nedenlerini de kaldır",
+    maxCohesion: "Uyumu tamamla",
+    maxCohesionTitle:
+      "Bu takımdaki her oyuncunun kulüple uyumunu en yüksek değer olan 100'e ayarla. Oyun, takım uyumunu Dinamikler sayfasında bir kez ilerleyince gösterir: oyunda Devam'a basın",
+    cohesionNone:
+      "Editör bu takımın uyumunu okuyamıyor: oyunun bu sürümü bunun için kontrol edilmedi ya da oyuncuların hiçbirinin kulüple uyumu yok",
+    cohesionWithout: (count: number) => `${format(count)} oyuncunun henüz kulüple uyumu yok`,
     refreshAll: "Hepsini dinlendir",
     refreshAllTitle: "Bu takımdaki her oyuncunun enerjisini ve maç kondisyonunu %100'e ayarla, onları tamamen dinlendir (yorgunluk -500)",
     maxAll: "Özellikleri tamamla",
@@ -1907,6 +1915,7 @@ export const tr: Strings = {
       matchSharpness: "Maç kond.",
       jadedness: "Yorgunluk",
       morale: "Moral",
+      cohesion: "Uyum",
       actions: "Kaptanlık",
     } satisfies Record<SquadSort | "actions", string>,
     sortBy: (by) => `Sırala: ${by}`,
@@ -1921,6 +1930,7 @@ export const tr: Strings = {
       matchSharpness: "maç kondisyonu",
       jadedness: "yorgunluk",
       morale: "moral",
+      cohesion: "uyum",
     } satisfies Record<SquadSort, string>,
 
     // The tags after a name

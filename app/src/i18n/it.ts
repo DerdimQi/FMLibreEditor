@@ -629,6 +629,7 @@ export const it: Strings = {
     "tie.workPermit": "Senza permesso di lavoro in",
     club: "Società",
     injuries: "Infortuni",
+    cohesion: "Affiatamento",
     bans: "Squalifiche",
     retirement: "Ritiro",
     clause: "Clausola del contratto",
@@ -1280,6 +1281,7 @@ export const it: Strings = {
     teams: "le squadre",
     staff: "lo staff",
     clubs: "le società",
+    cohesion: "l'affiatamento con le società",
   },
 
   update: {
@@ -1924,6 +1926,15 @@ export const it: Strings = {
     inspireAll: "Motiva tutti",
     inspireAllTitle:
       "Porta a 20, il massimo, il morale di ogni giocatore di questa squadra e toglie i suoi motivi di scontento",
+    cohesionWithout: (count: number) =>
+      count === 1
+        ? "1 giocatore non ha ancora affiatamento con la società"
+        : `${format(count)} giocatori non hanno ancora affiatamento con la società`,
+    maxCohesion: "Massimo affiatamento",
+    maxCohesionTitle:
+      "Porta a 100, il massimo, l'affiatamento con la società di ogni giocatore di questa squadra. Il gioco mostra l'affiatamento della squadra nella pagina Dinamiche quando va avanti: premi Continua nel gioco",
+    cohesionNone:
+      "L'editor non riesce a leggere l'affiatamento di questa squadra: questa versione del gioco non è stata verificata, oppure nessuno dei suoi giocatori ha affiatamento con la società",
     refreshAll: "Rigenera tutti",
     refreshAllTitle:
       "Porta al 100% energia e forma partita di ogni giocatore di questa squadra e lo fa riposare del tutto " +
@@ -1997,6 +2008,7 @@ export const it: Strings = {
       matchSharpness: "Forma",
       jadedness: "Stanch.",
       morale: "Morale",
+      cohesion: "Affiat.",
       actions: "Fascia di capitano",
     },
     sortBy: (by) => `Ordina per ${by}`,
@@ -2010,6 +2022,7 @@ export const it: Strings = {
       matchSharpness: "forma partita",
       jadedness: "stanchezza",
       morale: "morale",
+      cohesion: "affiatamento",
     },
 
     // Le etichette dopo un nome, con il loro significato come testo al passaggio del mouse

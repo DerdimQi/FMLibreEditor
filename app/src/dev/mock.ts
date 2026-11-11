@@ -569,6 +569,19 @@ function addTie(uid: number, kind: TieKind, target: number, rule?: number): Logg
 /** The fixture players whose bans were lifted through the editor, by UID, while the lifting is not undone. */
 const liftedPlayers = new Set<number>();
 
+/**
+ * Cohesion with the club as Max cohesion set it, by UID. The rest have the made-up one `cohesionOf` gives, and one player
+ * in seven none, as a player who has only just joined has no entry for his club yet.
+ */
+const cohesionSet = new Map<number, number>();
+
+function cohesionOf(uid: number): number | null {
+  if (cohesionSet.has(uid)) {
+    return cohesionSet.get(uid)!;
+  }
+  return uid % 7 === 0 ? null : 1 + ((uid * 37) % 99);
+}
+
 /** The current bans of a fixture player: every eleventh one is banned, for one to three matches, until lifted. */
 function bansOf(uid: number): Ban[] {
   if (uid % 11 !== 5 || liftedPlayers.has(uid)) {
@@ -1488,6 +1501,11 @@ function undoChange(id: number): LoggedChange {
     entry.undoneAt = Date.now();
     return { ...entry };
   }
+  if (entry.field === "cohesion") {
+    cohesionSet.set(entry.uid, entry.old);
+    entry.undoneAt = Date.now();
+    return { ...entry };
+  }
   if (entry.field === "retirement") {
     keptPlayers.delete(entry.uid);
     entry.undoneAt = Date.now();
@@ -2070,6 +2088,7 @@ function clubSquads(clubUid: number): ClubTeam[] {
         matchSharpness: d.matchSharpness,
         jadedness: d.jadedness,
         morale: d.morale,
+        cohesion: cohesionOf(uid),
         injuries: d.injuries.length,
         bans: d.bans.length,
         attributesFrozen: frozenAttributes.has(uid),
@@ -2185,6 +2204,30 @@ function teamAction(clubUid: number, index: number, action: TeamAction): MassRep
   if (action === "liftBans") {
     for (const player of team.players.filter((p) => p.bans > 0)) {
       liftBans(player.uid, batch);
+      report.applied++;
+    }
+    return report;
+  }
+  if (action === "maxCohesion") {
+    // Those with an entry for the club, and not at the top already.
+    for (const player of team.players) {
+      const old = cohesionOf(player.uid);
+      if (old === null || old === 100) {
+        continue;
+      }
+      cohesionSet.set(player.uid, 100);
+      changes.push({
+        id: changes.length + 1,
+        at: Date.now(),
+        name: player.name,
+        entity: "player",
+        uid: player.uid,
+        field: "cohesion",
+        old,
+        new: 100,
+        undoneAt: null,
+        batch,
+      });
       report.applied++;
     }
     return report;
@@ -2598,6 +2641,7 @@ const CHECKS: CheckKey[] = [
   "teams",
   "staff",
   "clubs",
+  "cohesion",
 ];
 const FAILING: CheckKey[] = ["gameDate", "attributes", "contracts"];
 

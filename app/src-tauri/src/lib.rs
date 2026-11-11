@@ -6,15 +6,15 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use fmlibre_core::{
-    ArraySource, Buyer, CaptainRole, CaptainSet, Change, Clause, ClauseSet, ClubDetails, ClubFilter, ClubIndex,
-    ClubMove, ClubSummary, Coded, EditError, Entity, EntityArrays, ExportFormat, ExportHeader, Exported, FeePlan,
-    Field, FmDate, GAME_EXE, GAME_PLUGIN, GameInfo, GraphicsCounts, GraphicsIndex, HOMEGROWN_RULES, Healed, Health,
-    Kind, LOAN_EXPIRES, LOAN_OPTION_FEE, Lifted, Listed, Loan, MoveError, MovePlan, MoveTerms, Nation, NewContract,
-    NewStaffContract, Operation, Paid, Picture, Planned, PlayerDetails, PlayerFilter, PlayerIndex, PlayerOrder,
-    PlayerSummary, ROLES, RelationSet, RetirementSet, Role, SCOUT_POSITIONS, ScoutError, ScoutPosition, ScoutRequest,
-    Scouted, SearchIndex, Session, SessionError, Skipped, SquadReport, StadiumName, StadiumRename, StaffChange,
-    StaffDetails, StaffFilter, StaffIndex, StaffOrder, StaffPlan, Target, Tie, TieTarget, diagnostics_report,
-    find_game, nations, sort_players, sort_staff,
+    ArraySource, Buyer, COHESION_RANGE, CaptainRole, CaptainSet, Change, Clause, ClauseSet, ClubDetails, ClubFilter,
+    ClubIndex, ClubMove, ClubSummary, Coded, CohesionSet, EditError, Entity, EntityArrays, ExportFormat, ExportHeader,
+    Exported, FeePlan, Field, FmDate, GAME_EXE, GAME_PLUGIN, GameInfo, GraphicsCounts, GraphicsIndex, HOMEGROWN_RULES,
+    Healed, Health, Kind, LOAN_EXPIRES, LOAN_OPTION_FEE, Lifted, Listed, Loan, MoveError, MovePlan, MoveTerms, Nation,
+    NewContract, NewStaffContract, Operation, Paid, Picture, Planned, PlayerDetails, PlayerFilter, PlayerIndex,
+    PlayerOrder, PlayerSummary, ROLES, RelationSet, RetirementSet, Role, SCOUT_POSITIONS, ScoutError, ScoutPosition,
+    ScoutRequest, Scouted, SearchIndex, Session, SessionError, Skipped, SquadReport, StadiumName, StadiumRename,
+    StaffChange, StaffDetails, StaffFilter, StaffIndex, StaffOrder, StaffPlan, Target, Tie, TieTarget,
+    diagnostics_report, find_game, nations, sort_players, sort_staff,
 };
 use fmlibre_mem::{Process, find_processes, is_current_process_elevated, list_modules};
 use serde::{Deserialize, Serialize};
@@ -890,6 +890,34 @@ impl Connection {
         logged
     }
 
+    /// Logs cohesion just set, as a change of the player's `cohesion` with his club from what it was to what it is.
+    fn log_cohesion(&mut self, done: CohesionSet, batch: Option<u32>) -> LoggedChange {
+        let change = Change {
+            entity: Entity::Player,
+            uid: done.player,
+            field: "cohesion".to_owned(),
+            old: i64::from(done.before),
+            new: i64::from(done.value),
+        };
+        let logged = LoggedChange {
+            id: self.log.len() + 1,
+            at: now_ms(),
+            name: self.player_name(done.player),
+            change,
+            undone_at: None,
+            batch,
+            moved: None,
+            captaincy: None,
+            tie: None,
+            clause: None,
+            recall: None,
+            stadium: None,
+            undo: Some(Undo::Cohesion(done)),
+        };
+        self.log.push(logged.clone());
+        logged
+    }
+
     /// Logs lifting just written, as a change of the player's `bans` from how many he had to none.
     fn log_lift(&mut self, done: Lifted, batch: Option<u32>) -> LoggedChange {
         let change = Change {
@@ -1354,6 +1382,7 @@ impl Connection {
             }
             Some(Undo::Heal(healed)) => self.session.undo_heal(&healed)?,
             Some(Undo::Lift(lifted)) => self.session.undo_lift_bans(&lifted)?,
+            Some(Undo::Cohesion(cohesion)) => self.session.undo_cohesion(&cohesion)?,
             Some(Undo::Retirement(retirement)) => self.session.undo_retirement(&retirement)?,
             Some(Undo::Tie(tie)) => self.session.undo_relation(&tie)?,
             Some(Undo::Clause(clause)) => self.session.undo_clause(&clause)?,
@@ -1579,6 +1608,7 @@ enum Undo {
     Move(LoggedMove),
     Heal(Healed),
     Lift(Lifted),
+    Cohesion(CohesionSet),
     Retirement(RetirementSet),
     Tie(RelationSet),
     Clause(ClauseSet),
@@ -1661,6 +1691,8 @@ struct SquadRow {
     match_sharpness: u16,
     jadedness: i16,
     morale: u8,
+    /// His cohesion with the club, 1..100; none where the layout has not placed it, or he has no entry for it yet.
+    cohesion: Option<i8>,
     injuries: usize,
     bans: usize,
     /// Whether his attributes are frozen, his energy and match sharpness, or his positions (see `freeze_team`).
@@ -1693,6 +1725,8 @@ enum TeamAction {
     Refresh,
     /// Every attribute to its best: 20, or 1 where lower is better.
     MaxAttributes,
+    /// Cohesion with the club to the top, for those who have an entry for it.
+    MaxCohesion,
 }
 
 #[derive(Clone, Serialize)]
@@ -3336,6 +3370,8 @@ fn club_squads(state: State<'_, AppState>, uid: u32) -> Result<Vec<TeamView>, Fa
     let connection = guard.as_ref().ok_or_else(not_connected)?;
     let club = connection.clubs.get(uid).ok_or_else(|| not_found(Entity::Club, uid))?;
     let teams = connection.session.club_teams(club, &connection.players)?;
+    // Cohesion is shown only where the lists checked out: a build that moved them would read other bytes.
+    let cohesion_read = connection.session.health().passed(fmlibre_core::Check::Cohesion);
     Ok(teams
         .into_iter()
         .map(|team| TeamView {
@@ -3349,6 +3385,8 @@ fn club_squads(state: State<'_, AppState>, uid: u32) -> Result<Vec<TeamView>, Fa
                 .into_iter()
                 .filter_map(|member| {
                     let player = connection.players.get(member.uid)?.clone();
+                    let cohesion =
+                        cohesion_read.then(|| connection.session.cohesion(&player, club).ok().flatten()).flatten();
                     Some(SquadRow {
                         player,
                         plays_here: member.plays_here,
@@ -3357,6 +3395,7 @@ fn club_squads(state: State<'_, AppState>, uid: u32) -> Result<Vec<TeamView>, Fa
                         match_sharpness: member.match_sharpness,
                         jadedness: member.jadedness,
                         morale: member.morale,
+                        cohesion,
                         injuries: member.injuries,
                         bans: member.bans,
                         attributes_frozen: connection.frozen.attributes.contains_key(&member.uid),
@@ -3397,10 +3436,11 @@ fn set_captain(
 fn team_action(state: State<'_, AppState>, club: u32, team: usize, action: TeamAction) -> Result<MassReport, Failure> {
     let mut guard = state.0.lock()?;
     let connection = guard.as_mut().ok_or_else(not_connected)?;
-    let summary = connection.clubs.get(club).ok_or_else(|| not_found(Entity::Club, club))?;
+    // A copy, for the log can be written while it is in use.
+    let summary = connection.clubs.get(club).ok_or_else(|| not_found(Entity::Club, club))?.clone();
     let members = connection
         .session
-        .club_teams(summary, &connection.players)?
+        .club_teams(&summary, &connection.players)?
         .into_iter()
         .find(|found| found.index == team)
         .ok_or(MoveError::NoTeam { index: team })?
@@ -3456,6 +3496,39 @@ fn team_action(state: State<'_, AppState>, club: u32, team: usize, action: TeamA
                         uid: member.uid,
                         name,
                         field: "bans".to_owned(),
+                        error: err.into(),
+                    }),
+                }
+            }
+            return Ok(report);
+        }
+        // Cohesion with the club at its best, as FM27 Editor saw FMRTE's Improve Team Cohesion set it, for those who
+        // have an entry for the club: one is added nowhere, and the app counts those without one. The game shows the
+        // team's cohesion on its Dynamics page once it moves on.
+        TeamAction::MaxCohesion => {
+            let (_, best) = COHESION_RANGE;
+            let mut report = MassReport { batch, applied: 0, failed: Vec::new() };
+            for member in &members {
+                let Some(player) = connection.players.get(member.uid) else {
+                    continue;
+                };
+                let name = player.name.clone();
+                let planned = connection.session.plan_cohesion(player, &summary, best);
+                let set = match planned {
+                    Ok(Some(plan)) if plan.before == best => continue,
+                    Ok(Some(plan)) => connection.session.apply_cohesion(&plan),
+                    Ok(None) => continue,
+                    Err(err) => Err(err),
+                };
+                match set {
+                    Ok(done) => {
+                        connection.log_cohesion(done, Some(batch));
+                        report.applied += 1;
+                    }
+                    Err(err) => report.failed.push(MassFailure {
+                        uid: member.uid,
+                        name,
+                        field: "cohesion".to_owned(),
                         error: err.into(),
                     }),
                 }

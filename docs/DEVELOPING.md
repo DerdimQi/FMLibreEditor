@@ -307,6 +307,7 @@ fmlibre-probe bans 29120248 --lift --restore         # lift a player's bans and 
 fmlibre-probe ties 2000138835                        # secondary nationalities and homegrown status, numbered
 fmlibre-probe tie-set 2000138835 0 --nation 765 --restore   # point tie 0 at England and back: this writes too
 fmlibre-probe teams 680                              # a club's teams: kinds, captains, players' fitness and morale
+fmlibre-probe cohesion 680 --raw                     # each senior player's cohesion with the club, and his other entries
 fmlibre-probe captain 680 43425040 --restore         # make a player captain (--vice: vice-captain) and back
 fmlibre-probe prizes                                 # the prize money competitions pay, by final position and per match
 fmlibre-probe prizes 130286 --win 1234567 --restore  # change what a Süper Lig win pays and back: this writes too
@@ -324,16 +325,17 @@ to save the results. `calibrate --scan` ignores the build profile and finds the
 arrays, the in-game date and the retirement manager the way it would on an unknown build.
 
 Only `set`, `move`, `swap`, `release`, `staff-move`, `staff-job`, `staff-sign`, `heal --heal`,
-`bans --lift`, `tie-set`, `tie-add`, `tie-remove`, `captain` and `prizes` with an amount to change write to the game.
-Unlike the app, the probe writes to a build without a profile too, as far as the checks allow, so that a new build can
-be mapped.
+`bans --lift`, `tie-set`, `tie-add`, `tie-remove`, `captain`, `cohesion --set` and `prizes` with an amount to change
+write to the game. Unlike the app, the probe writes to a build without a profile too, as far as the checks allow, so
+that a new build can be mapped.
 - `set` changes one field after the checks above. Values are as stored:
   attributes run 0–100, or 1–20 with `--shown`.
 - `move` moves a player to a club's senior team; `release` leaves him a free agent.
 - With `--restore`, each one puts the old values back straight away, to test
   without changing the save. `set`, `move`, `release`, `heal`, `bans`, the `tie`
-  commands, `captain` and `prizes` also take `--hold <seconds>` to wait first, so the
-  change can be looked at in the game.
+  commands, `captain`, `cohesion` and `prizes` also take `--hold <seconds>` to wait first, so the
+  change can be looked at in the game. The Dynamics page shows a team's cohesion as the game last
+  worked it out, and works it out again only once the game moves on (Continue).
 
 If Windows denies access, run the probe from an administrator terminal.
 
