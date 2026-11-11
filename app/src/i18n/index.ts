@@ -8,6 +8,7 @@ import { en, type Strings } from "./en";
 import { es } from "./es";
 import { id } from "./id";
 import { it } from "./it";
+import { ko } from "./ko";
 import { tr } from "./tr";
 import { zhCN } from "./zh-CN";
 
@@ -21,6 +22,7 @@ const LANGUAGES = {
   es: { strings: es, intl: "es-ES" },
   id: { strings: id, intl: "id-ID" },
   it: { strings: it, intl: "it-IT" },
+  ko: { strings: ko, intl: "ko-KR" },
   "zh-CN": { strings: zhCN, intl: "zh-CN" },
 } satisfies Record<string, { strings: Strings; intl: string }>;
 
@@ -45,9 +47,10 @@ function savedLocale(): Locale | null {
 }
 
 /**
- * The first of the system's languages, most preferred first, that the app has: "es-MX" is Spanish, "tr" Turkish, "id-ID" Indonesian,
- * and "zh-CN" or "zh-Hans" Simplified Chinese.
- * English when it has none of them. WebView2 lists the languages of Windows; WKWebView only the first one of macOS.
+ * The first of the system's languages, most preferred first, that the app has: "es-MX" is Spanish, "tr" Turkish,
+ * "id-ID" Indonesian, "ko-KR" Korean, and "zh", "zh-CN", "zh-SG" or "zh-Hans" Simplified Chinese. Traditional Chinese
+ * ("zh-TW", "zh-HK", "zh-Hant") is not taken for it: English reads better than the other script. English when it has
+ * none of them. WebView2 lists the languages of Windows; WKWebView only the first one of macOS.
  */
 function systemLocale(): Locale {
   const { languages, language } = window.navigator;

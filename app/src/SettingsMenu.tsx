@@ -16,9 +16,12 @@ const GAP = 4;
 
 /**
  * The flag of each language, in a box of 3:2: the Union Jack for English, as FM is British (cut to 3:2 at the sides,
- * as flag sets do), and the flags of Turkey, Spain, Indonesia and Italy whole. Spain's is drawn without the coat of
- * arms, as its civil flag is: at this size the arms would be a smudge. Indonesia's is 2:3 in law; drawn at 3:2 like the
- * others. Italy's is the tricolour, three vertical bands; China's flag has a yellow star.
+ * as flag sets do), and the flags of Turkey, Spain, Indonesia, Italy, South Korea and China whole. Spain's is drawn
+ * without the coat of arms, as its civil flag is: at this size the arms would be a smudge. Indonesia's is 2:3 in law;
+ * drawn at 3:2 like the others. Italy's is the tricolour, three vertical bands. South Korea's follows its construction
+ * sheet: the taegeuk on the diagonal, and around it the four trigrams, each of three bars that are whole or broken.
+ * China's follows its own: on a grid of 30 by 20, the large star at (5, 5) with a radius of 3, and four small ones with
+ * a radius of 1 at (10, 2), (12, 4), (12, 7) and (10, 9), each with a point towards the large star's centre.
  */
 const FLAGS: Record<Locale, ReactNode> = {
   en: (
@@ -61,10 +64,42 @@ const FLAGS: Record<Locale, ReactNode> = {
       <rect x="2" width="1" height="2" fill="#ce2b37" shapeRendering="crispEdges" />
     </svg>
   ),
+  ko: (
+    <svg className="language-flag" viewBox="0 0 3 2" aria-hidden="true">
+      <rect width="3" height="2" fill="#fff" />
+      <g transform="translate(1.5 1) rotate(33.69)">
+        <circle r="0.5" fill="#cd2e3a" />
+        <path d="M-0.5 0a0.5 0.5 0 0 0 1 0z" fill="#0047a0" />
+        <circle cx="-0.25" r="0.25" fill="#cd2e3a" />
+        <circle cx="0.25" r="0.25" fill="#0047a0" />
+      </g>
+      <g fill="none" stroke="#000" strokeWidth="0.0833">
+        <path transform="translate(1.5 1) rotate(213.69)" d="M0.792-0.25v0.5M0.917-0.25v0.5M1.042-0.25v0.5" />
+        <path
+          transform="translate(1.5 1) rotate(146.31)"
+          d="M0.792-0.25v0.5M0.917-0.25v0.229m0 0.042v0.229M1.042-0.25v0.5"
+        />
+        <path
+          transform="translate(1.5 1) rotate(-33.69)"
+          d="M0.792-0.25v0.229m0 0.042v0.229M0.917-0.25v0.5M1.042-0.25v0.229m0 0.042v0.229"
+        />
+        <path
+          transform="translate(1.5 1) rotate(33.69)"
+          d="M0.792-0.25v0.229m0 0.042v0.229M0.917-0.25v0.229m0 0.042v0.229M1.042-0.25v0.229m0 0.042v0.229"
+        />
+      </g>
+    </svg>
+  ),
   "zh-CN": (
     <svg className="language-flag" viewBox="0 0 3 2" aria-hidden="true">
       <rect width="3" height="2" fill="#de2910" />
-      <path d="M.58.32l.08.23.24.01-.19.14.07.23-.2-.14-.2.14.08-.23-.2-.14.25-.01z" fill="#ffde00" />
+      <g fill="#ffde00">
+        <path d="M.5 .2L.567 .407L.785 .407L.609 .535L.676 .743L.5 .615L.324 .743L.391 .535L.215 .407L.433 .407z" />
+        <path d="M.914 .251L.962 .197L.925 .134L.991 .163L1.039 .108L1.033 .18L1.1 .209L1.029 .225L1.022 .297L.985 .235z" />
+        <path d="M1.101 .414L1.166 .382L1.156 .31L1.207 .362L1.272 .33L1.238 .395L1.288 .447L1.217 .434L1.183 .499L1.173 .427z" />
+        <path d="M1.104 .673L1.176 .67L1.196 .6L1.221 .668L1.294 .666L1.237 .71L1.262 .779L1.201 .738L1.144 .783L1.164 .713z" />
+        <path d="M.922 .838L.99 .863L1.035 .806L1.032 .879L1.1 .905L1.03 .924L1.026 .996L.987 .936L.916 .955L.962 .898z" />
+      </g>
     </svg>
   ),
 };
@@ -76,6 +111,7 @@ const LANGUAGES: readonly { id: Locale; name: string }[] = [
   { id: "es", name: "Español" },
   { id: "id", name: "Bahasa Indonesia" },
   { id: "it", name: "Italiano" },
+  { id: "ko", name: "한국어" },
   { id: "zh-CN", name: "简体中文" },
 ];
 

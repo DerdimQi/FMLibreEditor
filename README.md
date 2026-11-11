@@ -44,8 +44,8 @@ How to install and use it: [docs/INSTALL.md](docs/INSTALL.md).
   your own tools: attributes, positions, personality, contract and more, with the in-game date.
 - Checks how it reads the game before it writes, and stays read-only on a version of FM27 it
   has not been checked with yet.
-- English, Turkish, Spanish, Indonesian and Italian; logos, flags and faces from your graphics
-  packs.
+- English, Turkish, Spanish, Indonesian, Italian and Korean; logos, flags and faces from your
+  graphics packs.
 - Updates itself on Windows and macOS: one click downloads and installs a new version.
 
 The game shows a change once you press **Continue** in FM.
@@ -67,8 +67,8 @@ A first pull request can be small: a typo, a clearer sentence, one translated sc
   [Discussions](https://github.com/tozmoz/FMLibreEditor/discussions).
 - **Work on the interface without the game:** `npm run dev` in `app/` opens it in a browser with
   made-up players (React + TypeScript).
-- **Translate:** the app speaks English, Turkish, Spanish, Indonesian and Italian; another
-  language is one file, see [CONTRIBUTING.md](CONTRIBUTING.md#translating).
+- **Translate:** the app speaks English, Turkish, Spanish, Indonesian, Italian and Korean;
+  another language is one file, see [CONTRIBUTING.md](CONTRIBUTING.md#translating).
 - **Test:** try a release on your storefront (Game Pass, Steam, macOS) and
   [report](https://github.com/tozmoz/FMLibreEditor/issues/new/choose) what does not work.
 - **Research:** found where FM27 keeps something? Share it in an issue; the notes in
