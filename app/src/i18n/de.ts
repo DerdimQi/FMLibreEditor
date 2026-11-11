@@ -1064,7 +1064,7 @@ export const de: Strings = {
     // Kopfzeile
     womensClub: "Frauenverein",
     founded: (year) => `Gegründet ${year}`,
-    reputationShort: "Ruf",
+    reputationShort: "Ansehen",
     reputationTitle: "Ansehen",
 
     tabsLabel: "Vereinsbereiche",
