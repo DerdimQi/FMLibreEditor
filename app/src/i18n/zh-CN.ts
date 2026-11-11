@@ -64,7 +64,7 @@ const SQUAD_STATUSES: Partial<Record<number, string>> = {
   17: "国内杯赛门将",
   20: "替补门将",
   21: "紧急替补门将",
-  22: "冗员",
+  22: "不再需要",
 };
 
 /** The kinds of contract, by the codes contracts hold them as; 10 and 11 are the MLS's. */
@@ -460,6 +460,7 @@ export const zhCN: Strings = {
     match_sharpness: "比赛状态",
     jadedness: "疲劳度",
     morale: "士气",
+    cohesion: "凝聚力",
     "contract.wage": "周薪",
     "contract.loyalty_bonus": "每周忠诚奖金",
     "contract.happiness": "满意度",
@@ -1198,11 +1199,20 @@ export const zhCN: Strings = {
     noDate: "游戏内日期未通过检查，因此不显示年龄。",
     /** The other checks that did not pass, their names joined (see `checks`). */
     failed: (names: string) => `以下项目保持只读：${names}。`,
+    failedCheck: (name: string, fit: number, sampled: number) =>
+      `${name}（${format(sampled)} 项中 ${format(fit)} 项符合要求）`,
     /** Joins the names of the checks that did not pass. */
     join: (names: string[]) =>
       names.length <= 1 ? names.join("") : `${names.slice(0, -1).join("、")}和${names[names.length - 1]}`,
     allow: "仍要编辑",
     allowTitle: "启用编辑，直到关闭 FMLibreEditor 或重新连接为止。请先备份存档。",
+  },
+
+  diagnostics: {
+    copy: "复制诊断信息",
+    copyTitle: "复制 FMLibreEditor 在游戏中发现的信息，以便粘贴到问题报告中。信息不包含姓名或路径。",
+    copied: "已复制",
+    failed: (reason: string) => `无法复制诊断信息：${reason}`,
   },
 
   /** What each check is about (`CheckKey`), as the notice lists the ones that did not pass and the errors name them. */
@@ -1217,6 +1227,7 @@ export const zhCN: Strings = {
     teams: "球队",
     staff: "职员",
     clubs: "俱乐部",
+    cohesion: "与俱乐部的凝聚力",
   } satisfies Record<CheckKey, string>,
 
   /** New versions: the notice under the masthead, and the version and Check for updates at the foot of the window. */
@@ -2036,6 +2047,11 @@ export const zhCN: Strings = {
     liftNone: "这支球队没有遭到禁赛的球员",
     inspireAll: "鼓舞全队",
     inspireAllTitle: "将全队士气设为最高值 20，并移除球员的不满原因",
+    maxCohesion: "凝聚力拉满",
+    maxCohesionTitle:
+      "将这支球队每位球员与俱乐部的凝聚力设为最高值 100。在游戏中点击“继续”推进后，球队动态页面会显示更新后的凝聚力。",
+    cohesionNone: "无法读取这支球队的凝聚力：此游戏版本尚未验证该功能，或球员都没有与俱乐部的凝聚力记录。",
+    cohesionWithout: (count: number) => `${format(count)} 名球员尚无与俱乐部的凝聚力记录`,
     refreshAll: "恢复全队状态",
     refreshAllTitle: "将全队体能和比赛状态恢复至 100%，并彻底消除疲劳（疲劳度 -500）",
     maxAll: "属性拉满",
@@ -2114,6 +2130,7 @@ export const zhCN: Strings = {
       matchSharpness: "Sharpness",
       jadedness: "Jaded.",
       morale: "士气",
+      cohesion: "凝聚力",
       /** The last column has no heading but this one, for assistive technology: it holds the captaincy menus. */
       actions: "Captaincy",
     } satisfies Record<SquadSort | "actions", string>,
@@ -2129,6 +2146,7 @@ export const zhCN: Strings = {
       matchSharpness: "match sharpness",
       jadedness: "jadedness",
       morale: "morale",
+      cohesion: "凝聚力",
     } satisfies Record<SquadSort, string>,
 
     // The tags after a name, with what each means as hover text
