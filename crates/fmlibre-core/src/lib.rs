@@ -73,7 +73,8 @@ pub use health::{Check, CheckResult, DateEvidence, DateFit, Health, Lock, STRUCT
 pub use index::{Listed, SearchIndex};
 pub use loans::{LoanDetails, LoanEnd, LoanTerms};
 pub use locate::{
-    DatePlace, Found, Place, date_candidates, holds_retirement_manager, retirement_guesses, search_retirement_manager,
+    DatePlace, Found, NEAR_GUESS, Place, date_candidates, date_guesses, holds_retirement_manager, retirement_guesses,
+    search_retirement_manager,
 };
 pub use mass::{Operation, Plan, Planned, Skipped};
 pub use medical::{Ban, HealPlan, Healed, Injury, LiftPlan, Lifted};

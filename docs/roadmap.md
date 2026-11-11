@@ -112,8 +112,9 @@ before trusting them.
   - `fmlibre-probe health` shows what the checks find, and Copy diagnostics in the app copies it for a bug report,
     with how close a list that was not found came;
   - the in-game date and the retirement manager found without a profile too: the date among the values in the
-    plugin's writable data that read as dates, by the contracts and the current injuries, and the manager's static
-    from where other builds keep it or from its class name;
+    plugin's writable data that read as dates, by the contracts and the current injuries, and told from the value the
+    game keeps for the day before by where other builds keep it or by how well each fits; the manager's static from
+    where other builds keep it or from its class name;
   - `fmlibre-probe profile` writes the profile of a new build and compares it with a built-in one, and
     `FMLIBRE_IGNORE_PROFILES=1` rehearses an update on a build the editor knows;
   - smoke tests in `tools/smoke` that drive the built app against the running game, the same on every storefront.

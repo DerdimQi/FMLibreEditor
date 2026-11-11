@@ -249,6 +249,13 @@ impl DateFit {
         self.contracts_hold() && self.injuries_hold() == Some(true)
     }
 
+    /// Whether the date this is the fit of fits the same evidence better than the one `other` is the fit of: no more
+    /// contract dates after it and no fewer current injuries that fit it, and better on at least one of the two.
+    pub fn beats(&self, other: &DateFit) -> bool {
+        let (ours, theirs) = ((self.before, self.within), (other.before, other.within));
+        ours.0 >= theirs.0 && ours.1 >= theirs.1 && ours != theirs
+    }
+
     fn note(&self) -> String {
         let latest = match self.since_latest {
             Some(days) => format!("the latest before it {days} days earlier"),
@@ -735,14 +742,21 @@ fn find_date(session: &Session, evidence: &DateEvidence) -> (Option<DatePlace>, 
 }
 
 /// The date among `candidates` that fits `evidence` strictly, and the best place to read it: the profile's, else a
-/// variable of its own rather than the field beside the arrays, which the game leaves unset after a load.
+/// variable of its own (one near where other builds keep the date first) rather than the field beside the arrays,
+/// which the game leaves unset after a load.
 ///
-/// When more than one date fits, the evidence cannot tell them apart: on a day on which no contract was signed and no
-/// injury began, a value the game keeps for the day before fits as well as the date (on the Game Pass save of 23
-/// September 2026, `game_plugin.dll+0x56546f8` held the 22nd). The field beside the arrays then tells, when it holds
-/// the latest of them: it is where the builds before November 2026 kept the date, and later builds keep the date
-/// there too once the game has moved on a day after a save is loaded. Otherwise no date is used. Along with the place,
-/// a note on how the date was chosen among several, if it was.
+/// More than one date can fit. The game keeps a value for the day before, and the evidence leaves some room, so the
+/// day before fits as well unless enough contracts were signed and injuries begun on the day to rule it out: on the
+/// Game Pass save of 23 September 2026, `game_plugin.dll+0x56546f8` held the 22nd and fitted as well as the date; on
+/// 0.9.2435.0, `+0x53886f8` held 10 January 2028 and fitted too, if less well than the 11th. Then the date is, in turn:
+/// - the latest of them, when the field beside the arrays holds it: where the builds before November 2026 kept the
+///   date, and 0.9.2409.0 keeps it there too once the game has moved on a day after a load;
+/// - the one of them read about as far from the players' array as other builds keep their date ([`Found::Guessed`]):
+///   the date's own variable has kept its distance from build to build, and the day before is far from it;
+/// - the one of them that fits better than every other ([`DateFit::beats`]): each contract signed and each injury
+///   begun on the day counts against the day before.
+///
+/// Otherwise no date is used. Along with the place, a note on how the date was chosen among several, if it was.
 fn pick_date(candidates: &[DatePlace], evidence: &DateEvidence) -> Result<(DatePlace, Option<String>), String> {
     let fitting: Vec<DatePlace> =
         candidates.iter().copied().filter(|place| evidence.fit(place.date).holds_strictly()).collect();
@@ -751,38 +765,57 @@ fn pick_date(candidates: &[DatePlace], evidence: &DateEvidence) -> Result<(DateP
     dates.dedup();
     let rank = |place: &DatePlace| match place.found {
         Found::Profile => 0,
-        Found::Searched | Found::Guessed => 1,
-        Found::BesideArrays => 2,
+        Found::Guessed => 1,
+        Found::Searched => 2,
+        Found::BesideArrays => 3,
     };
     let read_at = |date: FmDate| {
         fitting.iter().copied().filter(|place| place.date == date).min_by_key(|place| (rank(place), place.rva))
     };
     let listed = |dates: &[FmDate]| dates.iter().map(|&date| iso(date)).collect::<Vec<_>>().join(", ");
-    match dates.as_slice() {
-        [] => Err(format!("{} values in the plugin's data read as dates, and none fits", candidates.len())),
-        [date] => Ok((read_at(*date).expect("the date fits"), None)),
-        several => {
-            let latest = *several.last().expect("several dates");
-            let beside = fitting.iter().find(|place| place.found == Found::BesideArrays).map(|place| place.date);
-            if beside == Some(latest) {
-                let chosen = format!(
-                    "of the {} dates that fit ({}), the latest, which the field beside the arrays holds",
-                    several.len(),
-                    listed(several)
-                );
-                return Ok((read_at(latest).expect("the date fits"), Some(chosen)));
-            }
-            let beside = match beside {
-                Some(date) => format!("; the field beside the arrays holds {}, not the latest", iso(date)),
-                None => "; the field beside the arrays holds none of them".to_owned(),
-            };
-            Err(format!(
-                "values in the plugin's data read as {} dates that fit, so none is used: {}{beside}",
-                several.len(),
-                listed(several)
-            ))
-        }
+    let several = match dates.as_slice() {
+        [] => return Err(format!("{} values in the plugin's data read as dates, and none fits", candidates.len())),
+        [date] => return Ok((read_at(*date).expect("the date fits"), None)),
+        several => several,
+    };
+
+    let latest = *several.last().expect("several dates");
+    let beside = fitting.iter().find(|place| place.found == Found::BesideArrays).map(|place| place.date);
+    let mut guessed: Vec<FmDate> =
+        fitting.iter().filter(|place| place.found == Found::Guessed).map(|place| place.date).collect();
+    guessed.sort_unstable();
+    guessed.dedup();
+    let fits: Vec<(FmDate, DateFit)> = several.iter().map(|&date| (date, evidence.fit(date))).collect();
+    let best = fits
+        .iter()
+        .find(|(date, fit)| fits.iter().all(|(other, other_fit)| other == date || fit.beats(other_fit)))
+        .map(|&(date, _)| date);
+    let pick = if beside == Some(latest) {
+        Some((latest, "the latest, which the field beside the arrays holds"))
+    } else if let [date] = guessed.as_slice() {
+        Some((*date, "the one read about as far from the players' array as other builds keep the date"))
+    } else {
+        best.map(|date| (date, "the one that fits the contracts and the current injuries better than any other"))
+    };
+    if let Some((date, how)) = pick {
+        let chosen = format!("of the {} dates that fit ({}), {how}", several.len(), listed(several));
+        return Ok((read_at(date).expect("the date fits"), Some(chosen)));
     }
+
+    let beside = match beside {
+        Some(date) => format!("the field beside the arrays holds {}, not the latest", iso(date)),
+        None => "the field beside the arrays holds none of them".to_owned(),
+    };
+    let guessed = match guessed.len() {
+        0 => "none is read where other builds keep the date".to_owned(),
+        count => format!("{count} are read where other builds keep the date"),
+    };
+    Err(format!(
+        "values in the plugin's data read as {} dates that fit, and nothing tells them apart, so none is used: {}; \
+         {beside}; {guessed}; none fits better than every other",
+        several.len(),
+        listed(several)
+    ))
 }
 
 /// A date as YYYY-MM-DD.
@@ -1042,8 +1075,16 @@ mod tests {
         assert!(few.fit(today).holds() && !few.fit(today).holds_strictly());
     }
 
+    /// As [`evidence_on`] the day before `today`, with every injury a day longer: no contract was signed and no injury
+    /// began on `today`, so the day before fits as well as the date.
+    fn quiet_day(today: FmDate) -> DateEvidence {
+        let mut evidence = evidence_on(today.plus_days(-1));
+        evidence.injuries.iter_mut().for_each(|(_, back)| *back = back.plus_days(1));
+        evidence
+    }
+
     #[test]
-    fn a_searched_date_must_be_the_only_one_that_fits() {
+    fn a_searched_date_must_be_the_one_that_fits() {
         let today = date(2027, 8, 13);
         let evidence = evidence_on(today);
         let place = |rva, date, found| DatePlace { rva, date, found };
@@ -1060,17 +1101,19 @@ mod tests {
         assert_eq!(picked(&candidates), Ok(candidates[2]));
         // The field beside the arrays alone, as right after a load it would not be.
         assert_eq!(picked(&candidates[..2]), Ok(candidates[1]));
-        // A second date that fits leaves the editor without one, unless the field beside the arrays holds the latest:
-        // a value the game keeps for the day before is no match for it, a date later than the field's is.
+        // A second date that fits leaves the editor without one when nothing tells them apart: a date the day after,
+        // which every contract and injury fits as well, and which is later than the field beside the arrays.
         let mut later = candidates.to_vec();
         later.push(place(0x100, today.plus_days(1), Found::Searched));
         assert!(picked(&later).is_err());
+        // The day before is told apart by the field beside the arrays, and without it by the contract signed and the
+        // injuries begun on the day.
         let mut before = candidates.to_vec();
         before.push(place(0x200, today.plus_days(-1), Found::Searched));
         assert_eq!(picked(&before), Ok(candidates[2]));
         let without_beside: Vec<DatePlace> =
             before.iter().copied().filter(|p| p.found != Found::BesideArrays).collect();
-        assert!(picked(&without_beside).is_err());
+        assert_eq!(picked(&without_beside), Ok(candidates[2]));
         // A date the injuries cannot vouch for leaves the editor without one too.
         let few = DateEvidence { injuries: evidence.injuries[..10].to_vec(), ..evidence.clone() };
         assert!(pick_date(&candidates, &few).is_err());
@@ -1082,9 +1125,9 @@ mod tests {
         // As on the Game Pass save of 23 September 2026: on a day on which no contract was signed and no injury began,
         // the day before fits the evidence as well as the date.
         let today = date(2026, 9, 23);
-        let mut evidence = evidence_on(today.plus_days(-1));
-        evidence.injuries.iter_mut().for_each(|(_, back)| *back = back.plus_days(1));
+        let evidence = quiet_day(today);
         assert!(evidence.fit(today).holds_strictly() && evidence.fit(today.plus_days(-1)).holds_strictly());
+        assert!(!evidence.fit(today).beats(&evidence.fit(today.plus_days(-1))));
         let place = |rva, date, found| DatePlace { rva, date, found };
         let candidates = [
             place(0x562_57C8, today, Found::Searched),
@@ -1103,6 +1146,58 @@ mod tests {
         // A field that held the day before would not be followed either.
         let behind = [candidates[0], place(0x568_4608, today.plus_days(-1), Found::BesideArrays)];
         assert!(pick_date(&behind, &evidence).is_err());
+    }
+
+    #[test]
+    fn where_other_builds_keep_the_date_tells_it_from_the_day_before() {
+        // As on Game Pass 0.9.2435.0, where the field beside the arrays held no date after a day in the game, on a day
+        // on which no contract was signed and no injury began.
+        let today = date(2028, 1, 11);
+        let evidence = quiet_day(today);
+        let place = |rva, date, found| DatePlace { rva, date, found };
+        let candidates = [
+            place(0x535_97C8, today, Found::Guessed),
+            place(0x538_86F8, today.plus_days(-1), Found::Searched),
+            place(0x535_9E40, date(2027, 12, 1), Found::Guessed),
+        ];
+        let (picked, note) = pick_date(&candidates, &evidence).expect("a date");
+        assert_eq!(picked, candidates[0]);
+        assert!(note.is_some_and(|note| note.contains("as other builds keep the date")));
+        // Read where the guess put it rather than anywhere else that holds the date.
+        let elsewhere = [place(0x100, today, Found::Searched), candidates[0], candidates[1]];
+        assert_eq!(pick_date(&elsewhere, &evidence).map(|(place, _)| place), Ok(candidates[0]));
+        // Two dates near where other builds keep it tell nothing.
+        let both = [candidates[0], place(0x535_97D0, today.plus_days(-1), Found::Guessed)];
+        let refused = pick_date(&both, &evidence).expect_err("no date");
+        assert!(refused.contains("2 are read where other builds keep the date"), "{refused}");
+    }
+
+    #[test]
+    fn the_date_fits_better_than_the_day_before() {
+        // As on Game Pass 0.9.2435.0 on 11 January 2028, with no profile: contracts were signed and injuries began on
+        // the day, so the day before fitted less well, but still well enough; the field beside the arrays held no date.
+        let today = date(2028, 1, 11);
+        let evidence = evidence_on(today);
+        let (on_the_day, the_day_before) = (evidence.fit(today), evidence.fit(today.plus_days(-1)));
+        assert!(on_the_day.holds_strictly() && the_day_before.holds_strictly());
+        assert!(on_the_day.beats(&the_day_before));
+        assert!(!the_day_before.beats(&on_the_day) && !on_the_day.beats(&on_the_day));
+        let place = |rva, date, found| DatePlace { rva, date, found };
+        let candidates =
+            [place(0x538_86F8, today.plus_days(-1), Found::Searched), place(0x535_97C8, today, Found::Searched)];
+        let (picked, note) = pick_date(&candidates, &evidence).expect("a date");
+        assert_eq!(picked, candidates[1]);
+        assert!(note.is_some_and(|note| note.contains("better than any other")));
+        // Where each fits better on one count, neither is used: a contract signed on the day, and an injury still
+        // listed though over the day before.
+        let mut torn = quiet_day(today);
+        torn.signed.push(today);
+        torn.injuries.push((today.plus_days(-10), today.plus_days(-1)));
+        let (on_the_day, the_day_before) = (torn.fit(today), torn.fit(today.plus_days(-1)));
+        assert!(on_the_day.holds_strictly() && the_day_before.holds_strictly());
+        assert!(!on_the_day.beats(&the_day_before) && !the_day_before.beats(&on_the_day));
+        let refused = pick_date(&candidates, &torn).expect_err("no date");
+        assert!(refused.contains("none fits better than every other"), "{refused}");
     }
 
     #[test]
