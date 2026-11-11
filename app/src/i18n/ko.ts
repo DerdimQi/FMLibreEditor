@@ -615,6 +615,7 @@ export const ko: Strings = {
     "tie.workPermit": "취업 비자 불필요 국가",
     club: "구단",
     injuries: "부상",
+    cohesion: "결속력",
     bans: "출장 정지",
     retirement: "은퇴",
     clause: "계약 조항",
@@ -1204,9 +1205,19 @@ export const ko: Strings = {
     reloadHint: "세이브를 불러오는 중이었다면 '데이터 다시 불러오기'로 다시 검사할 수 있습니다.",
     noDate: "게임 내 날짜가 검사를 통과하지 못해 나이를 표시하지 않습니다.",
     failed: (names) => `읽기 전용으로 둔 항목: ${names}.`,
+    failedCheck: (name, fit, sampled) => `${name}(${format(sampled)}개 중 ${format(fit)}개 일치)`,
     join: (names) => names.join(", "),
     allow: "그래도 편집",
     allowTitle: "FMLibreEditor를 닫거나 다시 연결할 때까지 편집을 켭니다. 먼저 세이브를 백업하세요.",
+  },
+
+  diagnostics: {
+    copy: "진단 정보 복사",
+    copyTitle:
+      "FMLibreEditor가 게임에서 찾은 내용을 복사합니다. 버그 보고에 붙여 넣으세요. 이름이나 파일 경로는 들어 있지 " +
+      "않습니다.",
+    copied: "복사됨",
+    failed: (reason) => `진단 정보를 복사하지 못했습니다: ${reason}`,
   },
 
   checks: {
@@ -1220,6 +1231,7 @@ export const ko: Strings = {
     teams: "팀",
     staff: "스태프",
     clubs: "구단",
+    cohesion: "구단과의 결속력",
   },
 
   update: {
@@ -1835,6 +1847,14 @@ export const ko: Strings = {
     liftNone: "이 팀에는 출장 정지 선수가 없습니다",
     inspireAll: "모두 사기 진작",
     inspireAllTitle: "이 팀 모든 선수의 사기를 최고인 20으로 설정하고 불만 사항을 제거합니다",
+    maxCohesion: "결속력 최대",
+    maxCohesionTitle:
+      "이 팀 모든 선수의 구단과의 결속력을 최고인 100으로 설정합니다. 팀 결속력은 게임이 진행된 뒤 '세력 구도' " +
+      "화면에 표시됩니다. 게임에서 '진행하기'를 누르세요",
+    cohesionNone:
+      "이 팀의 결속력을 읽을 수 없습니다. 이 게임 버전에서 아직 확인되지 않았거나, 구단에 대한 결속력 항목이 있는 " +
+      "선수가 없습니다",
+    cohesionWithout: (count) => `${playerCount(count)}은 아직 구단과의 결속력이 없습니다`,
     refreshAll: "모두 회복",
     refreshAllTitle: "이 팀 모든 선수의 컨디션과 경기력을 100%로 설정하고 완전히 쉬게 합니다(피로도 -500)",
     maxAll: "능력치 최대",
@@ -1902,6 +1922,7 @@ export const ko: Strings = {
       matchSharpness: "경기력",
       jadedness: "피로도",
       morale: "사기",
+      cohesion: "결속력",
       actions: "주장직",
     },
     sortBy: (by) => `${by} 기준으로 정렬`,
@@ -1915,6 +1936,7 @@ export const ko: Strings = {
       matchSharpness: "경기력",
       jadedness: "피로도",
       morale: "사기",
+      cohesion: "결속력",
     },
 
     // The tags after a name
