@@ -8,6 +8,7 @@ import { en, type Strings } from "./en";
 import { es } from "./es";
 import { id } from "./id";
 import { it } from "./it";
+import { ko } from "./ko";
 import { tr } from "./tr";
 
 /**
@@ -20,6 +21,7 @@ const LANGUAGES = {
   es: { strings: es, intl: "es-ES" },
   id: { strings: id, intl: "id-ID" },
   it: { strings: it, intl: "it-IT" },
+  ko: { strings: ko, intl: "ko-KR" },
 } satisfies Record<string, { strings: Strings; intl: string }>;
 
 export type Locale = keyof typeof LANGUAGES;

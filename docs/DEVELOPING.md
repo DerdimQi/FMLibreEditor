@@ -233,7 +233,8 @@ macOS); `FMLIBRE_EXPORTS` names another folder. The columns and the JSON keys ar
 2. **Tag it and push the tag:** `git tag v0.1.0` and `git push origin v0.1.0`.
 3. **The `Release` workflow** (`.github/workflows/release.yml`) runs the checks and builds,
    on GitHub's Windows and macOS machines:
-   - `FMLibreEditor-Setup.exe`, a per-user NSIS installer in English, Turkish, Spanish and Italian;
+   - `FMLibreEditor-Setup.exe`, a per-user NSIS installer in English, Turkish, Spanish, Italian and
+     Korean;
    - `FMLibreEditor-portable.zip`;
    - `FMLibreEditor-macOS.zip`, the universal app with the bridge and its launcher;
    - `FMLibreEditor-macOS.app.tar.gz`, the same app, which installed macOS apps update from.
