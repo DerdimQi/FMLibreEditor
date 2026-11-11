@@ -109,7 +109,8 @@ before trusting them.
   - a version of the game without a build profile is read-only until Edit anyway, with a notice that says so;
   - checks of the layout against the running game before anything is written: what does not check out stays
     read-only, and a date that does not fit the game's contracts is not used, so no age is shown wrong;
-  - `fmlibre-probe health` shows what the checks find;
+  - `fmlibre-probe health` shows what the checks find, and Copy diagnostics in the app copies it for a bug report,
+    with how close a list that was not found came;
   - the in-game date and the retirement manager found without a profile too: the date among the values in the
     plugin's writable data that read as dates, by the contracts and the current injuries, and the manager's static
     from where other builds keep it or from its class name;

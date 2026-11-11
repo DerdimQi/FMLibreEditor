@@ -4,6 +4,7 @@ import { BridgeSetup } from "./BridgeSetup";
 import { ChangesView, useChangeLog } from "./ChangesView";
 import { ClubBrowser } from "./ClubBrowser";
 import { CompatibilityNotice } from "./CompatibilityNotice";
+import { CopyDiagnostics } from "./CopyDiagnostics";
 import { forgetFieldTables } from "./fieldTables";
 import { describeError, describeGame, formatDate } from "./format";
 import { FrozenNotice } from "./FrozenNotice";
@@ -294,6 +295,7 @@ function App() {
               }}
             />
           )}
+          {connection && <CopyDiagnostics className="update-link" />}
           <span className={`status ${connection ? "on" : ""}`}>
             <span className="dot" />
             <span className="status-text">

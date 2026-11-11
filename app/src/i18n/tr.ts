@@ -1171,10 +1171,20 @@ export const tr: Strings = {
     reloadHint: "Kayıt hâlâ yükleniyorduysa “Verileri yeniden oku” yeniden denetler.",
     noDate: "Oyun içi tarih denetimden geçmedi, bu yüzden yaşlar gösterilmiyor.",
     failed: (names) => `Salt okunur bırakılanlar: ${names}.`,
+    failedCheck: (name, fit, sampled) => `${name} (${format(sampled)} örnekten ${format(fit)} uygun)`,
     join: (names) =>
       names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} ve ${names[names.length - 1]}`,
     allow: "Yine de düzenle",
     allowTitle: "Düzenlemeyi FMLibreEditor kapanana ya da yeniden bağlanana kadar açar. Önce kayıt dosyanızı yedekleyin.",
+  },
+
+  diagnostics: {
+    copy: "Tanılama bilgisini kopyala",
+    copyTitle:
+      "FMLibreEditor'ın oyunda bulduklarını, hata bildirimine yapıştırmanız için kopyalar. İsim ya da dosya yolu " +
+      "içermez.",
+    copied: "Kopyalandı",
+    failed: (reason) => `Tanılama bilgisi kopyalanamadı: ${reason}`,
   },
 
   checks: {

@@ -1229,13 +1229,27 @@ export const en = {
     reloadHint: "If a save was still loading, Reload data checks again.",
     /** The in-game date did not check out: shown apart, as it leaves nothing read-only. */
     noDate: "The in-game date did not check out, so no ages are shown.",
-    /** The other checks that did not pass, their names joined (see `checks`). */
+    /** The other checks that did not pass, joined (see `join`), each as `failedCheck` words it. */
     failed: (names: string) => `Left read-only: ${names}.`,
+    /** A check that did not pass: its name (see `checks`), and how many of the people or clubs it sampled fit. */
+    failedCheck: (name: string, fit: number, sampled: number) => `${name} (${format(fit)} of ${format(sampled)} fit)`,
     /** Joins the names of the checks that did not pass. */
     join: (names: string[]) =>
       names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`,
     allow: "Edit anyway",
     allowTitle: "Turn editing on until FMLibreEditor is closed or connects again. Back up your save first.",
+  },
+
+  /**
+   * Copy diagnostics, at the foot of the window and in the notice under the masthead: copies a report of what the app
+   * found in the game, in English whatever the language, to paste into a bug report (`CopyDiagnostics`).
+   */
+  diagnostics: {
+    copy: "Copy diagnostics",
+    copyTitle: "Copy what FMLibreEditor found in the game, to paste into a bug report. It holds no names or paths.",
+    /** Said by the button for a moment once the report is on the clipboard. */
+    copied: "Copied",
+    failed: (reason: string) => `Could not copy the diagnostics: ${reason}`,
   },
 
   /** What each check is about (`CheckKey`), as the notice lists the ones that did not pass and the errors name them. */

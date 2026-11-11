@@ -1,7 +1,10 @@
+use std::cmp::Ordering;
+
 use fmlibre_mem::{Module, Process, is_user_pointer};
 use serde::Serialize;
 
 use crate::date::FmDate;
+use crate::game::GAME_PLUGIN;
 use crate::profile::{ArrayRvas, Layout};
 use crate::scan::{ScanOptions, scan_object_arrays};
 use crate::text::{is_name_like, read_fm_string, read_name_entry};
@@ -50,9 +53,57 @@ pub struct EntityArrays {
     pub clubs: Option<ArrayRef>,
     /// True when every array came from a built-in build profile rather than a scan.
     pub from_profile: bool,
+    /// For each array not found, players, staff and clubs in that order: how close the places looked at came.
+    #[serde(skip)]
+    missed: [Option<Miss>; 3],
+}
+
+/// How close the places looked at came to holding an array that was not found: what tells a list whose elements
+/// nearly all decoded from a place that holds something else.
+#[derive(Debug, Clone, Copy, Default)]
+struct Miss {
+    /// The place the build profile gives, when it was looked at: its pair's RVA, and the array there as sampled, or
+    /// `None` when the pair holds no array.
+    profile: Option<(u64, Option<ArrayRef>)>,
+    /// Of the arrays a scan found and had not handed to another kind by then, the one most of whose samples decoded;
+    /// `None` when the scan found none.
+    scanned: Option<ArrayRef>,
 }
 
 impl EntityArrays {
+    /// What was found, as the probe and the diagnostics report print it: a line for each array, and for one not found,
+    /// how close the place the build profile gives and the best of a scan came.
+    pub fn describe(&self) -> Vec<String> {
+        let mut lines = vec![
+            if self.from_profile { "Entity arrays (from the build profile, checked):" } else { "Entity arrays:" }
+                .to_owned(),
+        ];
+        for kind in KINDS {
+            let label = kind.label();
+            if let Some(array) = self.get(kind) {
+                let source = if self.from_profile {
+                    ""
+                } else if array.from_profile {
+                    " (from the build profile)"
+                } else {
+                    " (found by scanning)"
+                };
+                lines.push(format!("  {label:<8} {}{source}", sampled(&array)));
+                continue;
+            }
+            lines.push(format!("  {label:<8} not found"));
+            let miss = self.missed[kind as usize].unwrap_or_default();
+            if let Some((pair_rva, there)) = miss.profile {
+                let there = there
+                    .map_or_else(|| format!("{GAME_PLUGIN}+{pair_rva:#x}  no array, or an empty one"), |a| sampled(&a));
+                lines.push(format!("    in the build profile's place: {there}"));
+            }
+            let scanned = miss.scanned.map_or_else(|| "none".to_owned(), |a| sampled(&a));
+            lines.push(format!("    closest a scan found:         {scanned}"));
+        }
+        lines
+    }
+
     fn get(&self, kind: Kind) -> Option<ArrayRef> {
         match kind {
             Kind::Player => self.players,
@@ -70,11 +121,22 @@ impl EntityArrays {
     }
 }
 
+/// The kinds of array, numbered as [`EntityArrays::missed`] keeps them.
 #[derive(Debug, Clone, Copy)]
 enum Kind {
-    Player,
-    Staff,
-    Club,
+    Player = 0,
+    Staff = 1,
+    Club = 2,
+}
+
+impl Kind {
+    fn label(self) -> &'static str {
+        match self {
+            Kind::Player => "players",
+            Kind::Staff => "staff",
+            Kind::Club => "clubs",
+        }
+    }
 }
 
 /// The kinds of array, in the order a scan hands them out: the players first, as nothing works without them.
@@ -93,13 +155,14 @@ enum Source {
 /// Finds the player, staff and club arrays: each in the place the build profile gives when it checks out, the others
 /// by scanning the module. Only reads memory.
 pub fn calibrate(process: &Process, module: &Module, layout: &Layout, hint: Option<&ArrayRvas>) -> EntityArrays {
-    let mut arrays = EntityArrays { players: None, staff: None, clubs: None, from_profile: false };
+    let mut arrays = EntityArrays { players: None, staff: None, clubs: None, from_profile: false, missed: [None; 3] };
     find_missing(process, module, layout, hint, &mut arrays);
     arrays
 }
 
 /// Looks for the arrays `arrays` lacks: in the place the build profile gives, then by scanning the module among the
-/// arrays not taken already. Those found are kept. Returns whether one was found. Only reads memory.
+/// arrays not taken already. Those found are kept, and for those still missing, how close the places looked at came.
+/// Returns whether one was found. Only reads memory.
 pub(crate) fn find_missing(
     process: &Process,
     module: &Module,
@@ -108,11 +171,17 @@ pub(crate) fn find_missing(
     arrays: &mut EntityArrays,
 ) -> bool {
     let mut found = false;
+    let mut missed = [Miss::default(); 3];
     if let Some(hint) = hint {
         for (kind, pair_rva) in [(Kind::Player, hint.players), (Kind::Staff, hint.staff), (Kind::Club, hint.clubs)] {
             if arrays.get(kind).is_none() {
-                *arrays.slot(kind) = check(process, module, layout, kind, pair_rva, Source::Profile);
-                found |= arrays.get(kind).is_some();
+                match check(process, module, layout, kind, pair_rva, Source::Profile) {
+                    Ok(array) => {
+                        *arrays.slot(kind) = Some(array);
+                        found = true;
+                    }
+                    Err(there) => missed[kind as usize].profile = Some((pair_rva, there)),
+                }
             }
         }
     }
@@ -124,16 +193,16 @@ pub(crate) fn find_missing(
             if arrays.get(kind).is_some() {
                 continue;
             }
-            let best = candidates
+            let checked: Vec<Result<ArrayRef, Option<ArrayRef>>> = candidates
                 .iter()
                 .filter(|candidate| !candidate.pair_rvas.iter().any(|rva| taken.contains(rva)))
                 .filter_map(|candidate| {
-                    check(process, module, layout, kind, *candidate.pair_rvas.first()?, Source::Scan)
+                    Some(check(process, module, layout, kind, *candidate.pair_rvas.first()?, Source::Scan))
                 })
-                .max_by(|a, b| {
-                    // Most confident first, then the largest, then the lowest RVA.
-                    a.confidence.total_cmp(&b.confidence).then(a.count.cmp(&b.count)).then(b.pair_rva.cmp(&a.pair_rva))
-                });
+                .collect();
+            let best = checked.iter().filter_map(|checked| checked.ok()).max_by(likelier);
+            missed[kind as usize].scanned =
+                checked.iter().filter_map(|checked| checked.err().flatten()).max_by(likelier);
             if let Some(array) = best {
                 let pairs = candidates.iter().find(|candidate| candidate.pair_rvas.contains(&array.pair_rva));
                 taken.extend(pairs.map_or_else(|| vec![array.pair_rva], |candidate| candidate.pair_rvas.clone()));
@@ -143,11 +212,32 @@ pub(crate) fn find_missing(
         }
     }
     arrays.from_profile = KINDS.iter().all(|&kind| arrays.get(kind).is_some_and(|array| array.from_profile));
+    for kind in KINDS {
+        arrays.missed[kind as usize] = arrays.get(kind).is_none().then_some(missed[kind as usize]);
+    }
     found
 }
 
+/// Which of two arrays as sampled is likelier the one looked for: the most confident, then the largest, then the one at
+/// the lowest RVA.
+fn likelier(a: &ArrayRef, b: &ArrayRef) -> Ordering {
+    a.confidence.total_cmp(&b.confidence).then(a.count.cmp(&b.count)).then(b.pair_rva.cmp(&a.pair_rva))
+}
+
+/// An array as sampled: where its pair is, how many elements it has and how many of its samples decoded.
+fn sampled(array: &ArrayRef) -> String {
+    format!(
+        "{GAME_PLUGIN}+{:#x}  {:>7} elements  {:>3.0}% of samples decoded, {:>3.0}% by a name",
+        array.pair_rva,
+        array.count,
+        array.confidence * 100.0,
+        array.named * 100.0
+    )
+}
+
 /// Samples the array whose pair is at `pair_rva` and accepts it when enough elements decode as `kind`: by a name, or
-/// in the place the build profile gives, by their other fields.
+/// in the place the build profile gives, by their other fields. Otherwise the array as sampled, too few of whose
+/// elements decoded, or `None` when the pair holds no array, or an empty one.
 fn check(
     process: &Process,
     module: &Module,
@@ -155,11 +245,11 @@ fn check(
     kind: Kind,
     pair_rva: u64,
     source: Source,
-) -> Option<ArrayRef> {
+) -> Result<ArrayRef, Option<ArrayRef>> {
     let probe = ArrayRef { pair_rva, count: 0, confidence: 0.0, named: 0.0, from_profile: false };
-    let (begin, count) = probe.locate(process, module).ok()?;
+    let (begin, count) = probe.locate(process, module).map_err(|_| None)?;
     if count == 0 || !is_user_pointer(begin) {
-        return None;
+        return Err(None);
     }
     let samples = count.min(SAMPLES);
     let (mut named, mut fit) = (0, 0);
@@ -174,13 +264,8 @@ fn check(
     }
     let share = |n: u64| n as f32 / samples as f32;
     let confidence = share(fit);
-    (confidence >= MIN_CONFIDENCE).then_some(ArrayRef {
-        pair_rva,
-        count,
-        confidence,
-        named: share(named),
-        from_profile: source == Source::Profile,
-    })
+    let array = ArrayRef { pair_rva, count, confidence, named: share(named), from_profile: source == Source::Profile };
+    if confidence >= MIN_CONFIDENCE { Ok(array) } else { Err(Some(array)) }
 }
 
 /// Whether `object` holds a name that reads as one where `kind` keeps its names: any of a person's full, first, last
@@ -391,7 +476,7 @@ mod tests {
         assert_eq!((found.confidence, found.named), (1.0, 0.0));
         assert!(found.from_profile);
         // A scan needs names: many arrays hold ids and dates where staff keep theirs.
-        assert!(check(&process, &module, &layout, Kind::Staff, pair, Source::Scan).is_none());
+        assert!(check(&process, &module, &layout, Kind::Staff, pair, Source::Scan).is_err());
     }
 
     #[test]
@@ -402,8 +487,8 @@ mod tests {
             .map(|i| staff(&mut memory, &layout, [None, None, None], if i % 2 == 0 { 0 } else { 7 }, None))
             .collect();
         let pair = memory.array(&elements);
-        assert!(check(&process, &no_module(), &layout, Kind::Staff, pair, Source::Profile).is_none());
-        // Of 64, every one is looked at: 58 that fit are enough, 57 are not.
+        assert!(check(&process, &no_module(), &layout, Kind::Staff, pair, Source::Profile).is_err());
+        // Of 64, every one is looked at: 58 that fit are enough, 57 are not, and how many fit is kept then.
         for (fitting, accepted) in [(58, true), (57, false)] {
             let mut elements: Vec<u64> = (0..fitting)
                 .map(|i| staff(&mut memory, &layout, [Some("Ange"), Some("Postecoglou"), None], 1 + i, None))
@@ -411,11 +496,16 @@ mod tests {
             elements.extend((fitting..64).map(|_| staff(&mut memory, &layout, [None, None, None], 0, None)));
             let pair = memory.array(&elements);
             let found = check(&process, &no_module(), &layout, Kind::Staff, pair, Source::Profile);
-            assert_eq!(found.is_some(), accepted, "{fitting} of 64");
+            assert_eq!(found.is_ok(), accepted, "{fitting} of 64");
+            let sampled = found.unwrap_or_else(|refused| refused.expect("a list"));
+            assert_eq!((sampled.count, sampled.confidence), (64, fitting as f32 / 64.0));
         }
         // An empty list holds nothing to check.
         let pair = memory.array(&[]);
-        assert!(check(&process, &no_module(), &layout, Kind::Staff, pair, Source::Profile).is_none());
+        assert!(
+            check(&process, &no_module(), &layout, Kind::Staff, pair, Source::Profile)
+                .is_err_and(|refused| refused.is_none())
+        );
     }
 
     #[test]
@@ -470,5 +560,40 @@ mod tests {
         // Nothing new to find, and what was found stays.
         assert!(!find_missing(&process, &no_module(), &layout, Some(&hint), &mut arrays));
         assert!(arrays.staff.is_some_and(|staff| staff.pair_rva == staff_pair));
+    }
+
+    #[test]
+    fn a_missing_array_says_how_close_it_came() {
+        let (layout, process, mut memory) = (layout(), this_process(), Memory::default());
+        // Where the profile puts the staff, a list half of whose members have a name and the rest nothing; no players
+        // and no clubs where it puts them.
+        let mut elements: Vec<u64> = (0..32)
+            .map(|i| staff(&mut memory, &layout, [Some("Ange"), Some("Postecoglou"), None], 1 + i, None))
+            .collect();
+        elements.extend((32..64).map(|_| staff(&mut memory, &layout, [None, None, None], 0, None)));
+        let staff_pair = memory.array(&elements);
+        let (players_pair, clubs_pair) = (memory.array(&[]), memory.array(&[]));
+        let hint = ArrayRvas { players: players_pair, staff: staff_pair, clubs: clubs_pair };
+        let arrays = calibrate(&process, &no_module(), &layout, Some(&hint));
+        assert!(arrays.staff.is_none());
+        let lines = arrays.describe();
+        let at = |label: &str| lines.iter().position(|line| line.trim_start().starts_with(label)).expect(label);
+        let staff_at = at("staff");
+        assert_eq!(
+            lines[staff_at..staff_at + 3],
+            [
+                "  staff    not found".to_owned(),
+                format!(
+                    "    in the build profile's place: {GAME_PLUGIN}+{staff_pair:#x}       64 elements   50% of \
+                     samples decoded,  50% by a name"
+                ),
+                "    closest a scan found:         none".to_owned(),
+            ]
+        );
+        let players_at = at("players");
+        assert_eq!(
+            lines[players_at + 1],
+            format!("    in the build profile's place: {GAME_PLUGIN}+{players_pair:#x}  no array, or an empty one")
+        );
     }
 }
