@@ -61,7 +61,7 @@ export function CopyDiagnostics(props: { className?: string }) {
         {phase === "copied" ? text.copied : text.copy}
       </button>
       {error && (
-        <span className="copy-diagnostics-error" role="alert">
+        <span className="copy-diagnostics-error" role="alert" title={error}>
           {error}
         </span>
       )}

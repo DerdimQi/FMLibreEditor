@@ -719,6 +719,14 @@ dd,
   color: var(--danger);
 }
 
+/* In the colophon the error is cut short at the end, so that the game's line beside it keeps its room; it is whole in
+   its tooltip. */
+.colophon .copy-diagnostics-error {
+  max-width: 24em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Connect */
 
 .connect {
