@@ -19,6 +19,7 @@ pub fn diagnostics_report(session: &Session, version: &str) -> String {
         writing_line(session),
         format!("In-game date: {}", date_line(session)),
         format!("Retirement manager: {}", retirement_line(session)),
+        format!("Saves loaded: {}", saves_loaded_line(session)),
     ];
     lines.extend(session.arrays.describe());
     lines.push("Checks:".to_owned());
@@ -47,6 +48,25 @@ pub fn retirement_line(session: &Session) -> String {
     }
 }
 
+/// Where the static pointer to the game's own object is, how it was found, and the saves the game has loaded since it
+/// started, which that object counts: what tells the editor that the game has loaded a save since it read it.
+pub fn saves_loaded_line(session: &Session) -> String {
+    if session.layout.game.is_none() {
+        return "not read on this system yet".to_owned();
+    }
+    match (session.game_place(), session.loads()) {
+        (Some(place), Some(loads)) => {
+            format!(
+                "{GAME_PLUGIN}+{:#x} ({}): {loads} loaded since the game started",
+                place.rva,
+                place.found.describe()
+            )
+        }
+        (Some(place), None) => format!("{GAME_PLUGIN}+{:#x} ({}), count unreadable", place.rva, place.found.describe()),
+        (None, _) => "not found".to_owned(),
+    }
+}
+
 fn profile_line(session: &Session) -> String {
     match &session.profile {
         Some(profile) => format!("Build profile: {}", profile.name),
@@ -55,8 +75,8 @@ fn profile_line(session: &Session) -> String {
     }
 }
 
-/// Whether the system lets the app write to the game, and for a build without a profile, whether editing it was
-/// allowed.
+/// Whether the system lets the app write to the game, for a build without a profile whether editing it was allowed,
+/// and whether writes wait for the data to be read again, the game having loaded a save since the editor read it.
 fn writing_line(session: &Session) -> String {
     let system = if session.process.can_write() {
         "the system lets the app write to the game"
@@ -70,7 +90,13 @@ fn writing_line(session: &Session) -> String {
     } else {
         "; editing this build is not allowed yet (Edit anyway)"
     };
-    format!("Writing: {system}{allowed}")
+    let save = if session.save_changed() {
+        "; the game has loaded a save, or gone back to its main menu, since the editor read it: nothing is written until \
+         Reload data"
+    } else {
+        ""
+    };
+    format!("Writing: {system}{allowed}{save}")
 }
 
 fn system() -> &'static str {
