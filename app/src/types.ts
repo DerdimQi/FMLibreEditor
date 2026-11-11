@@ -170,7 +170,8 @@ export type CheckKey =
   | "contracts"
   | "teams"
   | "staff"
-  | "clubs";
+  | "clubs"
+  | "cohesion";
 
 /** What one check found: how many of the players, staff or clubs it looked at fit. */
 export interface CheckResult {
@@ -799,6 +800,11 @@ export interface SquadPlayer extends PlayerSummary {
   matchSharpness: number;
   jadedness: number;
   morale: number;
+  /**
+   * His cohesion with the club, 1–100; null where this version of the game has not been checked for it, or he has no
+   * entry for the club: the game gives one when it signs a player, and some moved by an editor have none.
+   */
+  cohesion: number | null;
   /** How many current injuries he has. */
   injuries: number;
   /** How many current bans he has. */
@@ -814,9 +820,10 @@ export type CaptainRole = "captain" | "viceCaptain";
 
 /**
  * What a team-wide action does to every player of the team, those out on loan too: "heal" heals every injury,
- * "liftBans" lifts every ban, "inspire" sets morale to 20, "refresh" sets energy and match sharpness to 100%.
+ * "liftBans" lifts every ban, "inspire" sets morale to 20, "refresh" sets energy and match sharpness to 100%,
+ * "maxCohesion" sets cohesion with the club to 100 for those who have one.
  */
-export type TeamAction = "heal" | "liftBans" | "inspire" | "refresh" | "maxAttributes";
+export type TeamAction = "heal" | "liftBans" | "inspire" | "refresh" | "maxAttributes" | "maxCohesion";
 
 /** The columns that sort a squad table. */
 export type SquadSort =
@@ -828,7 +835,8 @@ export type SquadSort =
   | "condition"
   | "matchSharpness"
   | "jadedness"
-  | "morale";
+  | "morale"
+  | "cohesion";
 
 /** The contract a move to another club gives the player, as stored; what is left out stays as it is. */
 export interface MoveTerms {

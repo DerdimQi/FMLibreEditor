@@ -9,8 +9,10 @@ mod calibrate;
 mod clauses;
 mod clubs;
 mod coded;
+mod cohesion;
 mod date;
 mod details;
+mod diagnostics;
 mod edit;
 mod export;
 mod filter;
@@ -52,11 +54,13 @@ pub use clubs::{
     ClubDetails, ClubIndex, ClubSummary, Finances, SUPPORTER_MIX, SUPPORTER_TRAITS, read_club_details, read_clubs,
 };
 pub use coded::Coded;
+pub use cohesion::{COHESION_RANGE, CohesionPlan, CohesionSet};
 pub use date::FmDate;
 pub use details::{
     ATTRIBUTE_GROUPS, Attribute, Clause, Contract, International, PERSONALITY, POSITIONS, PlayerDetails, Reputation,
     read_player_details,
 };
+pub use diagnostics::{date_line, diagnostics_report, retirement_line};
 pub use edit::{Change, EditError, Entity, Field, Kind, LOAN_EXPIRES, LOAN_OPTION_FEE, Scale, Target, fields};
 pub use export::{ExportFormat, ExportHeader, Exported};
 pub use filter::{
@@ -69,7 +73,8 @@ pub use health::{Check, CheckResult, DateEvidence, DateFit, Health, Lock, STRUCT
 pub use index::{Listed, SearchIndex};
 pub use loans::{LoanDetails, LoanEnd, LoanTerms};
 pub use locate::{
-    DatePlace, Found, Place, date_candidates, holds_retirement_manager, retirement_guesses, search_retirement_manager,
+    DatePlace, Found, NEAR_GUESS, Place, date_candidates, date_guesses, holds_retirement_manager, retirement_guesses,
+    search_retirement_manager,
 };
 pub use mass::{Operation, Plan, Planned, Skipped};
 pub use medical::{Ban, HealPlan, Healed, Injury, LiftPlan, Lifted};

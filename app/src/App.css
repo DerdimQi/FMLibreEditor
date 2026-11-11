@@ -707,6 +707,26 @@ dd,
   color: var(--text);
 }
 
+/* Copy diagnostics, in the colophon and in the compatibility notice: why the report could not be copied, beside it. */
+.copy-diagnostics {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.copy-diagnostics-error {
+  color: var(--danger);
+}
+
+/* In the colophon the error is cut short at the end, so that the game's line beside it keeps its room; it is whole in
+   its tooltip. */
+.colophon .copy-diagnostics-error {
+  max-width: 24em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Connect */
 
 .connect {

@@ -110,6 +110,8 @@ function sortValue(player: SquadPlayer, by: SquadSort): string | number | null {
       return player.jadedness;
     case "morale":
       return player.morale;
+    case "cohesion":
+      return player.cohesion;
   }
 }
 
@@ -265,9 +267,13 @@ export function SquadTab({ clubUid, version, panel }: SquadTabProps) {
   const act = (target: ClubTeam, action: TeamAction) =>
     write(target.index, async () => {
       const report = await teamAction(clubUid, target.index, action);
+      // Max cohesion leaves out the players who have no entry for the club yet, and says how many.
+      const without =
+        action === "maxCohesion" ? target.players.filter((player) => player.cohesion === null).length : 0;
+      const written = text.written(report.applied);
       return {
         team: target.index,
-        message: text.written(report.applied),
+        message: without > 0 ? `${written} · ${text.cohesionWithout(without)}` : written,
         failed: false,
         problems: refusalLines(report.failed),
         // An action that wrote nothing has nothing to take back.
@@ -401,6 +407,7 @@ export function SquadTab({ clubUid, version, panel }: SquadTabProps) {
                   {sortHeader("matchSharpness", "num")}
                   {sortHeader("jadedness", "num")}
                   {sortHeader("morale", "num")}
+                  {sortHeader("cohesion", "num")}
                   <th className="col-actions">
                     <span className="sr-only">{text.columns.actions}</span>
                   </th>
@@ -485,14 +492,16 @@ interface TeamActionsProps {
 }
 
 /**
- * Heal all, Lift bans, Inspire all, Refresh all and Max attributes for the shown team. Heal all and Lift bans say how
- * many players are injured or banned and wait until somebody is; every one waits while the game cannot be written to,
- * and says why.
+ * Heal all, Lift bans, Inspire all, Refresh all, Max attributes and Max cohesion for the shown team. Heal all and Lift
+ * bans say how many players are injured or banned and wait until somebody is, and Max cohesion until somebody's
+ * cohesion can be read; every one waits while the game cannot be written to, and says why.
  */
 function TeamActions({ team, editable, busy, onAction }: TeamActionsProps) {
   const { readOnlyNote } = useContext(EditorContext);
   const injured = team.players.filter((player) => player.injuries > 0).length;
   const banned = team.players.filter((player) => player.bans > 0).length;
+  // Those whose cohesion with the club the editor can read, and so set.
+  const cohesive = team.players.filter((player) => player.cohesion !== null).length;
   const empty = team.players.length === 0;
   // What a button's hover text says: why it waits, or else what it does.
   const hover = (does: string, waiting: string | null) => (!editable ? readOnlyNote : (waiting ?? does));
@@ -533,6 +542,13 @@ function TeamActions({ team, editable, busy, onAction }: TeamActionsProps) {
         waiting={!editable || empty}
         busy={busy}
         onPress={() => onAction("maxAttributes")}
+      />
+      <ActionButton
+        label={text.maxCohesion}
+        title={hover(text.maxCohesionTitle, cohesive === 0 ? text.cohesionNone : null)}
+        waiting={!editable || cohesive === 0}
+        busy={busy}
+        onPress={() => onAction("maxCohesion")}
       />
     </div>
   );
@@ -768,6 +784,7 @@ function SquadRow({ player, role, editable, busy, onCaptain, onOpen }: SquadRowP
       <td className="num">{percentText(player.matchSharpness)}</td>
       <td className="num">{formatNumber(player.jadedness)}</td>
       <td className="num">{profileText.morale(player.morale)}</td>
+      <td className="num">{player.cohesion ?? <span className="muted">{profileText.none}</span>}</td>
       <td className="col-actions">
         {player.playsHere && (
           <CaptainMenu name={player.name} holds={role} editable={editable} busy={busy} onPick={onCaptain} />

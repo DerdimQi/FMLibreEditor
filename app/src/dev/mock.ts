@@ -6,6 +6,7 @@ import { fold } from "../format";
 import { scoutingOverview, scoutingSuggest } from "./mockScouting";
 import type {
   ApplyReport,
+  ArrayRef,
   AttributeBound,
   ClubMoney,
   FeePlan,
@@ -567,6 +568,19 @@ function addTie(uid: number, kind: TieKind, target: number, rule?: number): Logg
 
 /** The fixture players whose bans were lifted through the editor, by UID, while the lifting is not undone. */
 const liftedPlayers = new Set<number>();
+
+/**
+ * Cohesion with the club as Max cohesion set it, by UID. The rest have the made-up one `cohesionOf` gives, and one player
+ * in seven none, as a player who has only just joined has no entry for his club yet.
+ */
+const cohesionSet = new Map<number, number>();
+
+function cohesionOf(uid: number): number | null {
+  if (cohesionSet.has(uid)) {
+    return cohesionSet.get(uid)!;
+  }
+  return uid % 7 === 0 ? null : 1 + ((uid * 37) % 99);
+}
 
 /** The current bans of a fixture player: every eleventh one is banned, for one to three matches, until lifted. */
 function bansOf(uid: number): Ban[] {
@@ -1487,6 +1501,11 @@ function undoChange(id: number): LoggedChange {
     entry.undoneAt = Date.now();
     return { ...entry };
   }
+  if (entry.field === "cohesion") {
+    cohesionSet.set(entry.uid, entry.old);
+    entry.undoneAt = Date.now();
+    return { ...entry };
+  }
   if (entry.field === "retirement") {
     keptPlayers.delete(entry.uid);
     entry.undoneAt = Date.now();
@@ -2069,6 +2088,7 @@ function clubSquads(clubUid: number): ClubTeam[] {
         matchSharpness: d.matchSharpness,
         jadedness: d.jadedness,
         morale: d.morale,
+        cohesion: cohesionOf(uid),
         injuries: d.injuries.length,
         bans: d.bans.length,
         attributesFrozen: frozenAttributes.has(uid),
@@ -2184,6 +2204,30 @@ function teamAction(clubUid: number, index: number, action: TeamAction): MassRep
   if (action === "liftBans") {
     for (const player of team.players.filter((p) => p.bans > 0)) {
       liftBans(player.uid, batch);
+      report.applied++;
+    }
+    return report;
+  }
+  if (action === "maxCohesion") {
+    // Those with an entry for the club, and not at the top already.
+    for (const player of team.players) {
+      const old = cohesionOf(player.uid);
+      if (old === null || old === 100) {
+        continue;
+      }
+      cohesionSet.set(player.uid, 100);
+      changes.push({
+        id: changes.length + 1,
+        at: Date.now(),
+        name: player.name,
+        entity: "player",
+        uid: player.uid,
+        field: "cohesion",
+        old,
+        new: 100,
+        undoneAt: null,
+        batch,
+      });
       report.applied++;
     }
     return report;
@@ -2597,6 +2641,7 @@ const CHECKS: CheckKey[] = [
   "teams",
   "staff",
   "clubs",
+  "cohesion",
 ];
 const FAILING: CheckKey[] = ["gameDate", "attributes", "contracts"];
 
@@ -2611,6 +2656,40 @@ function mockHealth(): Health {
       return { check, passed, fit: passed ? 2000 : 640, sampled: 2000 };
     }),
   };
+}
+
+/** The report Copy diagnostics copies, worded as the Rust side words it (`diagnostics_report`), for the fixtures. */
+function mockReport(connection: ConnectionInfo): string {
+  const share = (value: number) => `${Math.round(value * 100)}`.padStart(3);
+  const array = (label: string, found: ArrayRef | null) =>
+    found
+      ? `  ${label.padEnd(8)} game_plugin.dll+0x${found.pairRva.toString(16)}  ${String(found.count).padStart(7)} ` +
+        `elements  ${share(found.confidence)}% of samples decoded, ${share(found.named)}% by a name`
+      : `  ${label.padEnd(8)} not found`;
+  const allowed = connection.knownBuild
+    ? ""
+    : `; editing this build ${connection.editable ? "was allowed" : "is not allowed yet"} (Edit anyway)`;
+  const { arrays, health } = connection;
+  return [
+    "FMLibreEditor (browser preview, sample data)",
+    `Game: FM27 Game Pass ${game.packageVersion}`,
+    "game_plugin.dll build: size of image 0x175da000, link timestamp 0x6ae563a1",
+    `Build profile: ${connection.profile ?? "none for this build"}`,
+    `Writing: the system lets the app write to the game${allowed}`,
+    `In-game date: ${connection.gameDate ? "2026-09-09 (game_plugin.dll+0x56257c8, from the build profile)" : "none"}`,
+    "Retirement manager: game_plugin.dll+0x5675060 (from the build profile)",
+    arrays.fromProfile ? "Entity arrays (from the build profile, checked):" : "Entity arrays:",
+    array("players", arrays.players),
+    array("staff", arrays.staff),
+    array("clubs", arrays.clubs),
+    "Checks:",
+    ...health.results.map(
+      (result) =>
+        `  ${result.passed ? "pass" : "FAIL"}  ${result.check.padEnd(12)} ${String(result.fit).padStart(5)} of ` +
+        `${String(result.sampled).padStart(5)} fit`,
+    ),
+    "",
+  ].join("\n");
 }
 
 /**
@@ -2727,6 +2806,11 @@ export async function mockInvoke<T>(command: string, args?: Record<string, unkno
       mockConnection = { ...mockConnection, editable: mockConnection.writable };
       return mockConnection as T;
     }
+    case "diagnostics":
+      if (!mockConnection) {
+        throw failure("app.notConnected", "Not connected to the game");
+      }
+      return mockReport(mockConnection) as T;
     case "current_connection":
       // Like the real command after a window reload; here a reload starts the fixtures afresh, so it is null then.
       return (mockConnection && { ...mockConnection, loadMs: 0 }) as T;
