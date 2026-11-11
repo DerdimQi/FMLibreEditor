@@ -94,6 +94,32 @@ const checkName = (key: string | undefined) => {
   return name.charAt(0).toUpperCase() + name.slice(1);
 };
 
+/** The name of a job code a failure gives, as `jobs` below has it. */
+const jobName = (code: string | undefined) =>
+  (zhCN.jobs as Partial<Record<number, string>>)[Number(code)] ?? code ?? "";
+
+/** The noun of the kind of record a failure names, or "记录" when it names none. */
+const recordNoun = (entity: string | undefined) =>
+  entity === "player" || entity === "staff" || entity === "club" ? entityNouns[entity] : "记录";
+
+/** The reasons the Rust side gives for a field that cannot be changed some way. */
+const UNSUPPORTED: Partial<Record<string, string>> = {
+  "a date can only be set": "日期只能直接设定",
+  "it is changed one person at a time": "只能逐个人修改",
+  "the new value is not one of the game's own records of that kind": "新值不是游戏中该类型的已有记录",
+  "the in-game date is not known": "无法得知游戏内日期",
+};
+
+/** What to do once the game's data moved under the editor. */
+const reload = "请点击“重新读取数据”后重试";
+
+/** The lists of a club's staff, as `staff.noRoom` names them. */
+const STAFF_DEPARTMENTS: Partial<Record<string, string>> = {
+  medical: "医疗组",
+  coaching: "教练组",
+  scouting: "球探组",
+};
+
 /** 按错误代码显示中文提示；参数由命令返回。 */
 const errors: ErrorTexts = {
   "edit.unknownField": (p) => `此处没有可编辑的字段“${p.field}”。`,
@@ -101,7 +127,8 @@ const errors: ErrorTexts = {
   "edit.notADate": (p) => `${p.value} 不是有效的${field(p.field)}日期。`,
   "edit.notAChoice": (p) => `${p.value} 不是${field(p.field)}可用的选项。`,
   "edit.taken": (p) => `球衣号码 ${p.value} 已被占用：${p.name ?? `UID 为 ${p.uid} 的球员`} 正在穿着该号码。`,
-  "edit.unsupported": (p) => `无法以这种方式修改${field(p.field)}：${p.reason}。`,
+  "edit.unsupported": (p) => `无法以这种方式修改${field(p.field)}：${UNSUPPORTED[p.reason ?? ""] ?? p.reason}。`,
+  "edit.moved": (p) => `该${recordNoun(p.entity)}在游戏内存中的位置已改变；${reload}。`,
   "edit.noRecord": (p) => `无法在此修改${field(p.field)}：记录缺失或校验未通过。`,
   "edit.unset": (p) => `游戏中尚未设置${field(p.field)}，因此保留原值。`,
   "edit.implausible": (p) => `${field(p.field)}的值 ${p.value} 超出合理范围；为安全起见，保留原值。`,
@@ -135,6 +162,100 @@ const errors: ErrorTexts = {
   "scout.unknownRole": (p) => `编辑器不认识“${p.role}”这个职责。`,
   "setup.steamRunning": () =>
     "Steam 正在运行，因此未更改 FM27 的启动选项；bridge 已安装。请退出 Steam 后重试，或自行在 Steam 中填写启动选项。",
+  "setup.io": (p) => `${p.path}：${p.error}`,
+  "setup.noLibrary": (p) => `应用中缺少一个 bridge 文件：${p.path}`,
+  "setup.noSteamAccount": () => "在这台 Mac 上找不到 Steam 账户；请打开 Steam 并至少登录一次。",
+  "setup.unknownConfig": (p) => `${p.path} 的格式不是 FMLibreEditor 认识的，因此未作改动。`,
+
+  // The app and its change log
+  "app.alreadyUndone": () => "此改动已撤销。",
+  "app.dataChanged": () => `游戏中的这些数据已发生变化；${reload}。`,
+  "app.internal": () => "应用发生了意外错误。",
+  "app.noChange": (p) => `改动 ${p.id} 不存在。`,
+  "app.notConnected": () => "尚未连接到游戏。",
+  "app.notFound": (p) => `列表中没有 ID 为 ${p.uid} 的${recordNoun(p.entity)}；${reload}。`,
+
+  // Connecting to the game, and its memory
+  "session.notRunning": () => "Football Manager 27 未在运行。请启动游戏、载入存档后重试。",
+  "session.noSuchProcess": (p) => `没有 PID 为 ${p.pid} 的 ${p.exe ?? "fm.exe"}。`,
+  "session.severalRunning": (p) => `有 ${p.count} 个 ${p.exe ?? "fm.exe"} 正在运行（${p.pids}）；请选择其中一个。`,
+  "session.pluginNotLoaded": () => "游戏数据尚未载入；请等到主菜单出现后重试。",
+  "session.unsupportedEdition": (p) => `尚不支持 FM${p.edition}。`,
+  "session.unknownEdition": () => "无法判断这是哪一版 Football Manager。",
+  "session.playersNotFound": () => "未找到球员列表；请载入存档（仅停留在主菜单不行）后重试。",
+  "memory.win32": (p) => `Windows 拒绝了一项操作（${p.operation}，错误 ${p.code}）。`,
+  "memory.mach": (p) => `macOS 拒绝了一项操作（${p.operation}，错误 ${p.code}）。`,
+  "memory.posix": (p) => `macOS 拒绝了一项操作（${p.operation}，errno ${p.code}）。`,
+  "memory.bridge": (p) => `游戏中的 FMLibreEditor bridge 未能交出内存访问权限（${p.reason}）。`,
+  "memory.read": (p) => `无法读取游戏内存（系统错误 ${p.code}）。`,
+  "memory.write": (p) => `无法写入游戏内存（系统错误 ${p.code}）。`,
+  "memory.readOnly": () => "游戏以只读方式打开；Windows 不允许写入。",
+  "memory.notWritable": () => "该地址不在游戏可写的数据内存中，因此未写入。",
+  "memory.invalidPe": () => "无法读取游戏模块。",
+  "memory.invalidMachO": () => "无法读取游戏模块。",
+
+  // Transfers, loans and signings
+  "move.changed": () => `游戏在此期间修改了这部分内存；${reload}。`,
+  "move.moved": () => `该球员在游戏内存中的位置已改变；${reload}。`,
+  "move.freeAgent": () => "该球员是自由球员：没有可离开的俱乐部，也无法用于交换。",
+  "move.humanClub": () =>
+    "该球员效力于由玩家执教的俱乐部。在此游戏版本中，编辑器尚找不到该俱乐部的阵容安排，因此只能在游戏内让他离队。",
+  "move.menAndWomen": () => "两家俱乐部一家是男足，一家是女足。",
+  "move.noRoom": (p) => `该俱乐部的阵容名单已满（目前 ${p.players} 人），且编辑器在此系统上无法扩充。`,
+  "move.notAClub": () => "这家俱乐部没有可让球员加入的一线队。",
+  "move.notApplied": () => "内存已写入，但读回的内容与写入的不一致。",
+  "move.notListed": () => "阵容名单中没有在应有的位置找到该球员。",
+  "move.notOnLoan": () => "该球员未被租借。",
+  "move.onLoan": () => "该球员正在租借中：请先在其档案的“租借”部分召回，或将租借转为永久转会。",
+  "move.playerCoach": () => "球员兼教练无法转会：他们同时也是职员。",
+  "move.sameClub": () => "该球员已在这家俱乐部。",
+  "move.unusualContract": () => "该球员的合同不是普通的球员合同。",
+  "sign.noDate": () => "编辑器无法读取游戏内日期，而新合同需要从该日期开始。",
+  "sign.noModel": () => "该俱乐部一线队中没有持普通合同的球员，无法据此拟定新合同。",
+  "sign.noPool": () => "在此游戏版本中，编辑器找不到游戏存放合同的位置，因此无法为自由球员签约。",
+  "sign.poolFull": () =>
+    "游戏自己创建新合同之前（随着日期推进会创建），没有空位再放一份合同：请在游戏中推进一天后重试。",
+
+  // A player's records
+  "ban.notBanned": () => "该球员没有可解除的禁赛。",
+  "heal.notInjured": () => "该球员没有需要治疗的伤病。",
+  "captain.notInTeam": () => "该球员不在这支球队中效力；队长只能由本队球员担任。",
+  "captain.unchanged": () => "该球员已担任此职务。",
+  "clause.missing": () => `合同中已没有此条款；${reload}。`,
+  "clause.noContract": () => "该球员没有合同。",
+  "clause.noRoom": () => "合同的条款列表已满，编辑器无法扩充；请改为修改其中一项条款。",
+  "clause.notInClause": (p) => `此条款没有可修改的${p.field === "clause.amount" ? "金额" : "条件"}。`,
+  "clause.same": () => "合同中已有此项。",
+  "relation.missing": () => `球员的列表中已没有该国籍或培养经历；${reload}。`,
+  "relation.noRoom": () => "球员的列表已满，编辑器无法扩充；请改为修改其中一项。",
+  "relation.rule": (p) => `本土培养规则 ${p.rule} 不在编辑器可写入的规则之列。`,
+  "relation.same": () => "该球员已有此项。",
+  "relation.target": () => "这不是此项所接受类型的游戏内国家或俱乐部。",
+  "retirement.none": () => "游戏没有安排这名球员退役，他本就打算继续踢球。",
+  "retirement.unknown": () => "在此游戏版本中，编辑器找不到已计划的退役信息。",
+
+  // Clubs, squads and staff
+  "squad.noTeam": () => `该俱乐部没有这支球队，或其未通过检查；${reload}。`,
+  "stadium.none": () => "无法读取该俱乐部一线队的主场。",
+  "stadium.badName": () => "球场名称不能为空，不能以空格开头或结尾，也不能包含控制字符。",
+  "stadium.nameLength": (p) =>
+    `为放入游戏存放它的位置，此球场的新名称须占 ${p.min} 到 ${p.max} 字节；当前名称占 ${p.bytes} 字节。`,
+  "stadium.shared": (p) => `游戏中有 ${p.holders} 处共用此名称，无法只为这座球场修改。`,
+  "staff.job": (p) => `编辑器尚不能转移担任${jobName(p.job)}的职员，也不能分配该职位。`,
+  "staff.noRoom": (p) =>
+    `该俱乐部的${STAFF_DEPARTMENTS[p.department ?? ""] ?? p.department}名单已满（目前 ${p.staff} 人），且编辑器在此无法扩充。`,
+  "staff.notListed": () => "俱乐部的职员名单中没有在应有的位置找到此人。",
+  "staff.role": () =>
+    "俱乐部或其某支球队直接指向这名职员（例如同时担任足球总监的主教练，或亲自执教球队的主席）；只能由游戏自行调动他。",
+  "staff.unemployed": () => "这名职员没有俱乐部。",
+  "staff.you": () => "这是你本人，即你所控制的主教练。",
+
+  // Mass edits and exports
+  "mass.noOperations": () => "请至少选择一个要修改的字段。",
+  "mass.outOfDate": () => "此预览已过期。请重新生成批量编辑的预览。",
+  "mass.tooMany": (p) => `共有 ${p.count} 个结果。批量编辑一次最多处理 ${p.limit} 个，请缩小搜索或筛选范围。`,
+  "export.noFolder": () => "没有可导出到的文件夹。",
+  "export.notExported": () => "这不是 FMLibreEditor 导出的文件。",
 };
 
 /**
@@ -2122,53 +2243,53 @@ export const zhCN: Strings = {
     openProfile: "打开球员档案",
     columns: {
       name: "姓名",
-      position: "Pos",
+      position: "位置",
       age: "年龄",
       currentAbility: "CA",
       potentialAbility: "PA",
       condition: "体能",
-      matchSharpness: "Sharpness",
-      jadedness: "Jaded.",
+      matchSharpness: "比赛状态",
+      jadedness: "疲劳度",
       morale: "士气",
       cohesion: "凝聚力",
       /** The last column has no heading but this one, for assistive technology: it holds the captaincy menus. */
-      actions: "Captaincy",
+      actions: "队长设置",
     } satisfies Record<SquadSort | "actions", string>,
     /** Hover text of a column header that sorts the table; `by` is a name from `sortNames`. */
     sortBy: (by: string) => `按${by}排序`,
     sortNames: {
-      name: "name",
-      position: "position",
-      age: "age",
+      name: "姓名",
+      position: "位置",
+      age: "年龄",
       currentAbility: "当前能力",
       potentialAbility: "潜力",
-      condition: "energy",
-      matchSharpness: "match sharpness",
-      jadedness: "jadedness",
-      morale: "morale",
+      condition: "体能",
+      matchSharpness: "比赛状态",
+      jadedness: "疲劳度",
+      morale: "士气",
       cohesion: "凝聚力",
     } satisfies Record<SquadSort, string>,
 
     // The tags after a name, with what each means as hover text
-    injured: "Injured",
+    injured: "受伤",
     /** `count` is how many injuries he has. */
     injuredTitle: (count: number) => `${format(count)} 处伤病`,
-    banned: "Banned",
+    banned: "禁赛",
     /** `count` is how many bans he has. */
     bannedTitle: (count: number) => `${format(count)} 项禁赛`,
-    onLoan: "On loan",
-    onLoanTitle: "Out on loan to another club",
-    loanee: "Loanee",
-    loaneeTitle: "Here on loan from another club",
-    elsewhere: "Elsewhere",
-    elsewhereTitle: "Plays for another team of the club",
-    frozen: "Frozen",
+    onLoan: "外租",
+    onLoanTitle: "租借至其他俱乐部",
+    loanee: "租入",
+    loaneeTitle: "从其他俱乐部租借而来",
+    elsewhere: "其他梯队",
+    elsewhereTitle: "效力于本俱乐部的另一支球队",
+    frozen: "已锁定",
     /** Hover text of Frozen: what is frozen, one of them at least. */
     frozenTitle: (attributes: boolean, fitness: boolean, positions: boolean): string => {
       const frozen = [
-        ...(attributes ? ["attributes"] : []),
-        ...(fitness ? ["energy", "match sharpness"] : []),
-        ...(positions ? ["positions"] : []),
+        ...(attributes ? ["属性"] : []),
+        ...(fitness ? ["体能", "比赛状态"] : []),
+        ...(positions ? ["位置能力"] : []),
       ];
       const last = frozen.pop() ?? "";
       const listed = frozen.length > 0 ? `${frozen.join("、")}和${last}` : last;
@@ -2208,7 +2329,7 @@ export const zhCN: Strings = {
       wageBudget: "工资预算",
       squad: "阵容",
       averageAge: "平均年龄",
-      players: (count: number) => (count === 1 ? "1 名球员" : `${format(count)} players`),
+      players: (count: number) => playerCount(count),
     },
     tabs: {
       label: "球探栏目",
