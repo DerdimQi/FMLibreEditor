@@ -1078,7 +1078,7 @@ export const zhCN: Strings = {
     womensClub: "女子俱乐部",
     /** "Founded 1882", in the line under the name. */
     founded: (year: number) => `${year} 年成立`,
-    reputationShort: "REP",
+    reputationShort: "声望",
     reputationTitle: "声望",
 
     // The tabs under the header: what the club has, and its squad (see `squad`).
