@@ -1263,15 +1263,15 @@ mod tests {
         let fingerprint = PluginFingerprint::Pe { size_of_image: 0x19E6_9000, link_timestamp: 0x6ADF_B11C };
         assert_eq!(profile_for(fingerprint).and_then(|profile| profile.current_date), None);
 
-        // The builds of November 2026 on Windows, but Game Pass 0.9.2435.0, which has not been read for it yet, and
-        // 27.0.1 on the Mac place the game's own object; on the others the editor looks for it as far from the players
-        // pair as there, or else for a pointer to it.
+        // The builds of November 2026 on Windows and 27.0.1 on the Mac place the game's own object; on the others the
+        // editor looks for it as far from the players pair as there, or else for a pointer to it.
         let placed: Vec<String> =
             built_in_profiles().filter(|profile| profile.game_ui.is_some()).map(|profile| profile.name).collect();
         assert_eq!(
             placed,
             [
                 "FM27 0.9.2409.0 (Game Pass)",
+                "FM27 0.9.2435.0 (Game Pass)",
                 "FM27 Steam build 26340721 (27.0.0)",
                 "FM27 Steam build 26385295 (27.0.1)",
                 "FM27 Steam build 26385295 (27.0.1, macOS, Intel)",
