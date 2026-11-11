@@ -16,9 +16,10 @@ const GAP = 4;
 
 /**
  * The flag of each language, in a box of 3:2: the Union Jack for English, as FM is British (cut to 3:2 at the sides,
- * as flag sets do), and the flags of Turkey, Spain, Indonesia, Italy, South Korea and China whole. Spain's is drawn
- * without the coat of arms, as its civil flag is: at this size the arms would be a smudge. Indonesia's is 2:3 in law;
- * drawn at 3:2 like the others. Italy's is the tricolour, three vertical bands. South Korea's follows its construction
+ * as flag sets do), and the flags of Turkey, Spain, Germany, France, Indonesia, Italy, South Korea and China whole.
+ * Spain's is drawn without the coat of arms, as its civil flag is: at this size the arms would be a smudge. Germany's
+ * (3:5) and Indonesia's (2:3) are drawn at 3:2 like the others. France's and Italy's are tricolours of three vertical
+ * bands, France's in the shades it took back in 2020. South Korea's follows its construction
  * sheet: the taegeuk on the diagonal, and around it the four trigrams, each of three bars that are whole or broken.
  * China's follows its own: on a grid of 30 by 20, the large star at (5, 5) with a radius of 3, and four small ones with
  * a radius of 1 at (10, 2), (12, 4), (12, 7) and (10, 9), each with a point towards the large star's centre.
@@ -49,6 +50,20 @@ const FLAGS: Record<Locale, ReactNode> = {
     <svg className="language-flag" viewBox="0 0 3 2" aria-hidden="true">
       <rect width="3" height="2" fill="#aa151b" />
       <rect y="0.5" width="3" height="1" fill="#f1bf00" shapeRendering="crispEdges" />
+    </svg>
+  ),
+  de: (
+    <svg className="language-flag" viewBox="0 0 9 6" aria-hidden="true">
+      <rect width="9" height="6" fill="#ffce00" />
+      <rect width="9" height="4" fill="#dd0000" shapeRendering="crispEdges" />
+      <rect width="9" height="2" fill="#000" shapeRendering="crispEdges" />
+    </svg>
+  ),
+  fr: (
+    <svg className="language-flag" viewBox="0 0 3 2" aria-hidden="true">
+      <rect width="3" height="2" fill="#fff" />
+      <rect width="1" height="2" fill="#000091" shapeRendering="crispEdges" />
+      <rect x="2" width="1" height="2" fill="#e1000f" shapeRendering="crispEdges" />
     </svg>
   ),
   id: (
@@ -109,6 +124,8 @@ const LANGUAGES: readonly { id: Locale; name: string }[] = [
   { id: "en", name: "English" },
   { id: "tr", name: "Türkçe" },
   { id: "es", name: "Español" },
+  { id: "de", name: "Deutsch" },
+  { id: "fr", name: "Français" },
   { id: "id", name: "Bahasa Indonesia" },
   { id: "it", name: "Italiano" },
   { id: "ko", name: "한국어" },

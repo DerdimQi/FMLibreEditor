@@ -4,8 +4,10 @@
 // it runs.
 
 import { saveSnapshot } from "../restore";
+import { de } from "./de";
 import { en, type Strings } from "./en";
 import { es } from "./es";
+import { fr } from "./fr";
 import { id } from "./id";
 import { it } from "./it";
 import { ko } from "./ko";
@@ -20,6 +22,8 @@ const LANGUAGES = {
   en: { strings: en, intl: "en-GB" },
   tr: { strings: tr, intl: "tr-TR" },
   es: { strings: es, intl: "es-ES" },
+  de: { strings: de, intl: "de-DE" },
+  fr: { strings: fr, intl: "fr-FR" },
   id: { strings: id, intl: "id-ID" },
   it: { strings: it, intl: "it-IT" },
   ko: { strings: ko, intl: "ko-KR" },
