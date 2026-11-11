@@ -661,6 +661,48 @@ enum Command {
         #[arg(long)]
         find: Option<u64>,
     },
+    /// Show each senior player's tactical familiarity, as the Squad view of the Tactical Effectiveness screen shows it:
+    /// the record player +0xF8 points at (macOS), whose six lists of 4-byte entries, one per area, each give an
+    /// option's code (6 bits from bit 14) and its familiarity × 100 (bits 0–13). With --set, writes that familiarity
+    /// into every entry of the six lists: this writes.
+    Familiarity {
+        /// The club's UID.
+        club: u32,
+        /// Where the player keeps the pointer to his record of familiarity.
+        #[arg(long, default_value = "0xf8")]
+        record: String,
+        /// Set every entry's familiarity × 100 to this, 0..10000.
+        #[arg(long, value_parser = clap::value_parser!(u16).range(0..=10_000))]
+        set: Option<u16>,
+        #[command(flatten)]
+        restore: RestoreArgs,
+    },
+    /// Show the team's tactical familiarity as the Tactical Effectiveness screen works it out: from the history of
+    /// training the training manager keeps for each of the human manager's players (macOS 26340721: the
+    /// `TRAINING_MANAGER` at game_plugin+0x56a5740, its managers' list at +0x38, each manager's club at +0x98 and his
+    /// map of players by person id at +0x78, each player's 12-byte entries at node +0x28). Each entry adds to its area
+    /// a weight for its age (12 in its first week down to 0 after 251 days), times how close its option is to the
+    /// tactic's (1 less 0.1 a step), times three factors for the session and the player; an area holds at most 100.
+    /// With --max, rewrites each player's entries so that every area adds up to 100: this writes.
+    TrainingHistory {
+        /// The club's UID.
+        club: u32,
+        /// The options the tactic in use takes in areas 0–5, as `familiarity` shows them, e.g. 5 17 10 4 20 10.
+        #[arg(long, num_args = 6, required = true)]
+        options: Vec<i8>,
+        /// Only this player (UID).
+        #[arg(long)]
+        player: Option<u32>,
+        /// Rewrite the entries: dated today, on the tactic's options and shapes, at the factors' most, spread over
+        /// the eight areas.
+        #[arg(long)]
+        max: bool,
+        /// Print each entry.
+        #[arg(long)]
+        entries: bool,
+        #[command(flatten)]
+        restore: RestoreArgs,
+    },
     /// Search the game's memory for text (as UTF-8 and UTF-16), bytes or a number.
     Find {
         /// What to look for: text by default; hex bytes or a number with --as.
@@ -1090,6 +1132,8 @@ fn run(cli: Cli) -> Result<()> {
                 | Command::TieAdd { .. }
                 | Command::Captain { .. }
                 | Command::Cohesion { set: Some(_), .. }
+                | Command::Familiarity { set: Some(_), .. }
+                | Command::TrainingHistory { max: true, .. }
         )
     );
     let process = attach(cli.pid, elevated, writes)?;
@@ -1323,6 +1367,20 @@ fn run(cli: Cli) -> Result<()> {
             let near =
                 near.map(|near| Ok::<_, anyhow::Error>((parse_bytes(&near)?, parse_hex(&within)?))).transpose()?;
             find(&process, &modules, &pattern, kind, module.as_deref(), max, near)
+        }
+        Command::TrainingHistory { club, options, player, max, entries, restore } => {
+            let session = connect(process, ArraySource::ProfileFirst)?;
+            let options: [i8; 6] = options.try_into().map_err(|_| anyhow::anyhow!("give six options"))?;
+            training_history(&session, club, &options, player, max, entries, restore)
+        }
+        Command::Familiarity { club, record, set, restore } => {
+            let session = connect(process, ArraySource::ProfileFirst)?;
+            let record = parse_hex(&record)?;
+            familiarity(&session, club, record)?;
+            match set {
+                Some(value) => set_familiarity(&session, club, record, value, restore),
+                None => Ok(()),
+            }
         }
         Command::Pages { out, against } => pages(&process, &out, against.as_deref()),
         Command::Refs { addr, span, max } => {
@@ -6311,6 +6369,444 @@ fn read_pair(process: &Process, pair: u64) -> Result<(u64, u64)> {
         "{pair:#x} does not hold a (begin, end) pointer pair ({begin:#x}, {end:#x})"
     );
     Ok((begin, (end - begin) / 8))
+}
+
+/// An entry of a list of a player's record of familiarity: the option's code and its familiarity × 100.
+fn familiarity_entry(entry: [u8; 4]) -> (i32, u32) {
+    let packed = u32::from(entry[0]) | u32::from(entry[1]) << 8 | u32::from(entry[2]) << 16;
+    // Six bits from bit 14, read signed as the game does (`sbfx #14, #6`).
+    let code = ((packed << 12) as i32) >> 26;
+    (code, packed & 0x3FFF)
+}
+
+/// Where the familiarity of each entry of the record of familiarity of each senior player of the club `uid` is: the
+/// `u16` that holds it, as it is, and the bits of it that are not the familiarity. The six lists of areas hold it in
+/// bits 0–13 of an entry's first two bytes, next to the option's code; the list of shapes at +0xC0, 16-byte entries
+/// keyed by the formation's places, in the `u16` at +0xE.
+fn familiarity_places(session: &Session, uid: u32, record: u64) -> Result<Vec<(u64, u16, u16)>> {
+    let process = &session.process;
+    let players = PlayerIndex::new(session.players()?);
+    let clubs = ClubIndex::new(session.clubs()?);
+    let club = clubs.get(uid).with_context(|| format!("no club with UID {uid}"))?;
+    let team = session.club_teams(club, &players)?.into_iter().next().context("the club has no team")?;
+    let mut places = Vec::new();
+    for player in team.players.iter().filter(|m| m.plays_here).filter_map(|m| players.get(m.uid)) {
+        let at = process.read_u64(player.address + record)?;
+        if !is_user_pointer(at) {
+            continue;
+        }
+        for area in 0..6u64 {
+            let head = process.read_bytes(at + area * 0x20, 0x20)?;
+            let word = |i: usize| u64::from_le_bytes(head[i * 8..i * 8 + 8].try_into().expect("8 bytes"));
+            let (begin, end) = (word(0), word(1));
+            ensure!(head[0x18] as u64 == area, "player {}: list {area} names area {}", player.uid, head[0x18]);
+            ensure!(
+                is_user_pointer(begin) && end >= begin && (end - begin).is_multiple_of(4) && end - begin <= 0x100,
+                "player {}: list {area} does not check out",
+                player.uid
+            );
+            for entry in (begin..end).step_by(4) {
+                let bytes = process.read_bytes(entry, 2)?;
+                places.push((entry, u16::from_le_bytes([bytes[0], bytes[1]]), 0xC000));
+            }
+        }
+        let head = process.read_bytes(at + SHAPES, 0x18)?;
+        let word = |i: usize| u64::from_le_bytes(head[i * 8..i * 8 + 8].try_into().expect("8 bytes"));
+        let (begin, end) = (word(0), word(1));
+        if begin == 0 && end == 0 {
+            continue;
+        }
+        ensure!(
+            is_user_pointer(begin) && end >= begin && (end - begin).is_multiple_of(16) && end - begin <= 0x400,
+            "player {}: the list of shapes does not check out",
+            player.uid
+        );
+        for entry in (begin..end).step_by(16) {
+            let bytes = process.read_bytes(entry + 0xE, 2)?;
+            places.push((entry + 0xE, u16::from_le_bytes([bytes[0], bytes[1]]), 0));
+        }
+    }
+    Ok(places)
+}
+
+/// Where the record of familiarity keeps its list of shapes (the two shape areas).
+const SHAPES: u64 = 0xC0;
+
+/// `familiarity --set`: every entry's familiarity to `value`, its option kept; with --restore, put back and checked.
+fn set_familiarity(session: &Session, uid: u32, record: u64, value: u16, restore: RestoreArgs) -> Result<()> {
+    let process = &session.process;
+    let places = familiarity_places(session, uid, record)?;
+    // The option's two lowest bits share the second byte with the familiarity; they stay.
+    let written: Vec<(u64, u16, u16)> = places.iter().map(|&(at, old, kept)| (at, old, (old & kept) | value)).collect();
+    let write = |at: u64, expected: u16, new: u16| -> Result<()> {
+        let now = process.read_bytes(at, 2)?;
+        ensure!(u16::from_le_bytes([now[0], now[1]]) == expected, "the game changed {at:#x} since it was read");
+        process.write_bytes(at, &new.to_le_bytes())?;
+        let back = process.read_bytes(at, 2)?;
+        ensure!(u16::from_le_bytes([back[0], back[1]]) == new, "{at:#x} does not hold what was written");
+        Ok(())
+    };
+    println!();
+    println!("Setting {} entries to {:.2}.", written.len(), f64::from(value) / 100.0);
+    for (i, &(at, old, new)) in written.iter().enumerate() {
+        if let Err(err) = write(at, old, new) {
+            for &(at, old, new) in written[..i].iter().rev() {
+                let _ = write(at, new, old);
+            }
+            return Err(err);
+        }
+    }
+    println!("  set.");
+    familiarity(session, uid, record)?;
+    if restore.restore {
+        if restore.hold > 0 {
+            println!("  putting it back in {} s", restore.hold);
+            std::thread::sleep(std::time::Duration::from_secs(restore.hold));
+        }
+        for &(at, old, new) in written.iter().rev() {
+            write(at, new, old)?;
+        }
+        println!("  restored: {} entries as they were.", written.len());
+    }
+    Ok(())
+}
+
+/// The static pointer to the training manager (`MANUAL_SINGLETON<TRAINING_MANAGER>`), macOS 26340721.
+const TRAINING_MANAGER: u64 = 0x56a5740;
+
+/// How much an entry of training history adds to its area for its age in days, the first age at most each one
+/// (game_plugin+0x54014d4, and +0x54014ec when the entry's byte +7 is set); none after the last.
+const TRAINING_AGE: [&[(i32, f32)]; 2] = [
+    &[(6, 12.0), (13, 9.0), (20, 7.0), (41, 6.0), (83, 4.0), (251, 2.0)],
+    &[(6, 12.0), (13, 9.0), (20, 7.0), (41, 5.0), (83, 4.0), (193, 3.0), (251, 2.0)],
+];
+/// The factor for the entry's byte +9, the first threshold at least it (game_plugin+0x5401608); 1 above them.
+const TRAINING_SESSION: [(i32, f32); 7] =
+    [(8, 0.75), (10, 0.8), (12, 0.85), (14, 0.9), (16, 0.95), (18, 1.0), (20, 1.0)];
+/// The factor for the entry's byte +10, the player's (game_plugin+0x54016d8); 1 above them.
+const TRAINING_PLAYER: [(i32, f32); 10] =
+    [(8, 0.7), (10, 0.75), (12, 0.8), (13, 0.85), (14, 0.87), (15, 0.9), (16, 0.95), (17, 0.97), (18, 1.0), (20, 1.0)];
+/// The factor for the entry's byte +11, the last threshold at most it (game_plugin+0x5401508).
+const TRAINING_WEEKS: [(i32, f32); 9] =
+    [(0, 0.6), (4, 0.65), (8, 0.7), (26, 0.75), (52, 0.8), (78, 0.85), (104, 0.9), (130, 0.95), (156, 1.0)];
+/// The tag the game gives the entries of areas 0–5 (their bytes +2).
+const AREA_TAG: u16 = 0x0C8C;
+
+/// How much one entry of a player's training history adds to its area, as game_plugin+0x486d408 works it out for the
+/// Tactical Effectiveness screen (its last two arguments 1 and 4), `today` the day of the year from 0: `None` when the
+/// entry is of a shape not in `shapes`, whose closeness the game works out from the formations.
+fn training_weight(e: &[u8; 12], options: &[i8; 6], shapes: [Option<u16>; 2], today: i32) -> Option<(usize, f32)> {
+    let area = e[4] as i8;
+    let closeness = match e[8] {
+        0 if (0..6).contains(&area) => {
+            (1.0 - 0.1 * f32::from((e[6] as i8 - options[area as usize]).unsigned_abs())).max(0.0)
+        }
+        1 if (6..8).contains(&area) => {
+            let tag = u16::from_le_bytes([e[2], e[3]]);
+            if shapes[area as usize - 6] == Some(tag) { 1.0 } else { return None }
+        }
+        _ => 0.0,
+    };
+    if closeness <= 0.0 {
+        return Some((area.clamp(0, 7) as usize, 0.0));
+    }
+    let mut age = today - i32::from(u16::from_le_bytes([e[0], e[1]]));
+    if age < 0 {
+        age += 365;
+    }
+    let first_at_least =
+        |table: &[(i32, f32)], v: i32, above: f32| table.iter().find(|t| t.0 >= v).map_or(above, |t| t.1);
+    let aged = first_at_least(TRAINING_AGE[usize::from(e[7] != 0)], age, 0.0);
+    let kind = match e[5] {
+        0 => 1.0,
+        1 | 3 => 0.8,
+        2 => 0.2,
+        4 => 0.1,
+        _ => 0.0,
+    };
+    let session = first_at_least(&TRAINING_SESSION, i32::from(e[9]), 1.0);
+    let player = first_at_least(&TRAINING_PLAYER, i32::from(e[10] as i8), 1.0);
+    let weeks = TRAINING_WEEKS.iter().rev().find(|t| t.0 <= i32::from(e[11])).map_or(0.75, |t| t.1);
+    Some((area as usize, closeness * aged * kind * session * player * weeks))
+}
+
+/// The eight areas a player's training history adds up to, each 0..100 (`None` where it holds shapes the game alone
+/// can weigh).
+fn training_areas(entries: &[[u8; 12]], options: &[i8; 6], shapes: [Option<u16>; 2], today: i32) -> [Option<u8>; 8] {
+    let mut sums = [Some(0.0f32); 8];
+    for e in entries {
+        match training_weight(e, options, shapes, today) {
+            Some((area, weight)) => sums[area] = sums[area].map(|s| s + weight),
+            None => sums[(e[4] as usize).min(7)] = None,
+        }
+    }
+    sums.map(|s| s.map(|s| s.round().clamp(0.0, 100.0) as u8))
+}
+
+/// `training-history`: see the command.
+fn training_history(
+    session: &Session,
+    uid: u32,
+    options: &[i8; 6],
+    only: Option<u32>,
+    max: bool,
+    show_entries: bool,
+    restore: RestoreArgs,
+) -> Result<()> {
+    use std::collections::HashMap;
+    let process = &session.process;
+    let selection = session.layout.selection.as_ref().context("this layout has no selections, so no person ids")?;
+    let p = &session.layout.player;
+    let players = PlayerIndex::new(session.players()?);
+    let clubs = ClubIndex::new(session.clubs()?);
+    let club = clubs.get(uid).with_context(|| format!("no club with UID {uid}"))?;
+    // The club's players by person id, with the team each plays for.
+    let mut people: HashMap<u32, (u32, String, usize)> = HashMap::new();
+    for (index, team) in session.club_teams(club, &players)?.iter().enumerate() {
+        for player in team.players.iter().filter(|m| m.plays_here).filter_map(|m| players.get(m.uid)) {
+            let id = process.read_u32(player.address + p.at(selection.player_person, player.shift))?;
+            people.insert(id, (player.uid, player.name.clone(), index));
+        }
+    }
+    let date = session.date_place().context("the in-game date was not found")?;
+    let today = (process.read_u32(session.plugin.base + date.rva)? & 0x1FF) as i32 - 1;
+    let manager = process.read_u64(session.plugin.base + TRAINING_MANAGER)?;
+    ensure!(is_user_pointer(manager), "no training manager at game_plugin+{TRAINING_MANAGER:#x}");
+    let (first, last) = (process.read_u64(manager + 0x38)?, process.read_u64(manager + 0x40)?);
+    ensure!(last >= first && last - first <= 0x400, "the training manager's list of managers does not check out");
+    let mut keeper = None;
+    for at in (first..last).step_by(8) {
+        let object = process.read_u64(at)?;
+        if is_user_pointer(object) && process.read_u64(object + 0x98)? == club.address {
+            keeper = Some(object);
+        }
+    }
+    let keeper = keeper.with_context(|| format!("the training manager keeps no history for {}", club.name))?;
+    // The map of players at +0x78: its root at +0x80, nodes (left, right, parent, colour, key at +0x20, vector +0x28).
+    let mut nodes = Vec::new();
+    let mut stack = vec![process.read_u64(keeper + 0x80)?];
+    while let Some(node) = stack.pop() {
+        if !is_user_pointer(node) {
+            continue;
+        }
+        ensure!(nodes.len() < 10_000, "the map of players does not check out");
+        let head = process.read_bytes(node, 0x40)?;
+        let word = |i: usize| u64::from_le_bytes(head[i..i + 8].try_into().expect("8 bytes"));
+        let id = u32::from_le_bytes(head[0x20..0x24].try_into().expect("4 bytes"));
+        nodes.push((id, word(0x28), word(0x30)));
+        stack.push(word(0));
+        stack.push(word(8));
+    }
+    nodes.sort_unstable_by_key(|n| people.get(&n.0).map_or((usize::MAX, String::new()), |p| (p.2, p.1.clone())));
+    // Each player's entries, read once.
+    let mut histories = Vec::new();
+    for &(id, begin, end) in &nodes {
+        ensure!(
+            is_user_pointer(begin) && end >= begin && (end - begin).is_multiple_of(12) && end - begin <= 12 * 4000,
+            "person {id}: the history does not check out"
+        );
+        let bytes = process.read_bytes(begin, (end - begin) as usize)?;
+        let entries: Vec<[u8; 12]> = bytes.as_chunks::<12>().0.to_vec();
+        histories.push((id, begin, entries));
+    }
+    // A player's shapes: the codes his latest entries of each shape area give, which follow his place in the team's
+    // formation (each player has his own).
+    let shapes_of = |entries: &[[u8; 12]]| -> [Option<u16>; 2] {
+        [6usize, 7].map(|area| {
+            entries
+                .iter()
+                .enumerate()
+                .filter(|(_, e)| e[8] == 1 && e[4] as usize == area)
+                .min_by_key(|(i, e)| {
+                    ((today - i32::from(u16::from_le_bytes([e[0], e[1]]))).rem_euclid(365), usize::MAX - i)
+                })
+                .map(|(_, e)| u16::from_le_bytes([e[2], e[3]]))
+        })
+    };
+    let show = |label: &str, histories: &[(u32, u64, Vec<[u8; 12]>)]| {
+        println!(
+            "{} ({uid}), {label}: day {today} of the year, options {options:?}; areas 0–5, then the shapes",
+            club.name
+        );
+        let mut totals = [0u32; 8];
+        let mut counted = 0;
+        for (id, _, entries) in histories {
+            let Some((player, name, team)) = people.get(id) else {
+                if only.is_none() {
+                    println!("  person {id:>8}  not at the club now, {} entries", entries.len());
+                }
+                continue;
+            };
+            if only.is_some_and(|o| o != *player) {
+                continue;
+            }
+            let shapes = shapes_of(entries);
+            let areas = training_areas(entries, options, shapes, today);
+            if *team == 0 {
+                counted += 1;
+                for (t, a) in totals.iter_mut().zip(areas) {
+                    *t += u32::from(a.unwrap_or(0));
+                }
+            }
+            let shown: Vec<String> =
+                areas.iter().map(|a| a.map_or_else(|| "?".to_owned(), |a| format!("{a:>3}"))).collect();
+            println!(
+                "  {player:>10}  {:<24} team {team}  {:>4} entries  {}",
+                clip(name, 24),
+                entries.len(),
+                shown.join(" ")
+            );
+            if show_entries {
+                for e in entries {
+                    let weight =
+                        training_weight(e, options, shapes, today).map_or("?".to_owned(), |w| format!("{:.2}", w.1));
+                    let hex: String = e.iter().map(|b| format!("{b:02x}")).collect();
+                    println!(
+                        "      {hex}  day {:>3} area {} option {:>3}  {weight}",
+                        u16::from_le_bytes([e[0], e[1]]),
+                        e[4],
+                        e[6] as i8
+                    );
+                }
+            }
+        }
+        if counted > 0 {
+            let mean: Vec<String> = totals.iter().map(|t| format!("{:>3}", (t + counted / 2) / counted)).collect();
+            println!("  mean of the {counted} senior players{:>38}{}", "", mean.join(" "));
+        }
+    };
+    show("as it is", &histories);
+    if !max {
+        return Ok(());
+    }
+    // Every entry dated today, on the tactic's options and shapes, at the factors' most, the areas taken in turn.
+    let mut written: Vec<(u64, Vec<u8>, Vec<u8>)> = Vec::new();
+    let mut after = Vec::new();
+    for (id, begin, entries) in &histories {
+        let mine = people.get(id).is_some_and(|p| p.2 == 0 && only.is_none_or(|o| o == p.0));
+        let shapes = shapes_of(entries);
+        // The areas to fill: the six, and the shapes the player has a code for.
+        let areas: Vec<usize> = (0..8).filter(|&a| a < 6 || shapes[a - 6].is_some()).collect();
+        if !mine || entries.len() < 9 * areas.len() {
+            if mine {
+                println!(
+                    "  person {id}: {} entries, too few to fill {} areas; left as they are",
+                    entries.len(),
+                    areas.len()
+                );
+            }
+            after.push((*id, *begin, entries.clone()));
+            continue;
+        }
+        let new: Vec<[u8; 12]> = entries
+            .iter()
+            .enumerate()
+            .map(|(i, old)| {
+                let area = areas[i % areas.len()];
+                let mut e = [0u8; 12];
+                e[..2].copy_from_slice(&(today as u16).to_le_bytes());
+                if area < 6 {
+                    e[2..4].copy_from_slice(&AREA_TAG.to_le_bytes());
+                    e[6] = options[area] as u8;
+                } else {
+                    e[2..4].copy_from_slice(&shapes[area - 6].expect("checked").to_le_bytes());
+                    e[6] = 0xFF;
+                    e[8] = 1;
+                }
+                e[4] = area as u8;
+                e[7] = old[7];
+                e[9] = 20;
+                e[10] = 20;
+                e[11] = 156;
+                e
+            })
+            .collect();
+        written.push((*begin, entries.concat(), new.concat()));
+        after.push((*id, *begin, new));
+    }
+    let write = |at: u64, expected: &[u8], new: &[u8]| -> Result<()> {
+        ensure!(process.read_bytes(at, expected.len())? == expected, "the game changed {at:#x} since it was read");
+        process.write_bytes(at, new)?;
+        ensure!(process.read_bytes(at, new.len())? == new, "{at:#x} does not hold what was written");
+        Ok(())
+    };
+    println!();
+    println!("Rewriting the history of {} players.", written.len());
+    for (i, (at, old, new)) in written.iter().enumerate() {
+        if let Err(err) = write(*at, old, new) {
+            for (at, old, new) in written[..i].iter().rev() {
+                let _ = write(*at, new, old);
+            }
+            return Err(err);
+        }
+    }
+    show("rewritten", &after);
+    if restore.restore {
+        if restore.hold > 0 {
+            println!("  putting it back in {} s", restore.hold);
+            std::thread::sleep(std::time::Duration::from_secs(restore.hold));
+        }
+        for (at, old, new) in written.iter().rev() {
+            write(*at, new, old)?;
+        }
+        println!("  restored: {} players' history as it was.", written.len());
+    }
+    Ok(())
+}
+
+/// `familiarity`: see the command.
+fn familiarity(session: &Session, uid: u32, record: u64) -> Result<()> {
+    let process = &session.process;
+    let players = PlayerIndex::new(session.players()?);
+    let clubs = ClubIndex::new(session.clubs()?);
+    let club = clubs.get(uid).with_context(|| format!("no club with UID {uid}"))?;
+    let team = session.club_teams(club, &players)?.into_iter().next().context("the club has no team")?;
+    println!("{} ({uid}): areas 0–5 as the game lists them, each entry option:familiarity", club.name);
+    for member in team.players.iter().filter(|m| m.plays_here) {
+        let Some(player) = players.get(member.uid) else {
+            continue;
+        };
+        let at = process.read_u64(player.address + record)?;
+        if !is_user_pointer(at) {
+            println!("  {:>10}  {:<24} no record", player.uid, clip(&player.name, 24));
+            continue;
+        }
+        let mut areas = Vec::new();
+        for area in 0..6u64 {
+            let head = process.read_bytes(at + area * 0x20, 0x20)?;
+            let word = |i: usize| u64::from_le_bytes(head[i * 8..i * 8 + 8].try_into().expect("8 bytes"));
+            let (begin, end) = (word(0), word(1));
+            let index = head[0x18];
+            let count =
+                if is_user_pointer(begin) && end >= begin && end - begin <= 0x100 { (end - begin) / 4 } else { 0 };
+            let entries = if count > 0 { process.read_bytes(begin, (count * 4) as usize)? } else { Vec::new() };
+            let shown: Vec<String> = entries
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .map(|e| {
+                    let (code, value) = familiarity_entry(*e);
+                    format!("{code}:{:.2}", f64::from(value) / 100.0)
+                })
+                .collect();
+            areas.push(format!("[{index}] {}", shown.join(" ")));
+        }
+        let head = process.read_bytes(at + SHAPES, 0x18)?;
+        let (begin, end) = (
+            u64::from_le_bytes(head[..8].try_into().expect("8 bytes")),
+            u64::from_le_bytes(head[8..16].try_into().expect("8 bytes")),
+        );
+        if is_user_pointer(begin) && end > begin && end - begin <= 0x400 {
+            let bytes = process.read_bytes(begin, (end - begin) as usize)?;
+            let shapes: Vec<String> = bytes
+                .chunks(16)
+                .map(|e| format!("{:.2}", f64::from(u16::from_le_bytes([e[0xE], e[0xF]])) / 100.0))
+                .collect();
+            areas.push(format!("shapes {}", shapes.join(" ")));
+        }
+        println!("  {:>10}  {:<24} {}", player.uid, clip(&player.name, 24), areas.join("  "));
+    }
+    Ok(())
 }
 
 /// "module+0x..." for module addresses, plain hex otherwise.
