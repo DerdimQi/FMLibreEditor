@@ -751,7 +751,10 @@ export const it: Strings = {
     removingUnhappiness: "Rimozione…",
     removeUnhappinessTitle:
       "Toglie dalla sua lista ogni motivo di scontento, come fa Rimuovi tutto di FMRTE; si può annullare in Modifiche",
+    removeUnhappinessFollows:
+      "I motivi che i compagni hanno su di lui finiscono da soli quando il gioco va avanti: premi Continua nel gioco",
     concernSince: (date) => `dal ${date}`,
+    concernAbout: (name) => `riguarda ${name}`,
     concernKind: (kind) => (kind === 1 ? "Preoccupato" : kind === 2 ? "Interno" : `Tipo ${kind}`),
     concernMotive: (motive) => CONCERN_MOTIVES_IT[motive] ?? `Motivo ${motive}`,
     clauses: "Bonus e clausole",
@@ -2047,6 +2050,11 @@ export const it: Strings = {
     injuredTitle: (count) => (count === 1 ? "1 infortunio" : `${format(count)} infortuni`),
     banned: "Squalificato",
     bannedTitle: (count) => (count === 1 ? "1 squalifica" : `${format(count)} squalifiche`),
+    unrest: "Malumori",
+    unrestTitle: (count) =>
+      count === 1
+        ? "1 compagno ha un motivo di scontento che lo riguarda. Rimuovi tutto, nel suo profilo, lo risolve quando il gioco va avanti"
+        : `${format(count)} compagni hanno un motivo di scontento che lo riguarda. Rimuovi tutto, nel suo profilo, li risolve quando il gioco va avanti`,
     onLoan: "In prestito",
     onLoanTitle: "In prestito a un'altra società",
     loanee: "In prestito qui",

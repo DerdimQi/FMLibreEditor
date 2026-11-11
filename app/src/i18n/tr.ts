@@ -692,7 +692,10 @@ export const tr: Strings = {
     removeUnhappiness: "Hepsini kaldır",
     removingUnhappiness: "Kaldırılıyor…",
     removeUnhappinessTitle: "FMRTE'nin Remove all düğmesi gibi, mutsuzluk nedenlerinin hepsini listesinden kaldırır; Değişiklikler'den geri alınabilir",
+    removeUnhappinessFollows:
+      "The reasons his teammates hold about him end by themselves once the game moves on: press Continue in the game",
     concernSince: (date) => `${date} tarihinden beri`,
+    concernAbout: (name) => `about ${name}`,
     concernKind: (kind) => (kind === 1 ? "Endişeli" : kind === 2 ? "İçsel" : `Tür ${kind}`),
     concernMotive: (motive) => CONCERN_MOTIVES_TR[motive] ?? `Neden ${motive}`,
     clauses: "Primler ve maddeler",
@@ -1953,6 +1956,11 @@ export const tr: Strings = {
     injuredTitle: (count) => `${format(count)} sakatlık`,
     banned: "Cezalı",
     bannedTitle: (count) => `${format(count)} ceza`,
+    unrest: "Unrest",
+    unrestTitle: (count) =>
+      count === 1
+        ? "1 teammate has a reason to be unhappy about him. Remove all, in his profile, settles it once the game moves on"
+        : `${format(count)} teammates have a reason to be unhappy about him. Remove all, in his profile, settles them once the game moves on`,
     onLoan: "Kirada",
     onLoanTitle: "Başka bir kulübe kiralık gönderildi",
     loanee: "Kiralık",

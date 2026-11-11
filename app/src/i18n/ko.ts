@@ -736,7 +736,10 @@ export const ko: Strings = {
     removingUnhappiness: "제거하는 중…",
     removeUnhappinessTitle:
       "FMRTE의 Remove all처럼 이 선수의 불만 사항을 목록에서 모두 지웁니다. 변경 내역에서 되돌릴 수 있습니다",
+    removeUnhappinessFollows:
+      "The reasons his teammates hold about him end by themselves once the game moves on: press Continue in the game",
     concernSince: (date) => `${date}부터`,
+    concernAbout: (name) => `about ${name}`,
     concernKind: (kind) => (kind === 1 ? "우려" : kind === 2 ? "내부" : `유형 ${kind}`),
     concernMotive: (motive) => CONCERN_MOTIVES_KO[motive] ?? `사유 ${motive}`,
     clauses: "보너스 및 조항",
@@ -1964,6 +1967,11 @@ export const ko: Strings = {
     injuredTitle: (count) => `부상 ${format(count)}건`,
     banned: "출장 정지",
     bannedTitle: (count) => `출장 정지 ${format(count)}건`,
+    unrest: "Unrest",
+    unrestTitle: (count) =>
+      count === 1
+        ? "1 teammate has a reason to be unhappy about him. Remove all, in his profile, settles it once the game moves on"
+        : `${format(count)} teammates have a reason to be unhappy about him. Remove all, in his profile, settles them once the game moves on`,
     onLoan: "임대 중",
     onLoanTitle: "다른 구단으로 임대를 떠나 있습니다",
     loanee: "임대생",

@@ -708,7 +708,10 @@ export const es: Strings = {
     removingUnhappiness: "Quitando…",
     removeUnhappinessTitle:
       "Quita de su lista todos los motivos de descontento, como hace Quitar todo en FMRTE; se puede deshacer en Cambios",
+    removeUnhappinessFollows:
+      "The reasons his teammates hold about him end by themselves once the game moves on: press Continue in the game",
     concernSince: (date) => `desde el ${date}`,
+    concernAbout: (name) => `about ${name}`,
     concernKind: (kind) => (kind === 1 ? "Preocupado" : kind === 2 ? "Interno" : `Tipo ${kind}`),
     concernMotive: (motive) => CONCERN_MOTIVES_ES[motive] ?? `Motivo ${motive}`,
     clauses: "Primas y cláusulas",
@@ -2038,6 +2041,11 @@ export const es: Strings = {
     injuredTitle: (count) => (count === 1 ? "1 lesión" : `${format(count)} lesiones`),
     banned: "Sancionado",
     bannedTitle: (count) => (count === 1 ? "1 sanción" : `${format(count)} sanciones`),
+    unrest: "Unrest",
+    unrestTitle: (count) =>
+      count === 1
+        ? "1 teammate has a reason to be unhappy about him. Remove all, in his profile, settles it once the game moves on"
+        : `${format(count)} teammates have a reason to be unhappy about him. Remove all, in his profile, settles them once the game moves on`,
     onLoan: "Cedido",
     onLoanTitle: "Cedido a otro club",
     loanee: "En préstamo",

@@ -1,5 +1,6 @@
 mod bridge;
 
+use std::cell::OnceCell;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -10,7 +11,7 @@ use fmlibre_core::{
     ClubIndex, ClubMove, ClubSummary, Coded, CohesionSet, EditError, Entity, EntityArrays, ExportFormat, ExportHeader,
     Exported, FeePlan, Field, FmDate, GAME_EXE, GAME_PLUGIN, GameInfo, GraphicsCounts, GraphicsIndex, HOMEGROWN_RULES,
     Healed, Health, Kind, LOAN_EXPIRES, LOAN_OPTION_FEE, Lifted, Listed, Loan, MoveError, MovePlan, MoveTerms, Nation,
-    NewContract, NewStaffContract, Operation, Paid, Picture, Planned, PlayerDetails, PlayerFilter, PlayerIndex,
+    NewContract, NewStaffContract, Operation, Paid, People, Picture, Planned, PlayerDetails, PlayerFilter, PlayerIndex,
     PlayerOrder, PlayerSummary, ROLES, RelationSet, RetirementSet, Role, SCOUT_POSITIONS, ScoutError, ScoutPosition,
     ScoutRequest, Scouted, SearchIndex, Session, SessionError, Skipped, SquadReport, StadiumName, StadiumRename,
     StaffChange, StaffDetails, StaffFilter, StaffIndex, StaffOrder, StaffPlan, Target, Tie, TieTarget,
@@ -54,6 +55,8 @@ struct Connection {
     save: Option<String>,
     /// What the hold last found of the game's clubs, for the stadiums renamed in the editor.
     clubs_seen: ClubsSeen,
+    /// Whom the game's ids of people name among `players`, read when a profile first needs it (see `people`).
+    people: OnceCell<People>,
 }
 
 /// How often the balances of frozen clubs, the attributes, energy and sharpness of frozen players, the attributes of
@@ -398,7 +401,27 @@ impl Connection {
             checked: Some(Instant::now()),
             ..ClubsSeen::unknown(begin, session.loads())
         };
-        Ok(Self { session, players, staff, clubs, human_clubs, log, mass: None, next_id, frozen, save, clubs_seen })
+        let people = OnceCell::new();
+        Ok(Self {
+            session,
+            players,
+            staff,
+            clubs,
+            human_clubs,
+            log,
+            mass: None,
+            next_id,
+            frozen,
+            save,
+            clubs_seen,
+            people,
+        })
+    }
+
+    /// Whom the game's ids of people name: read once for these lists, a read for each player, and kept until they
+    /// are read again.
+    fn people(&self) -> &People {
+        self.people.get_or_init(|| self.session.people(&self.players))
     }
 
     /// Freezes again what was frozen in this save before, as the file at `path` remembers it: the attributes, energy,
@@ -1710,6 +1733,8 @@ struct SquadRow {
     morale: u8,
     /// His cohesion with the club, 1..100; none where the layout has not placed it, or he has no entry for it yet.
     cohesion: Option<i8>,
+    /// How many of the club's other players hold a reason to be unhappy about him that is not over.
+    concerned_teammates: usize,
     injuries: usize,
     bans: usize,
     /// Whether his attributes are frozen, his energy and match sharpness, or his positions (see `freeze_team`).
@@ -2534,6 +2559,10 @@ fn player_details(state: State<'_, AppState>, uid: u32) -> Result<PlayerDetails,
     let connection = guard.as_ref().ok_or_else(not_connected)?;
     let player = connection.players.get(uid).ok_or_else(|| not_found(Entity::Player, uid))?;
     let mut details = connection.session.player_details(player)?.ok_or_else(data_changed)?;
+    // The teammates his reasons to be unhappy are about, by name.
+    if let Some(contract) = details.contract.as_mut().filter(|contract| !contract.concerns.is_empty()) {
+        connection.session.name_concerns(&mut contract.concerns, connection.people(), &connection.players);
+    }
     // A loan that ends on the day this session's recall wrote, not undone, is the editor's doing.
     if let Some(loan) = details.loan.as_mut() {
         let until = loan.until.map(FmDate::to_number);
@@ -3421,6 +3450,10 @@ fn club_squads(state: State<'_, AppState>, uid: u32) -> Result<Vec<TeamView>, Fa
     let teams = connection.session.club_teams(club, &connection.players)?;
     // Cohesion is shown only where the lists checked out: a build that moved them would read other bytes.
     let cohesion_read = connection.session.health().passed(fmlibre_core::Check::Cohesion);
+    // Who the club's players hold reasons to be unhappy about, across its teams.
+    let members: BTreeSet<u32> = teams.iter().flat_map(|team| team.players.iter().map(|member| member.uid)).collect();
+    let members: Vec<&PlayerSummary> = members.iter().filter_map(|&uid| connection.players.get(uid)).collect();
+    let concerned = connection.session.concerned_teammates(&members);
     Ok(teams
         .into_iter()
         .map(|team| TeamView {
@@ -3445,6 +3478,7 @@ fn club_squads(state: State<'_, AppState>, uid: u32) -> Result<Vec<TeamView>, Fa
                         jadedness: member.jadedness,
                         morale: member.morale,
                         cohesion,
+                        concerned_teammates: concerned.get(&member.uid).copied().unwrap_or(0),
                         injuries: member.injuries,
                         bans: member.bans,
                         attributes_frozen: connection.frozen.attributes.contains_key(&member.uid),

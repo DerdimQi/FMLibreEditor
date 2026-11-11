@@ -792,7 +792,10 @@ export const fr: Strings = {
     removingUnhappiness: "Retrait…",
     removeUnhappinessTitle:
       "Retirer de sa liste tous les motifs de mécontentement, comme le fait FMRTE\u00a0; annulable dans Modifications",
+    removeUnhappinessFollows:
+      "The reasons his teammates hold about him end by themselves once the game moves on: press Continue in the game",
     concernSince: (date) => `depuis le ${date}`,
+    concernAbout: (name) => `about ${name}`,
     concernKind: (kind) => (kind === 1 ? "Préoccupé" : kind === 2 ? "Interne" : `Type ${kind}`),
     concernMotive: (motive) => CONCERN_MOTIVES_FR[motive] ?? `Motif ${motive}`,
     clauses: "Primes et clauses",
@@ -2118,6 +2121,11 @@ export const fr: Strings = {
     injuredTitle: (count) => counted(count, "blessure", "blessures"),
     banned: "Suspendu",
     bannedTitle: (count) => counted(count, "suspension", "suspensions"),
+    unrest: "Unrest",
+    unrestTitle: (count) =>
+      count === 1
+        ? "1 teammate has a reason to be unhappy about him. Remove all, in his profile, settles it once the game moves on"
+        : `${format(count)} teammates have a reason to be unhappy about him. Remove all, in his profile, settles them once the game moves on`,
     onLoan: "Parti en prêt",
     onLoanTitle: "Prêté à un autre club",
     loanee: "Arrivé en prêt",
