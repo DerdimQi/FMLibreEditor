@@ -115,4 +115,6 @@ before fitted as well as the date, and a search without the profile used neither
 the dates that fit when the field beside the arrays holds it (see `pick_date` in `crates/fmlibre-core/src/health.rs`):
 with `FMLIBRE_IGNORE_PROFILES=1`, `fmlibre-probe health` read the 23rd at `+0x56257c8`, and the smoke test `unknown`
 passed. Both date values sit in the `.data` section among the compiler's type descriptors, not inside an object, so
-their places tell nothing about which is the date.
+their places in this build alone tell nothing about which is the date. From one build to the next they do: the date's
+own variable keeps its distance from the players pair, and the search now goes by that too (see the notes on
+[0.9.2435.0](fm27-gamepass-0.9.2435.md)).

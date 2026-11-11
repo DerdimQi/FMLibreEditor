@@ -3023,7 +3023,11 @@ fn profile(session: &Session, out: Option<&Path>) -> Result<()> {
     for place in candidates.iter().filter(|place| health.evidence.fit(place.date).contracts_hold()) {
         let fit = health.evidence.fit(place.date);
         let verdict = if fit.holds_strictly() { "fits" } else { "    " };
-        let beside = if place.found == Found::BesideArrays { "  (the field beside the arrays)" } else { "" };
+        let beside = match place.found {
+            Found::BesideArrays => "  (the field beside the arrays)",
+            Found::Guessed => "  (about as far from the players' array as other builds keep the date)",
+            Found::Profile | Found::Searched => "",
+        };
         println!(
             "  {verdict}  {GAME_PLUGIN}+{:#x}  {}  {} of {} contract dates after it, {} of {} injuries fit{beside}",
             place.rva,

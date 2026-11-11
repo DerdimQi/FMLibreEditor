@@ -48,3 +48,24 @@ again after:
 - the 220 witnesses (players, staff, clubs) read the same, and no part of their objects moved.
 
 After a load, no contract had room for another clause (12 of 9,960 did on 0.9.2409.0 after a load of the same save).
+
+## The day before, some days on
+
+On 11 November 2026 the same save had moved on to 11 January 2028. Of the 30 values in the plugin's writable data
+that read as dates, two fitted the contracts and the current injuries:
+
+| | Date | Contract dates after it | Injuries that fit it | From the players pair |
+|---|---|---|---|---|
+| `+0x53597C8`, the date's own variable | 11 January 2028 | 0 of 3,712 | 173 of 173 | 0x5E618 before it |
+| `+0x53886F8`, the value for the day before | 10 January 2028 | 3 of 3,712 | 161 of 173 | 0x2F6E8 before it |
+
+The field beside the arrays (`+0x53B8628`) held 1 January 1900, unset, so the code of the released app (0.5.0), which
+went by that field alone when two dates fitted, used neither: without a profile it showed no ages, and refused
+signings for want of a date. Right after the load on 10 November, `+0x53886F8` had held no date.
+
+On 0.9.2409.0 both values sat about as far from the players pair: the date 0x5E5F8 before it, the day before
+(`+0x56546F8`) 0x2F6C8 before it. The search now takes the one date read within 0x400 bytes of where the other builds
+keep their date, and else the one that fits better than every other (see `pick_date` in
+`crates/fmlibre-core/src/health.rs`). With `FMLIBRE_IGNORE_PROFILES=1`, `fmlibre-probe health` read the 11th at
+`+0x53597C8`, "about as far from the players' array as in another build", where the probe of 0.5.0's code still
+used neither date.
