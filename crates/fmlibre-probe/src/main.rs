@@ -678,8 +678,8 @@ enum Command {
         restore: RestoreArgs,
     },
     /// Show the team's tactical familiarity as the Tactical Effectiveness screen works it out: from the history of
-    /// training the training manager keeps for each of the human manager's players (macOS 26340721: the
-    /// `TRAINING_MANAGER` at game_plugin+0x56a5740, its managers' list at +0x38, each manager's club at +0x98 and his
+    /// training the training manager keeps for each of the human manager's players (macOS: the `TRAINING_MANAGER`
+    /// the build profile places, its managers' list at +0x38, each manager's club at +0x98 and his
     /// map of players by person id at +0x78, each player's 12-byte entries at node +0x28). Each entry adds to its area
     /// a weight for its age (12 in its first week down to 0 after 251 days), times how close its option is to the
     /// tactic's (1 less 0.1 a step), times three factors for the session and the player; an area holds at most 100.
@@ -3209,6 +3209,7 @@ fn profile(session: &Session, out: Option<&Path>) -> Result<()> {
         game_ui: game_ui.map(|place| place.rva),
         // Not looked for: kept from the built-in profile.
         tactics_manager: session.profile.as_ref().and_then(|profile| profile.tactics_manager),
+        training_manager: session.profile.as_ref().and_then(|profile| profile.training_manager),
     };
 
     let failed = health.failed();
@@ -6476,9 +6477,6 @@ fn set_familiarity(session: &Session, uid: u32, record: u64, value: u16, restore
     Ok(())
 }
 
-/// The static pointer to the training manager (`MANUAL_SINGLETON<TRAINING_MANAGER>`), macOS 26340721.
-const TRAINING_MANAGER: u64 = 0x56a5740;
-
 /// How much an entry of training history adds to its area for its age in days, the first age at most each one
 /// (game_plugin+0x54014d4, and +0x54014ec when the entry's byte +7 is set); none after the last.
 const TRAINING_AGE: [&[(i32, f32)]; 2] = [
@@ -6585,8 +6583,13 @@ fn training_history(
     }
     let date = session.date_place().context("the in-game date was not found")?;
     let today = (process.read_u32(session.plugin.base + date.rva)? & 0x1FF) as i32 - 1;
-    let manager = process.read_u64(session.plugin.base + TRAINING_MANAGER)?;
-    ensure!(is_user_pointer(manager), "no training manager at game_plugin+{TRAINING_MANAGER:#x}");
+    let rva = session
+        .profile
+        .as_ref()
+        .and_then(|profile| profile.training_manager)
+        .context("the build profile does not place the training manager")?;
+    let manager = process.read_u64(session.plugin.base + rva)?;
+    ensure!(is_user_pointer(manager), "no training manager at game_plugin+{rva:#x}");
     let (first, last) = (process.read_u64(manager + 0x38)?, process.read_u64(manager + 0x40)?);
     ensure!(last >= first && last - first <= 0x400, "the training manager's list of managers does not check out");
     let mut keeper = None;

@@ -864,6 +864,9 @@ pub struct BuildProfile {
     /// RVA in the game plugin of the static pointer to the tactics the human managers keep for their teams
     /// ([`TacticsLayout`]).
     pub tactics_manager: Option<u64>,
+    /// RVA in the game plugin of the static pointer to the training manager (`TRAINING_MANAGER`), which keeps the
+    /// history of training of the human managers' players.
+    pub training_manager: Option<u64>,
 }
 
 /// Identifies a build of the game plugin from its headers as mapped in memory.
@@ -1015,6 +1018,9 @@ pub fn profile_text(profile: &BuildProfile, notes: &ProfileNotes) -> String {
     }
     if let Some(rva) = profile.tactics_manager {
         text += &format!("\ntactics_manager = {rva:#X}\n");
+    }
+    if let Some(rva) = profile.training_manager {
+        text += &format!("\ntraining_manager = {rva:#X}\n");
     }
     text += "\n# game_plugin as mapped in memory; these values identify the build.\n[plugin]\n";
     match profile.plugin {
@@ -1268,6 +1274,7 @@ mod tests {
         assert_eq!(profile.arrays.players, 0x56D_2E18);
         assert_eq!(profile.current_date, Some(0x56B_1DB8));
         assert_eq!(profile.tactics_manager, Some(0x56A_8310));
+        assert_eq!(profile.training_manager, Some(0x56A_5740));
         let uuid = [0x09, 0x81, 0xAB, 0x31, 0xAC, 0x3B, 0x3D, 0x93, 0x94, 0x4F, 0x47, 0xFE, 0x4B, 0x59, 0xCD, 0x9E];
         let profile = profile_for(PluginFingerprint::MachO { uuid }).expect("27.0.0's Intel half");
         assert_eq!(profile.arrays.players, 0x5C8_91C8);
@@ -1283,6 +1290,7 @@ mod tests {
         assert_eq!(profile.current_date, Some(0x574_DDB8));
         assert_eq!(profile.retirement_manager, Some(0x574_42A8));
         assert_eq!(profile.game_ui, Some(0x574_0B60));
+        assert_eq!((profile.tactics_manager, profile.training_manager), (Some(0x574_4310), Some(0x574_1740)));
         let uuid = [0x94, 0xCD, 0xDC, 0x80, 0x84, 0x74, 0x32, 0x7A, 0x85, 0xE0, 0xE4, 0xFF, 0x95, 0xDC, 0x68, 0x93];
         let profile = profile_for(PluginFingerprint::MachO { uuid }).expect("27.0.1's Intel half");
         assert_eq!(
