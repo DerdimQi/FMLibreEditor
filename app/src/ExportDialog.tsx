@@ -1,5 +1,5 @@
-// Exporting players or clubs: the button in the toolbar of the player and club lists, and the dialog it opens. The
-// dialog writes what the list's search and filters select, in its order, to a CSV or JSON file in the exports folder.
+// Exporting players, staff or clubs: the button in the toolbar of the player, staff and club lists, and the dialog it
+// opens. The dialog writes what the list's search and filters select, in its order, to a CSV or JSON file in the exports folder.
 // It only reads the game.
 
 import { useEffect, useId, useRef, useState } from "react";
@@ -35,7 +35,11 @@ function startFormat(): ExportFormat {
 }
 
 /** The command that writes each kind of list. */
-const COMMANDS: Record<ExportEntity, string> = { player: "export_players", club: "export_clubs" };
+const COMMANDS: Record<ExportEntity, string> = {
+  player: "export_players",
+  staff: "export_staff",
+  club: "export_clubs",
+};
 
 /** What an export writes: the list as it was when the dialog opened. */
 interface ExportScope {
@@ -43,7 +47,7 @@ interface ExportScope {
   query: string;
   /** The list's filter and order, as its command takes them. */
   args: Record<string, unknown>;
-  /** How many players or clubs the search and the filters select. */
+  /** How many players, staff or clubs the search and the filters select. */
   total: number;
 }
 
@@ -53,14 +57,14 @@ interface ExportButtonProps {
   /** The search text and the total of the list, from its toolbar. */
   list: ListState;
   /**
-   * The list's filter and, for players, its order, as the list sends them to its search: none of either when nothing
+   * The list's filter and, for players and staff, its order, as the list sends them to its search: none of either when nothing
    * is chosen.
    */
   args: Record<string, unknown>;
 }
 
 /**
- * The Export button of the player or club list, and the dialog it opens. It reads only, so it is there read-only too.
+ * The Export button of the player, staff or club list, and the dialog it opens. It reads only, so it is there read-only too.
  */
 export function ExportButton({ entity, list, args }: ExportButtonProps) {
   const [scope, setScope] = useState<ExportScope | null>(null);

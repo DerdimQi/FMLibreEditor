@@ -39,8 +39,8 @@ extract it and run **FMLibreEditor.exe**.
 The game shows a change after you press **Continue** in FM. The **Changes** view lists what
 you did, and **Undo** puts the old value back.
 
-**Export**, above the player list, writes the players the list shows (with its search, filters
-and order) to a CSV or JSON file in `Documents\FMLibreEditor\Exports`
+**Export**, above the player, staff and club lists, writes what the list shows (with its
+search, filters and order) to a CSV or JSON file in `Documents\FMLibreEditor\Exports`
 (`Documents/FMLibreEditor/Exports` on macOS), named after the in-game date. Pick **CSV,
 semicolon-separated** if Excel puts every value in one column, as it does where decimals are
 written with a comma. Exporting only reads the game.

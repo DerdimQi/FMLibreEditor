@@ -1,8 +1,9 @@
-//! Players or clubs written to a file that a spreadsheet or a script reads: CSV, a row each, or JSON, an object each.
-//! What a profile holds that is worth comparing, across players or clubs and over time. For a player: abilities,
-//! positions, the attributes on the 1–20 scale the game shows, personality, reputation, caps, and the contract with its
-//! clauses. For a club: reputation, supporters, facilities, the stadium and the finances. Each with the in-game date
-//! they were read on. Money is in pounds, as the game keeps it. Only reads memory.
+//! Players, staff or clubs written to a file that a spreadsheet or a script reads: CSV, a row each, or JSON, an object
+//! each. What a profile holds that is worth comparing, across players, staff or clubs and over time. For a player:
+//! abilities, positions, the attributes on the 1–20 scale the game shows, personality, reputation, caps, and the contract
+//! with its clauses. For a member of staff: the job, abilities, attributes, personality, reputation and the contract. For
+//! a club: reputation, supporters, facilities, the stadium and the finances. Each with the in-game date they were read
+//! on. Money is in pounds, as the game keeps it. Only reads memory.
 
 use std::io::{self, Write};
 
@@ -10,21 +11,22 @@ use serde::{Deserialize, Serialize, Serializer};
 
 use crate::{
     ATTRIBUTE_GROUPS, ClubDetails, ClubSummary, Contract, FmDate, International, PERSONALITY, PlayerDetails,
-    PlayerSummary, RELEASE_CLAUSE, RELEASE_CLAUSES, Reputation, SUPPORTER_MIX, SUPPORTER_TRAITS, Session,
-    read_club_details, read_player_details, release_clause_expiry, release_clause_never_expires,
+    PlayerSummary, RELEASE_CLAUSE, RELEASE_CLAUSES, Reputation, STAFF_ATTRIBUTE_GROUPS, SUPPORTER_MIX,
+    SUPPORTER_TRAITS, Session, StaffContract, StaffDetails, StaffSummary, job_name, read_club_details,
+    read_player_details, read_staff_details, release_clause_expiry, release_clause_never_expires,
 };
 
-/// How an export writes the players or clubs.
+/// How an export writes the players, staff or clubs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ExportFormat {
-    /// Values separated by commas, a row per player or club.
+    /// Values separated by commas, a row per player, member of staff or club.
     Csv,
     /// The same, separated by semicolons: what Excel takes where the comma is the decimal mark (in Turkish, Spanish
     /// or German, say).
     CsvSemicolon,
-    /// An object per player or club, with groups of values (a player's attributes, a club's facilities) as objects of
-    /// their own.
+    /// An object per player, member of staff or club, with groups of values (a player's attributes, a club's
+    /// facilities) as objects of their own.
     Json,
 }
 
@@ -52,9 +54,9 @@ pub struct ExportHeader {
 /// What an export wrote.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Exported {
-    /// The players or clubs written.
+    /// The players, staff or clubs written.
     pub count: usize,
-    /// Players or clubs whose objects had changed since the lists were read: left out.
+    /// Players, staff or clubs whose objects had changed since the lists were read: left out.
     pub skipped: usize,
 }
 
@@ -91,6 +93,34 @@ impl Session {
         Ok(exported)
     }
 
+    /// Writes `staff`, in their order, to `out` as `format`. Each is read again, as their profile is; one whose object
+    /// has changed since the lists were read is left out and counted. Only reads memory.
+    pub fn export_staff(
+        &self,
+        staff: &[&StaffSummary],
+        format: ExportFormat,
+        header: &ExportHeader,
+        out: &mut impl Write,
+    ) -> io::Result<Exported> {
+        let mut exported = Exported::default();
+        let details = staff.iter().filter_map(|member| match read_staff_details(&self.process, &self.layout, member) {
+            Ok(Some(details)) => {
+                exported.count += 1;
+                Some(details)
+            }
+            _ => {
+                exported.skipped += 1;
+                None
+            }
+        });
+        match format {
+            ExportFormat::Csv => write_staff_csv(out, header, details, b',')?,
+            ExportFormat::CsvSemicolon => write_staff_csv(out, header, details, b';')?,
+            ExportFormat::Json => write_staff_json(out, header, details)?,
+        }
+        Ok(exported)
+    }
+
     /// Writes `clubs`, in their order, to `out` as `format`. Each is read again, as its profile is; one whose object
     /// has changed since the lists were read is left out and counted. Only reads memory.
     pub fn export_clubs(
@@ -120,7 +150,7 @@ impl Session {
     }
 }
 
-/// A cell of a CSV row, read from a player's or a club's profile.
+/// A cell of a CSV row, read from a player's, a member of staff's or a club's profile.
 type Cell<T> = Box<dyn Fn(&T) -> String>;
 
 /// The columns of a CSV export, in order: the name of each, and how it reads a profile.
@@ -196,6 +226,50 @@ fn csv_columns(game_date: Option<FmDate>) -> Columns<PlayerDetails> {
     columns
 }
 
+impl Columns<StaffDetails> {
+    /// A column read from the contract: empty for a member of staff without one.
+    fn contract(&mut self, name: &str, cell: fn(&StaffContract) -> String) {
+        self.add(name, move |d| d.contract.as_ref().map(cell).unwrap_or_default());
+    }
+}
+
+/// The columns of a staff export: who they are, their job and employer, then what their profile shows.
+fn staff_columns(game_date: Option<FmDate>) -> Columns<StaffDetails> {
+    let mut columns = Columns::<StaffDetails>::default();
+    columns.add("game_date", move |_| game_date.map(iso).unwrap_or_default());
+    columns.add("uid", |d| d.summary.uid.to_string());
+    columns.add("name", |d| d.summary.name.clone());
+    columns.add("full_name", |d| d.summary.full_name.clone().unwrap_or_default());
+    columns.add("date_of_birth", |d| d.summary.date_of_birth.map(iso).unwrap_or_default());
+    columns.add("age", |d| text(d.summary.age));
+    columns.add("nationality", |d| d.summary.nation.clone().unwrap_or_default());
+    columns.add("club", |d| d.summary.club.clone().unwrap_or_default());
+    columns.add("job_code", |d| text(staff_job(d)));
+    columns.add("job", |d| staff_job(d).and_then(job_name).unwrap_or_default().to_owned());
+    columns.add("human_manager", |d| d.summary.is_human.to_string());
+    columns.add("current_ability", |d| d.summary.current_ability.to_string());
+    columns.add("potential_ability", |d| d.summary.potential_ability.to_string());
+    for key in STAFF_ATTRIBUTE_GROUPS.iter().flat_map(|(_, keys)| keys.iter().copied()) {
+        columns.add(key, move |d| text(d.attributes.get(key).map(|attribute| attribute.value)));
+    }
+    for key in PERSONALITY {
+        columns.add(key, move |d| text(d.personality.get(key)));
+    }
+    columns.add("reputation_home", |d| d.reputation.home.to_string());
+    columns.add("reputation_current", |d| d.reputation.current.to_string());
+    columns.add("reputation_world", |d| d.reputation.world.to_string());
+    columns.contract("wage_per_week_gbp", |c| c.wage.to_string());
+    columns.contract("contract_signed", |c| c.signed.map(iso).unwrap_or_default());
+    columns.contract("contract_expires", |c| c.expires.map(iso).unwrap_or_default());
+    columns.contract("contract_joined", |c| c.joined.map(iso).unwrap_or_default());
+    columns
+}
+
+/// The job of a member of staff: the contract's, as the profile reads it, or the list's.
+fn staff_job(d: &StaffDetails) -> Option<u8> {
+    d.contract.map(|c| c.job).or(d.summary.job)
+}
+
 /// The facilities a club export has, in the order of the club profile; corporate only where the club has the full
 /// finance record.
 const FACILITIES: [&str; 5] = ["training", "youth_facilities", "youth_coaching", "youth_recruitment", "corporate"];
@@ -254,6 +328,16 @@ fn write_csv(
     write_rows(out, &csv_columns(header.game_date), players, separator)
 }
 
+/// Writes the staff as CSV: a row of column names, then a row per member of staff, each cell apart by `separator`.
+fn write_staff_csv(
+    out: &mut impl Write,
+    header: &ExportHeader,
+    staff: impl Iterator<Item = StaffDetails>,
+    separator: u8,
+) -> io::Result<()> {
+    write_rows(out, &staff_columns(header.game_date), staff, separator)
+}
+
 /// Writes the clubs as CSV: a row of column names, then a row per club, each cell apart by `separator`.
 fn write_club_csv(
     out: &mut impl Write,
@@ -310,6 +394,22 @@ fn write_json(
     for (i, details) in players.enumerate() {
         out.write_all(if i == 0 { b"\n    " } else { b",\n    " })?;
         serde_json::to_writer(&mut *out, &JsonPlayer::from(&details))?;
+    }
+    writeln!(out, "\n  ]\n}}")
+}
+
+/// Writes the staff as JSON: where they come from, then the staff, one object to a line.
+fn write_staff_json(
+    out: &mut impl Write,
+    header: &ExportHeader,
+    staff: impl Iterator<Item = StaffDetails>,
+) -> io::Result<()> {
+    write_json_header(out, header)?;
+    writeln!(out, "  \"attributeScale\": \"1-20\",")?;
+    write!(out, "  \"staff\": [")?;
+    for (i, details) in staff.enumerate() {
+        out.write_all(if i == 0 { b"\n    " } else { b",\n    " })?;
+        serde_json::to_writer(&mut *out, &JsonStaff::from(&details))?;
     }
     writeln!(out, "\n  ]\n}}")
 }
@@ -444,6 +544,72 @@ impl<'a> From<&'a PlayerDetails> for JsonPlayer<'a> {
                         expires: release_clause_expiry(clause, c.signed).map(iso),
                     })
                     .collect(),
+            }),
+        }
+    }
+}
+
+/// A member of staff as a JSON export writes them.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct JsonStaff<'a> {
+    uid: u32,
+    name: &'a str,
+    full_name: Option<&'a str>,
+    date_of_birth: Option<String>,
+    age: Option<u16>,
+    nationality: Option<&'a str>,
+    club: Option<&'a str>,
+    /// The game's code for the job; a player-coach's coaching jobs are the code plus one.
+    job: Option<u8>,
+    job_name: Option<&'static str>,
+    /// The manager the player controls in this save.
+    human_manager: bool,
+    current_ability: u16,
+    potential_ability: i16,
+    /// 1–20, in the game's groups; only those the build's layout places.
+    attributes: InOrder<&'static str, u8>,
+    personality: InOrder<&'static str, Option<u8>>,
+    reputation: Reputation,
+    contract: Option<JsonStaffContract>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct JsonStaffContract {
+    /// Pounds.
+    wage_per_week: i32,
+    signed: Option<String>,
+    expires: Option<String>,
+    joined: Option<String>,
+}
+
+impl<'a> From<&'a StaffDetails> for JsonStaff<'a> {
+    fn from(d: &'a StaffDetails) -> Self {
+        let s = &d.summary;
+        let attributes = STAFF_ATTRIBUTE_GROUPS.iter().flat_map(|(_, keys)| keys.iter().copied());
+        let job = staff_job(d);
+        Self {
+            uid: s.uid,
+            name: &s.name,
+            full_name: s.full_name.as_deref(),
+            date_of_birth: s.date_of_birth.map(iso),
+            age: s.age,
+            nationality: s.nation.as_deref(),
+            club: s.club.as_deref(),
+            job,
+            job_name: job.and_then(job_name),
+            human_manager: s.is_human,
+            current_ability: s.current_ability,
+            potential_ability: s.potential_ability,
+            attributes: InOrder(attributes.filter_map(|key| Some((key, d.attributes.get(key)?.value))).collect()),
+            personality: InOrder(PERSONALITY.iter().map(|&key| (key, d.personality.get(key).copied())).collect()),
+            reputation: d.reputation,
+            contract: d.contract.map(|c| JsonStaffContract {
+                wage_per_week: c.wage,
+                signed: c.signed.map(iso),
+                expires: c.expires.map(iso),
+                joined: c.joined.map(iso),
             }),
         }
     }
@@ -848,6 +1014,61 @@ mod tests {
         club
     }
 
+    /// A manager with a contract, and one out of work: no club, no contract.
+    fn arteta() -> StaffDetails {
+        let summary = StaffSummary {
+            uid: 2_000_073_164,
+            name: "Mikel Arteta".to_owned(),
+            full_name: Some("Mikel Arteta Amatriain".to_owned()),
+            date_of_birth: Some(FmDate { year: 1982, month: 3, day: 26 }),
+            age: Some(44),
+            nation: Some("Spain".to_owned()),
+            nation_uid: Some(796),
+            nation_address: 0,
+            club: Some("Arsenal".to_owned()),
+            club_uid: Some(602),
+            job: Some(16),
+            current_ability: 160,
+            potential_ability: 170,
+            is_human: false,
+            attributes: Vec::new(),
+            contract_expires: Some(FmDate { year: 2027, month: 6, day: 30 }),
+            woman: Some(false),
+            address: 0,
+            shift: 0,
+        };
+        let attributes = STAFF_ATTRIBUTE_GROUPS
+            .iter()
+            .flat_map(|(_, keys)| keys.iter())
+            .filter(|&&key| key != "data_analysis")
+            .map(|&key| (key.to_owned(), Attribute::from_raw(80)))
+            .collect();
+        StaffDetails {
+            summary,
+            reputation: Reputation { home: 8200, current: 7900, world: 7500 },
+            personality: PERSONALITY.iter().map(|&key| (key, 17)).collect(),
+            attributes,
+            contract: Some(StaffContract {
+                wage: 160_000,
+                signed: Some(FmDate { year: 2024, month: 9, day: 12 }),
+                expires: Some(FmDate { year: 2027, month: 6, day: 30 }),
+                joined: Some(FmDate { year: 2019, month: 12, day: 20 }),
+                job: 16,
+            }),
+        }
+    }
+
+    fn out_of_work() -> StaffDetails {
+        let mut member = arteta();
+        member.summary.uid = 42;
+        member.summary.name = "Gennaro Gattuso".to_owned();
+        member.summary.club = None;
+        member.summary.club_uid = None;
+        member.summary.job = None;
+        member.contract = None;
+        member
+    }
+
     fn header() -> ExportHeader {
         ExportHeader {
             writer: "FMLibreEditor test".to_owned(),
@@ -959,6 +1180,68 @@ mod tests {
         let line = text.lines().find(|line| line.contains("28122642")).unwrap();
         assert!(line.trim_start().starts_with("{\"uid\":28122642,\"name\":\"Bukayo Saka\""));
         assert!(line.find("\"corners\"").unwrap() < line.find("\"finishing\"").unwrap());
+    }
+
+    #[test]
+    fn staff_csv_has_a_header_and_rows_of_the_same_length() {
+        let mut out = Vec::new();
+        write_staff_csv(&mut out, &header(), [arteta(), out_of_work()].into_iter(), b',').unwrap();
+        let text = String::from_utf8(out).unwrap();
+        let text = text.strip_prefix('\u{FEFF}').expect("a byte order mark");
+        let lines: Vec<&str> = text.split("\r\n").filter(|line| !line.is_empty()).collect();
+        assert_eq!(lines.len(), 3);
+        let header: Vec<&str> = lines[0].split(',').collect();
+        assert_eq!(&header[..4], ["game_date", "uid", "name", "full_name"]);
+        assert!(header.contains(&"tactical_knowledge") && header.contains(&"ambition"));
+        let row: Vec<&str> = lines[1].split(',').collect();
+        assert_eq!(row.len(), header.len());
+        let cell = |row: &[&str], name: &str| row[header.iter().position(|&column| column == name).unwrap()].to_owned();
+        assert_eq!(cell(&row, "game_date"), "2027-01-02");
+        assert_eq!(cell(&row, "job_code"), "16");
+        assert_eq!(cell(&row, "job"), "Manager");
+        assert_eq!(cell(&row, "human_manager"), "false");
+        assert_eq!(cell(&row, "tactical"), "16");
+        // An attribute the layout does not place is empty.
+        assert_eq!(cell(&row, "data_analysis"), "");
+        assert_eq!(cell(&row, "ambition"), "17");
+        assert_eq!(cell(&row, "reputation_world"), "7500");
+        assert_eq!(cell(&row, "wage_per_week_gbp"), "160000");
+        assert_eq!(cell(&row, "contract_expires"), "2027-06-30");
+        // Without a club or a contract, those cells are empty, and the row is as long as the header.
+        let row: Vec<&str> = lines[2].split(',').collect();
+        assert_eq!(row.len(), header.len());
+        assert_eq!(cell(&row, "club"), "");
+        assert_eq!(cell(&row, "job_code"), "");
+        assert_eq!(cell(&row, "job"), "");
+        assert_eq!(cell(&row, "wage_per_week_gbp"), "");
+    }
+
+    #[test]
+    fn staff_json_reads_back_in_order() {
+        let mut out = Vec::new();
+        write_staff_json(&mut out, &header(), [arteta(), out_of_work()].into_iter()).unwrap();
+        let text = String::from_utf8(out).unwrap();
+        let value: serde_json::Value = serde_json::from_str(&text).unwrap();
+        assert_eq!(value["gameDate"], "2027-01-02");
+        assert_eq!(value["attributeScale"], "1-20");
+        assert_eq!(value["staff"].as_array().unwrap().len(), 2);
+        let manager = &value["staff"][0];
+        assert_eq!(manager["job"], 16);
+        assert_eq!(manager["jobName"], "Manager");
+        assert_eq!(manager["humanManager"], false);
+        assert_eq!(manager["attributes"]["tactical"], 16);
+        assert!(manager["attributes"].get("data_analysis").is_none());
+        assert_eq!(manager["reputation"]["world"], 7500);
+        assert_eq!(manager["contract"]["wagePerWeek"], 160_000);
+        assert_eq!(manager["contract"]["joined"], "2019-12-20");
+        let free = &value["staff"][1];
+        assert_eq!(free["club"], serde_json::Value::Null);
+        assert_eq!(free["job"], serde_json::Value::Null);
+        assert_eq!(free["contract"], serde_json::Value::Null);
+        // The object keeps the order it was written in: the UID first, the attributes in the game's groups.
+        let line = text.lines().find(|line| line.contains("2000073164")).unwrap();
+        assert!(line.trim_start().starts_with("{\"uid\":2000073164,\"name\":\"Mikel Arteta\""));
+        assert!(line.find("\"attacking\"").unwrap() < line.find("\"physiotherapy\"").unwrap());
     }
 
     #[test]

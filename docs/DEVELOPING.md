@@ -279,8 +279,8 @@ fmlibre-probe players "arda guler"                   # search players (accents i
 fmlibre-probe players --position st --max-age 20 --min-pa 170 --sort pa   # wonderkid strikers
 fmlibre-probe players --max-age 21 --export young.csv   # every match to a file, as the app's Export writes it (.json: JSON; --semicolon)
 fmlibre-probe player 7458500                         # everything read for one player
-fmlibre-probe staff arteta                           # search staff; staff-member <id> for details
-fmlibre-probe clubs tottenham                        # search clubs; club <uid> for details
+fmlibre-probe staff arteta                           # search staff; staff-member <id> for details; --export FILE as players
+fmlibre-probe clubs tottenham                        # search clubs; club <uid> for details; --export FILE as players
 fmlibre-probe fields player                          # what the editor can change (also: staff)
 fmlibre-probe get player 7458500                     # those fields' values for one player
 fmlibre-probe set player 7458500 attribute.finishing 18 --shown   # change one: this writes to the game

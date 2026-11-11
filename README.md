@@ -40,8 +40,9 @@ How to install and use it: [docs/INSTALL.md](docs/INSTALL.md).
   own job or another (doctors, analysts and directors of football too), or sign staff who have
   no club.
 - Mass edit many at once, with a preview; undo any change.
-- Export the player list, with its search and filters, to CSV or JSON for a spreadsheet or
-  your own tools: attributes, positions, personality, contract and more, with the in-game date.
+- Export the player, staff or club list, with its search and filters, to CSV or JSON for a
+  spreadsheet or your own tools: attributes, positions, personality, contracts, club finances
+  and more, with the in-game date.
 - Checks how it reads the game before it writes, and stays read-only on a version of FM27 it
   has not been checked with yet.
 - English, Turkish, Spanish, Indonesian and Italian; logos, flags and faces from your graphics

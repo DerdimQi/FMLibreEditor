@@ -1416,13 +1416,17 @@ export const en = {
     button: "Export",
     buttonTitle: {
       player: "Write the players the list shows to a CSV or JSON file, for a spreadsheet or a script",
+      staff: "Write the staff the list shows to a CSV or JSON file, for a spreadsheet or a script",
       club: "Write the clubs the list shows to a CSV or JSON file, for a spreadsheet or a script",
     } satisfies Record<ExportEntity, string>,
-    title: { player: "Export players", club: "Export clubs" } satisfies Record<ExportEntity, string>,
+    title: { player: "Export players", staff: "Export staff", club: "Export clubs" } satisfies Record<
+      ExportEntity,
+      string
+    >,
     /** What the export covers: everything the list's search and filters select, in its order. */
     scope: (entity: ExportEntity, count: number) =>
       count === 0
-        ? `No ${entity} matches the search and the filters.`
+        ? `No ${entity === "staff" ? "member of staff" : entity} matches the search and the filters.`
         : `${entityCount[entity](count)}: what the list's search and filters select, in its order.`,
     formatLabel: "Format",
     formats: {
@@ -1435,6 +1439,7 @@ export const en = {
       csvSemicolon: "For Excel where decimals are written with a comma: in Turkish, Spanish or German, say",
       json: {
         player: "For scripts: the positions, attributes and personality as objects of their own",
+        staff: "For scripts: the attributes, personality and contract as objects of their own",
         club: "For scripts: the supporters, facilities, stadium and finances as objects of their own",
       } satisfies Record<ExportEntity, string>,
     },
@@ -1443,6 +1448,10 @@ export const en = {
         "Each player's abilities, positions and position ratings, attributes on the 1–20 scale (the hidden ones " +
         "too), personality, reputation, caps, and contract with its clauses, with the in-game date. Money is in " +
         "pounds, as the game keeps it. Nothing in the game changes.",
+      staff:
+        "Each member of staff's job and employer, abilities, attributes on the 1–20 scale, personality, reputation, " +
+        "and contract (wage and dates), with the in-game date. Money is in pounds, as the game keeps it. Nothing in " +
+        "the game changes.",
       club:
         "Each club's reputation, founding year, season tickets, social media followers, supporter mix and traits, " +
         "facilities, stadium, and finances: balance, transfer budget, weekly wage spend and wage budget, and ticket " +
@@ -1455,7 +1464,7 @@ export const en = {
     done: (entity: ExportEntity, count: number, file: string) => `Exported ${entityCount[entity](count)} to ${file}`,
     folder: (folder: string) => `in ${folder}`,
     skipped: (entity: ExportEntity, count: number) => {
-      const pronoun = count !== 1 ? "they were" : entity === "player" ? "he was" : "it was";
+      const pronoun = count !== 1 || entity === "staff" ? "they were" : entity === "player" ? "he was" : "it was";
       return (
         `${entityCount[entity](count)} changed in the game while ${pronoun} read, and ` +
         `${count === 1 ? "was" : "were"} left out.`
