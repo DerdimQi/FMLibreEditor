@@ -260,6 +260,21 @@ count = 0x08              # u16: a count some relations use; of 109, the days it
 value = 0x0C              # u8: of a training, the homegrown rule it meets
 size = 0x10
 
+# A player's cohesion with each club and nation he has been at: the second list of the same record, 8-byte entries.
+# FM27 Editor (https://github.com/Jackhamerp24/Football-Manager-27-Editor, GPL-3.0) found it on Windows. Read with
+# `fmlibre-probe cohesion` on the Steam save: every list of the senior players of Arsenal, Manchester United,
+# Barcelona, Juventus and Benevento checked out and named the club by the index at club +0x8 (Arsenal 331), but
+# for some who had come in the save's first weeks, two at least moved there by an editor. Saka 99 at Arsenal, Kepa 2.
+# The Dynamics page's team cohesion follows them: Benevento's read Poor with a mean of 26, Excellent with all at 100,
+# and fell a day after all were set to 1.
+[cohesion]
+list = 0x18               # the list (begin, end, capacity) in the record of relations
+size = 0x08
+index = 0x00              # i32: the club or nation the entry is for, by its index
+kind = 0x04               # u8: 1 a club, 2 a nation
+value = 0x05              # i8: the cohesion, 1..100
+club_index = 0x08         # i32 in the club object: the index its entries name it by
+
 # The retirements the game has planned, as on Windows: the manager's two lists and its 24-byte entries are laid out
 # alike. The static pointer to the manager is a variable of its own, which the build profiles place.
 [retirement]

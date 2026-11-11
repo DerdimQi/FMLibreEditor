@@ -10,7 +10,9 @@ Please follow the [code of conduct](CODE_OF_CONDUCT.md).
 
 - **Report a bug or ask for a feature:** open an
   [issue](https://github.com/tozmoz/FMLibreEditor/issues/new/choose). For a bug, say which version
-  of the app you use and where you run FM27 (Game Pass, Steam or macOS).
+  of the app you use and where you run FM27 (Game Pass, Steam or macOS). If the app connects to
+  the game, paste what Copy diagnostics, at the foot of its window, copies (versions later than
+  0.5.0 have it).
 - **Ask a question or share an idea:**
   [Discussions](https://github.com/tozmoz/FMLibreEditor/discussions).
 - **Test:** run the latest release on your storefront and say what works and what does not. A

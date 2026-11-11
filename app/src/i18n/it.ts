@@ -629,6 +629,7 @@ export const it: Strings = {
     "tie.workPermit": "Senza permesso di lavoro in",
     club: "Società",
     injuries: "Infortuni",
+    cohesion: "Affiatamento",
     bans: "Squalifiche",
     retirement: "Ritiro",
     clause: "Clausola del contratto",
@@ -1251,12 +1252,22 @@ export const it: Strings = {
     reloadHint: "Se un salvataggio era ancora in caricamento, Ricarica i dati controlla di nuovo.",
     noDate: "La data del gioco non ha superato i controlli, quindi le età non sono mostrate.",
     failed: (names) => `In sola lettura: ${names}.`,
+    failedCheck: (name, fit, sampled) => `${name} (${format(fit)} su ${format(sampled)} in regola)`,
     join: (names) =>
       names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} e ${names[names.length - 1]}`,
     allow: "Modifica comunque",
     allowTitle:
       "Attiva la modifica finché FMLibreEditor non viene chiuso o non si connette di nuovo. Fai prima un backup del " +
       "salvataggio.",
+  },
+
+  diagnostics: {
+    copy: "Copia diagnostica",
+    copyTitle:
+      "Copia quello che FMLibreEditor ha trovato nel gioco, da incollare in una segnalazione di bug. Non contiene " +
+      "nomi né percorsi.",
+    copied: "Copiato",
+    failed: (reason) => `Non è stato possibile copiare la diagnostica: ${reason}`,
   },
 
   checks: {
@@ -1270,6 +1281,7 @@ export const it: Strings = {
     teams: "le squadre",
     staff: "lo staff",
     clubs: "le società",
+    cohesion: "l'affiatamento con le società",
   },
 
   update: {
@@ -1914,6 +1926,15 @@ export const it: Strings = {
     inspireAll: "Motiva tutti",
     inspireAllTitle:
       "Porta a 20, il massimo, il morale di ogni giocatore di questa squadra e toglie i suoi motivi di scontento",
+    cohesionWithout: (count: number) =>
+      count === 1
+        ? "1 giocatore non ha ancora affiatamento con la società"
+        : `${format(count)} giocatori non hanno ancora affiatamento con la società`,
+    maxCohesion: "Massimo affiatamento",
+    maxCohesionTitle:
+      "Porta a 100, il massimo, l'affiatamento con la società di ogni giocatore di questa squadra. Il gioco mostra l'affiatamento della squadra nella pagina Dinamiche quando va avanti: premi Continua nel gioco",
+    cohesionNone:
+      "L'editor non riesce a leggere l'affiatamento di questa squadra: questa versione del gioco non è stata verificata, oppure nessuno dei suoi giocatori ha affiatamento con la società",
     refreshAll: "Rigenera tutti",
     refreshAllTitle:
       "Porta al 100% energia e forma partita di ogni giocatore di questa squadra e lo fa riposare del tutto " +
@@ -1987,6 +2008,7 @@ export const it: Strings = {
       matchSharpness: "Forma",
       jadedness: "Stanch.",
       morale: "Morale",
+      cohesion: "Affiat.",
       actions: "Fascia di capitano",
     },
     sortBy: (by) => `Ordina per ${by}`,
@@ -2000,6 +2022,7 @@ export const it: Strings = {
       matchSharpness: "forma partita",
       jadedness: "stanchezza",
       morale: "morale",
+      cohesion: "affiatamento",
     },
 
     // Le etichette dopo un nome, con il loro significato come testo al passaggio del mouse

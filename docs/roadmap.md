@@ -109,10 +109,12 @@ before trusting them.
   - a version of the game without a build profile is read-only until Edit anyway, with a notice that says so;
   - checks of the layout against the running game before anything is written: what does not check out stays
     read-only, and a date that does not fit the game's contracts is not used, so no age is shown wrong;
-  - `fmlibre-probe health` shows what the checks find;
+  - `fmlibre-probe health` shows what the checks find, and Copy diagnostics in the app copies it for a bug report,
+    with how close a list that was not found came;
   - the in-game date and the retirement manager found without a profile too: the date among the values in the
-    plugin's writable data that read as dates, by the contracts and the current injuries, and the manager's static
-    from where other builds keep it or from its class name;
+    plugin's writable data that read as dates, by the contracts and the current injuries, and told from the value the
+    game keeps for the day before by where other builds keep it or by how well each fits; the manager's static from
+    where other builds keep it or from its class name;
   - `fmlibre-probe profile` writes the profile of a new build and compares it with a built-in one, and
     `FMLIBRE_IGNORE_PROFILES=1` rehearses an update on a build the editor knows;
   - smoke tests in `tools/smoke` that drive the built app against the running game, the same on every storefront.
@@ -169,10 +171,20 @@ before trusting them.
     sharpness to 100%), each undone as one batch.
 - [ ] Next: suspensions ("Unban All"), and the squad status codes past 5 (youth and
   backup roles), once the game's own data names them.
-- [ ] Team cohesion and tactical familiarity (FMLE's "Max Cohesion" and "Max
-  Tactics"). Set aside: no single stored value matched ten clubs' readings, so they
-  look derived (see the Steam notes). The probe's `related`, `nearby` and
-  `team-average` searches are there for another try.
+- [x] Team cohesion: Max cohesion in the squad tab, and each player's cohesion in its
+  table, guarded by the `cohesion` check. No single stored value matched ten clubs'
+  readings because the game works the team's cohesion out from each player's: his entry
+  for the club in the second list of his record of relations, as FM27 Editor found it on
+  Windows (see `cohesion.rs` and the Steam macOS notes). On the Mac Steam save the
+  Dynamics page showed Poor with those entries as they were (a mean of 26), Excellent with
+  all at 100, and fell the day after all were set to 1. Checked on Game Pass 0.9.2409.0
+  too (#140).
+- [ ] Cohesion for players without an entry for their club, such as some moved by an
+  editor: adding one means growing the list, as ties do, since every list read was full.
+  First, whether the game gives them one later.
+- [ ] Tactical familiarity (FMLE's "Max Tactics"): the game's tactical areas, a team's
+  block that FM27 Editor reads at an address found by hand. What FM27 Editor edits as a
+  player's tactical familiarity is his versatility.
 
 ## Phase 7: what FMRTE, FM Live Editor and FM27€0 users reach for (in progress)
 
@@ -352,5 +364,5 @@ changes many at once, and undo.
     has room: 384 of 53,356 contracts on the Game Pass save. Checked there with Kane, Mbappé and Bisseck, restored.
     The competition bonuses (`+0x80`) are not named or edited yet.
   - [x] Keep a player from retiring (see Wave 2 above).
-  - [ ] Team cohesion and tactical familiarity (see Phase 6).
+  - [x] Team cohesion (see Phase 6); tactical familiarity still to do.
   - [ ] Epic.
