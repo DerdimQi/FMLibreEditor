@@ -16,7 +16,7 @@ const GAP = 4;
 
 /**
  * The flag of each language, in a box of 3:2: the Union Jack for English, as FM is British (cut to 3:2 at the sides,
- * as flag sets do), and the flags of Turkey, Spain, Germany, France, Indonesia, Italy, South Korea and China whole.
+ * as flag sets do), and the flags of Turkey, Spain, Germany, France, Indonesia, Italy, South Korea, Russia and China whole.
  * Spain's is drawn without the coat of arms, as its civil flag is: at this size the arms would be a smudge. Germany's
  * (3:5) and Indonesia's (2:3) are drawn at 3:2 like the others. France's and Italy's are tricolours of three vertical
  * bands, France's in the shades it took back in 2020. South Korea's follows its construction
@@ -105,6 +105,13 @@ const FLAGS: Record<Locale, ReactNode> = {
       </g>
     </svg>
   ),
+  ru: (
+    <svg className="language-flag" viewBox="0 0 9 6" aria-hidden="true">
+      <rect width="9" height="6" fill="#d52b1e" />
+      <rect width="9" height="4" fill="#0039a6" shapeRendering="crispEdges" />
+      <rect width="9" height="2" fill="#fff" shapeRendering="crispEdges" />
+    </svg>
+  ),
   "zh-CN": (
     <svg className="language-flag" viewBox="0 0 3 2" aria-hidden="true">
       <rect width="3" height="2" fill="#de2910" />
@@ -129,6 +136,7 @@ const LANGUAGES: readonly { id: Locale; name: string }[] = [
   { id: "id", name: "Bahasa Indonesia" },
   { id: "it", name: "Italiano" },
   { id: "ko", name: "한국어" },
+  { id: "ru", name: "Русский" },
   { id: "zh-CN", name: "简体中文" },
 ];
 
