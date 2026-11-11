@@ -14,6 +14,11 @@ current_date = 0x57CA3B8
 # 0xDAC0 before the players pair; 29 planned retirements on the save.
 retirement_manager = 0x5812D50
 
+# The static pointer to the game's one GAME_UI object, whose count of saves loaded tells a load from a save: 0x3C80
+# before the players pair, as in build 26340721, where the guess from that build's distance found it (1 loaded on the
+# save of 17 August 2026). Another static, at 0x580EBB8, points at it too.
+game_ui = 0x581CB90
+
 # game_plugin as mapped in memory; these values identify the build.
 [plugin]
 size_of_image = 0x17CB9000

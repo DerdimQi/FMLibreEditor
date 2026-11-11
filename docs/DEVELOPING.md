@@ -86,12 +86,21 @@ For a build without one, or where a place a profile names does not check out, th
   - nine in ten of the current injuries began on or before it and are not over by then.
 
   Contracts alone cannot rule out a later date the game keeps for something else: 22 September and 11 October 2027
-  on that save. The injuries can, as only 12 and 3 of 110 fitted those. Neither can rule out the day before on a day
-  on which no contract was signed and no injury began: the game keeps a value for it too (on the Game Pass save of 23
-  September 2026, `game_plugin.dll+0x56546f8` held the 22nd, which fitted as well as the date). When values that fit
-  read as several dates, the latest is used if the field beside the arrays holds it: that is where the builds before
-  November 2026 kept the date, and later builds keep the date there too once the game has moved on a day after a load.
-  Otherwise none is used, as right after a load, until the game has moved on a day and the data is read again.
+  on that save. The injuries can, as only 12 and 3 of 110 fitted those. The day before is harder: the game keeps a
+  value for it too, and as the witnesses leave some room, it fits unless enough contracts were signed and injuries
+  begun on the day. On Game Pass 0.9.2435.0 on 11 January 2028, `game_plugin.dll+0x53886f8` held the 10th: 3 of 3,712
+  contract dates came after it and 161 of 173 injuries fitted it, against none and all 173 for the date. When values
+  that fit read as several dates, the date is, in turn:
+  - the latest of them, if the field beside the arrays holds it: that is where the builds before November 2026 kept
+    the date, and 0.9.2409.0 keeps it there too once the game has moved on a day after a load;
+  - the one read within 0x400 bytes of where the other builds keep their date, by its distance from the players'
+    array: the date's own variable has kept that distance to within 0x38 bytes from one build to the next, while the
+    value for the day before sits some 0x2F000 bytes away;
+  - the one that fits the witnesses better than every other: no more contracts after it, no fewer injuries, and
+    better on one count. On a day on which no contract was signed and no injury began, the day before fits exactly
+    as well as the date, so this alone cannot tell them apart.
+
+  Otherwise none is used.
 - **The retirement manager's static** where other builds keep it, as far from the players' array, checked by the
   name of the class its object has. Otherwise the plugin's writable data is searched for a pointer to an object of
   the class `RETIREMENT_MANAGER`, which takes about half a second.
@@ -124,10 +133,9 @@ read-only until `profiles/fm27/layout.toml` is fixed.
 
 #### On the day of an update
 
-1. Load a save in the updated game. Right after a load is best: then the field beside the arrays is unset, and the
-   date's own variable is the only place that holds the date. If the probe then finds two dates a day apart (the
-   value the game keeps for the day before), continue one day in the game and run it again: the field beside the
-   arrays is set by then, and tells which is the date.
+1. Load a save in the updated game. If the probe finds values that read as two dates a day apart (the value the
+   game keeps for the day before), it says how it chose between them: check that the date it took is the one the game
+   shows, and that it read it where the other builds keep their date.
 2. `fmlibre-probe profile --out profiles/fm27/<storefront>-<version>.toml` looks for everything as for a build
    without a profile, runs the checks with what it found, and writes the profile. It lists the values that read as a
    plausible date, and whether the guessed and the searched places of the retirement manager and of the game object
@@ -254,7 +262,8 @@ macOS); `FMLIBRE_EXPORTS` names another folder. The columns and the JSON keys ar
 2. **Tag it and push the tag:** `git tag v0.1.0` and `git push origin v0.1.0`.
 3. **The `Release` workflow** (`.github/workflows/release.yml`) runs the checks and builds,
    on GitHub's Windows and macOS machines:
-   - `FMLibreEditor-Setup.exe`, a per-user NSIS installer in English, Turkish, Spanish and Italian;
+   - `FMLibreEditor-Setup.exe`, a per-user NSIS installer in English, Turkish, Spanish, German,
+     French, Italian and Korean;
    - `FMLibreEditor-portable.zip`;
    - `FMLibreEditor-macOS.zip`, the universal app with the bridge and its launcher;
    - `FMLibreEditor-macOS.app.tar.gz`, the same app, which installed macOS apps update from.
@@ -303,6 +312,7 @@ Start FM27, load a save, then run:
 fmlibre-probe info                                   # process, storefront, modules, game_plugin.dll layout
 fmlibre-probe calibrate                              # identify the build; locate players, staff, clubs, the date, the saves loaded
 fmlibre-probe health                                 # the checks the editor makes before it writes, and what each found
+fmlibre-probe diagnostics                            # what the app's Copy diagnostics copies: no names or paths
 fmlibre-probe profile                                # a build profile for this build, looked for as for a new build
 fmlibre-probe players "arda guler"                   # search players (accents ignored), best first
 fmlibre-probe players --position st --max-age 20 --min-pa 170 --sort pa   # wonderkid strikers
@@ -335,6 +345,7 @@ fmlibre-probe bans 29120248 --lift --restore         # lift a player's bans and 
 fmlibre-probe ties 2000138835                        # secondary nationalities and homegrown status, numbered
 fmlibre-probe tie-set 2000138835 0 --nation 765 --restore   # point tie 0 at England and back: this writes too
 fmlibre-probe teams 680                              # a club's teams: kinds, captains, players' fitness and morale
+fmlibre-probe cohesion 680 --raw                     # each senior player's cohesion with the club, and his other entries
 fmlibre-probe captain 680 43425040 --restore         # make a player captain (--vice: vice-captain) and back
 fmlibre-probe prizes                                 # the prize money competitions pay, by final position and per match
 fmlibre-probe prizes 130286 --win 1234567 --restore  # change what a Süper Lig win pays and back: this writes too
@@ -352,16 +363,17 @@ to save the results. `calibrate --scan` ignores the build profile and finds the
 arrays, the in-game date, the retirement manager and the game object the way it would on an unknown build.
 
 Only `set`, `move`, `swap`, `release`, `staff-move`, `staff-job`, `staff-sign`, `heal --heal`,
-`bans --lift`, `tie-set`, `tie-add`, `tie-remove`, `captain` and `prizes` with an amount to change write to the game.
-Unlike the app, the probe writes to a build without a profile too, as far as the checks allow, so that a new build can
-be mapped.
+`bans --lift`, `tie-set`, `tie-add`, `tie-remove`, `captain`, `cohesion --set` and `prizes` with an amount to change
+write to the game. Unlike the app, the probe writes to a build without a profile too, as far as the checks allow, so
+that a new build can be mapped.
 - `set` changes one field after the checks above. Values are as stored:
   attributes run 0–100, or 1–20 with `--shown`.
 - `move` moves a player to a club's senior team; `release` leaves him a free agent.
 - With `--restore`, each one puts the old values back straight away, to test
   without changing the save. `set`, `move`, `release`, `heal`, `bans`, the `tie`
-  commands, `captain` and `prizes` also take `--hold <seconds>` to wait first, so the
-  change can be looked at in the game.
+  commands, `captain`, `cohesion` and `prizes` also take `--hold <seconds>` to wait first, so the
+  change can be looked at in the game. The Dynamics page shows a team's cohesion as the game last
+  worked it out, and works it out again only once the game moves on (Continue).
 
 If Windows denies access, run the probe from an administrator terminal.
 

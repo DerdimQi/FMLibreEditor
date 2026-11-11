@@ -4,11 +4,15 @@
 // it runs.
 
 import { saveSnapshot } from "../restore";
+import { de } from "./de";
 import { en, type Strings } from "./en";
 import { es } from "./es";
+import { fr } from "./fr";
 import { id } from "./id";
 import { it } from "./it";
+import { ko } from "./ko";
 import { tr } from "./tr";
+import { zhCN } from "./zh-CN";
 
 /**
  * The languages of the UI: the text of each, and the tag its dates and numbers are formatted by (see `format.ts`).
@@ -18,8 +22,12 @@ const LANGUAGES = {
   en: { strings: en, intl: "en-GB" },
   tr: { strings: tr, intl: "tr-TR" },
   es: { strings: es, intl: "es-ES" },
+  de: { strings: de, intl: "de-DE" },
+  fr: { strings: fr, intl: "fr-FR" },
   id: { strings: id, intl: "id-ID" },
   it: { strings: it, intl: "it-IT" },
+  ko: { strings: ko, intl: "ko-KR" },
+  "zh-CN": { strings: zhCN, intl: "zh-CN" },
 } satisfies Record<string, { strings: Strings; intl: string }>;
 
 export type Locale = keyof typeof LANGUAGES;
@@ -43,13 +51,26 @@ function savedLocale(): Locale | null {
 }
 
 /**
- * The first of the system's languages, most preferred first, that the app has: "es-MX" is Spanish, "tr" Turkish, "id-ID" Indonesian.
- * English when it has none of them. WebView2 lists the languages of Windows; WKWebView only the first one of macOS.
+ * The first of the system's languages, most preferred first, that the app has: "es-MX" is Spanish, "tr" Turkish,
+ * "id-ID" Indonesian, "ko-KR" Korean, and "zh", "zh-CN", "zh-SG" or "zh-Hans" Simplified Chinese. Traditional Chinese
+ * ("zh-TW", "zh-HK", "zh-Hant") is not taken for it: English reads better than the other script. English when it has
+ * none of them. WebView2 lists the languages of Windows; WKWebView only the first one of macOS.
  */
 function systemLocale(): Locale {
   const { languages, language } = window.navigator;
   for (const tag of languages?.length ? languages : [language]) {
-    const primary = tag?.split("-")[0].toLowerCase();
+    const normalized = tag?.replace(/_/g, "-").toLowerCase();
+    if (
+      normalized === "zh" ||
+      normalized === "zh-cn" ||
+      normalized?.startsWith("zh-cn-") ||
+      normalized === "zh-sg" ||
+      normalized === "zh-hans" ||
+      normalized?.startsWith("zh-hans-")
+    ) {
+      return "zh-CN";
+    }
+    const primary = normalized?.split("-")[0];
     if (isLocale(primary)) {
       return primary;
     }

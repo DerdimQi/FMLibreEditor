@@ -562,6 +562,7 @@ export const id: Strings = {
     "tie.workPermit": "Tanpa izin kerja di",
     club: "Klub",
     injuries: "Cedera",
+    cohesion: "Kekompakan",
     bans: "Larangan bermain",
     retirement: "Pensiun",
     clause: "Klausul kontrak",
@@ -1159,10 +1160,20 @@ export const id: Strings = {
     reloadHint: "Jika save masih dimuat, Muat ulang data akan memeriksanya lagi.",
     noDate: "Tanggal dalam game tidak lolos pemeriksaan, jadi usia tidak ditampilkan.",
     failed: (names: string) => `Dibiarkan hanya baca: ${names}.`,
+    failedCheck: (name, fit, sampled) => `${name} (${format(fit)} dari ${format(sampled)} cocok)`,
     join: (names: string[]) =>
       names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} dan ${names[names.length - 1]}`,
     allow: "Tetap edit",
     allowTitle: "Nyalakan pengeditan sampai FMLibreEditor ditutup atau terhubung lagi. Cadangkan save-mu lebih dulu.",
+  },
+
+  diagnostics: {
+    copy: "Salin diagnostik",
+    copyTitle:
+      "Menyalin apa yang ditemukan FMLibreEditor di dalam game, untuk ditempel ke laporan bug. Tidak memuat nama " +
+      "atau path.",
+    copied: "Disalin",
+    failed: (reason) => `Diagnostik tidak bisa disalin: ${reason}`,
   },
 
   checks: {
@@ -1176,6 +1187,7 @@ export const id: Strings = {
     teams: "tim",
     staff: "staf",
     clubs: "klub",
+    cohesion: "kekompakan dengan klub",
   },
 
   update: {
@@ -1782,6 +1794,12 @@ export const id: Strings = {
     inspireAll: "Inspirasi semua",
     inspireAllTitle:
       "Atur moral setiap pemain di tim ini ke 20, yang tertinggi, dan hapus alasan mereka untuk tidak senang",
+    maxCohesion: "Kekompakan maksimal",
+    maxCohesionTitle:
+      "Atur kekompakan dengan klub setiap pemain di tim ini ke 100, yang tertinggi. Game menampilkan kekompakan tim di halaman Dinamika setelah waktu berjalan: tekan Lanjutkan di game",
+    cohesionNone:
+      "Editor tidak dapat membaca kekompakan tim ini: versi game ini belum diperiksa untuk itu, atau tidak ada pemainnya yang memiliki kekompakan dengan klub",
+    cohesionWithout: (count: number) => `${format(count)} pemain belum memiliki kekompakan dengan klub`,
     refreshAll: "Segarkan semua",
     refreshAllTitle:
       "Atur energi dan ketajaman bertanding setiap pemain di tim ini ke 100%, dan istirahatkan sepenuhnya (keletihan -500)",
@@ -1847,6 +1865,7 @@ export const id: Strings = {
       matchSharpness: "Ketajaman",
       jadedness: "Letih",
       morale: "Moral",
+      cohesion: "Kekompakan",
       actions: "Kapten",
     },
     sortBy: (by: string) => `Urutkan berdasarkan ${by}`,
@@ -1860,6 +1879,7 @@ export const id: Strings = {
       matchSharpness: "ketajaman bertanding",
       jadedness: "keletihan",
       morale: "moral",
+      cohesion: "kekompakan",
     },
 
     injured: "Cedera",

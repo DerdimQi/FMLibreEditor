@@ -43,7 +43,7 @@ By default nothing that changes the game. With `--writes`, the tests change the 
 | Test | Writes | What it checks |
 |---|---|---|
 | `connect` | no | The build is known, every check passes, the in-game date and ages, no notice that the game's save has changed (its count of saves loaded is where the app read it), the players', staff and clubs' lists, a player's and a club's profile, an empty change log |
-| `dialog` | no | A player opened from a club's squad as a dialog: focus kept in it, Escape, the Transfer dialog over it, the question before unapplied edits are thrown away |
+| `dialog` | no | A player opened from a club's squad as a dialog: focus kept in it, Escape (on an (i) button it hides only the note, the next one closes the dialog), the Transfer dialog over it, the question before unapplied edits are thrown away |
 | `edit` | yes | Edits through the app's commands, read back by the probe and undone; one attribute through Edit mode, undone from the Changes tab |
 | `mass` | yes | A mass edit over a club's players, applied, read back and undone as one batch |
 | `move` | yes | A transfer the app agrees to, and the undo that moves the player back |

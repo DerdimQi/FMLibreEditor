@@ -10,7 +10,9 @@ Please follow the [code of conduct](CODE_OF_CONDUCT.md).
 
 - **Report a bug or ask for a feature:** open an
   [issue](https://github.com/tozmoz/FMLibreEditor/issues/new/choose). For a bug, say which version
-  of the app you use and where you run FM27 (Game Pass, Steam or macOS).
+  of the app you use and where you run FM27 (Game Pass, Steam or macOS). If the app connects to
+  the game, paste what Copy diagnostics, at the foot of its window, copies (versions later than
+  0.5.0 have it).
 - **Ask a question or share an idea:**
   [Discussions](https://github.com/tozmoz/FMLibreEditor/discussions).
 - **Test:** run the latest release on your storefront and say what works and what does not. A
@@ -49,13 +51,14 @@ with the merge; do not let that stop you.
 ## Translating
 
 The interface's text lives in `app/src/i18n/`: `en.ts` is English, with a comment on what each
-string is for; `tr.ts`, `es.ts`, `id.ts` and `it.ts` are Turkish, Spanish, Indonesian and
-Italian. To add a language:
+string is for; `tr.ts`, `es.ts`, `de.ts`, `fr.ts`, `id.ts`, `it.ts`, `ko.ts` and `zh-CN.ts` are
+Turkish, Spanish, German, French, Indonesian, Italian, Korean and Simplified Chinese. To add a
+language:
 
-1. Copy `en.ts` to a file named after the language's code (`de.ts` for German) and translate
+1. Copy `en.ts` to a file named after the language's code (`pt.ts` for Portuguese) and translate
    the strings. The build fails if a key is missing or extra, so you cannot miss one.
 2. Add it to `LANGUAGES` in `app/src/i18n/index.ts`, with the tag its dates and numbers are
-   formatted by (`de-DE`).
+   formatted by (`pt-PT`).
 3. Add its name, in that language, to `LANGUAGES` in `app/src/SettingsMenu.tsx`.
 
 `npm run dev` shows it in the browser; pick it from the settings menu. Fixing a word in an

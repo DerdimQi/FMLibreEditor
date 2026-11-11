@@ -32,6 +32,12 @@ body:
     validations:
       required: true
   - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Versions later than 0.5.0 have Copy diagnostics at the foot of the window. If yours has it and the app connects to the game, press it and paste it here. It holds no names or paths.
+      render: text
+  - type: textarea
     id: more
     attributes:
       label: Anything else
