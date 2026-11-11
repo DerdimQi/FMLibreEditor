@@ -9,12 +9,18 @@ import { saveSnapshot } from "./restore";
  * The currencies on offer, in the order of the menu, with what one pound is worth in each: FM27's own rates for 2025,
  * the last year its database holds (`db::CURRENCY_RECORD`, read from the game on 1 November 2026). With them a
  * billion euros, Kylian Mbappé's release clause, is the 859,031,872 pounds the game keeps, give or take a few million.
+ *
+ * To add one: each `db::CURRENCY_RECORD` holds pointers to its name (+0x18, "South Korean Won"), short name (+0x20,
+ * "Won") and symbol (+0x30), each a `u32` length and the UTF-8 text, and from +0x40 the begin and end of its rates:
+ * pairs of a `u32` whose low 16 bits are the year and the `f32` rate, from 1960 to 2025. The won's was read on 11
+ * November 2026, on Steam build 26385295.
  */
 const RATES = {
   GBP: 1,
   EUR: 1.16756499,
   USD: 1.31842196,
   CNY: 9.4739151,
+  KRW: 1873.22583,
   TRY: 52.2383461,
   BRL: 7.36309385,
   ARS: 1644.82361,
