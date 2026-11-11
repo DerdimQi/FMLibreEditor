@@ -1171,7 +1171,7 @@ export const tr: Strings = {
     reloadHint: "Kayıt hâlâ yükleniyorduysa “Verileri yeniden oku” yeniden denetler.",
     noDate: "Oyun içi tarih denetimden geçmedi, bu yüzden yaşlar gösterilmiyor.",
     failed: (names) => `Salt okunur bırakılanlar: ${names}.`,
-    failedCheck: (name, fit, sampled) => `${name} (${format(fit)} of ${format(sampled)} fit)`,
+    failedCheck: (name, fit, sampled) => `${name} (${format(sampled)} örnekten ${format(fit)} uygun)`,
     join: (names) =>
       names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} ve ${names[names.length - 1]}`,
     allow: "Yine de düzenle",
@@ -1179,10 +1179,12 @@ export const tr: Strings = {
   },
 
   diagnostics: {
-    copy: "Copy diagnostics",
-    copyTitle: "Copy what FMLibreEditor found in the game, to paste into a bug report. It holds no names or paths.",
-    copied: "Copied",
-    failed: (reason) => `Could not copy the diagnostics: ${reason}`,
+    copy: "Tanılama bilgisini kopyala",
+    copyTitle:
+      "FMLibreEditor'ın oyunda bulduklarını, hata bildirimine yapıştırmanız için kopyalar. İsim ya da dosya yolu " +
+      "içermez.",
+    copied: "Kopyalandı",
+    failed: (reason) => `Tanılama bilgisi kopyalanamadı: ${reason}`,
   },
 
   checks: {

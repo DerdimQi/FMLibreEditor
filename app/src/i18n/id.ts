@@ -1148,7 +1148,7 @@ export const id: Strings = {
     reloadHint: "Jika save masih dimuat, Muat ulang data akan memeriksanya lagi.",
     noDate: "Tanggal dalam game tidak lolos pemeriksaan, jadi usia tidak ditampilkan.",
     failed: (names: string) => `Dibiarkan hanya baca: ${names}.`,
-    failedCheck: (name, fit, sampled) => `${name} (${format(fit)} of ${format(sampled)} fit)`,
+    failedCheck: (name, fit, sampled) => `${name} (${format(fit)} dari ${format(sampled)} cocok)`,
     join: (names: string[]) =>
       names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} dan ${names[names.length - 1]}`,
     allow: "Tetap edit",
@@ -1156,10 +1156,12 @@ export const id: Strings = {
   },
 
   diagnostics: {
-    copy: "Copy diagnostics",
-    copyTitle: "Copy what FMLibreEditor found in the game, to paste into a bug report. It holds no names or paths.",
-    copied: "Copied",
-    failed: (reason) => `Could not copy the diagnostics: ${reason}`,
+    copy: "Salin diagnostik",
+    copyTitle:
+      "Menyalin apa yang ditemukan FMLibreEditor di dalam game, untuk ditempel ke laporan bug. Tidak memuat nama " +
+      "atau path.",
+    copied: "Disalin",
+    failed: (reason) => `Diagnostik tidak bisa disalin: ${reason}`,
   },
 
   checks: {
