@@ -15,6 +15,10 @@ current_date = 0x56257C8
 # class, 0xED60 before the players pair as in 0.9.2355.0.
 retirement_manager = 0x5675060
 
+# The static pointer to the game's one GAME_UI object, whose count of saves loaded tells a load from a save: 0x3C80
+# before the players pair, as on Steam build 26340721. Another static, at 0x5670EC8, points at it too.
+game_ui = 0x5680140
+
 # game_plugin.dll as mapped in memory; these two values identify the build.
 [plugin]
 size_of_image = 0x175DA000

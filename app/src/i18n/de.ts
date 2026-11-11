@@ -391,6 +391,9 @@ const errors: ErrorTexts = {
   "memory.invalidMachO": () => "Das Modul des Spiels konnte nicht gelesen werden.",
   "memory.mach": (p) => `macOS hat einen Vorgang abgelehnt (${p.operation}, Fehler ${p.code}).`,
   "memory.posix": (p) => `macOS hat einen Vorgang abgelehnt (${p.operation}, errno ${p.code}).`,
+  "guard.saveChanged": () =>
+    "Das Spiel hat einen Spielstand geladen oder ist zum Hauptmenü zurückgekehrt, seit FMLibreEditor es gelesen hat, " +
+    "daher ändert es nichts, bis Sie die Daten neu laden.",
   "memory.noBridge": () =>
     "macOS lässt FMLibreEditor nicht in das Spiel: Das Spiel wurde ohne die Bridge von FMLibreEditor gestartet. " +
     "Richten Sie die Bridge ein und starten Sie das Spiel dann erneut über Steam.",
@@ -1186,6 +1189,18 @@ export const de: Strings = {
     detecting: "Football Manager wird gesucht…",
     connecting: "Spieler, Mitarbeiter und Vereine werden gelesen…",
     reloading: "Spieler, Mitarbeiter und Vereine werden neu gelesen…",
+
+    /**
+     * The notice under the masthead once the game has loaded a save, or gone back to its main menu, since the data was
+     * read (`SaveChangedNotice`), beside a Reload data button.
+     */
+    saveChanged: {
+      title: "Der Spielstand im Spiel hat sich geändert",
+      text:
+        "Das Spiel hat einen Spielstand geladen oder ist zum Hauptmenü zurückgekehrt, seit FMLibreEditor es gelesen hat. " +
+        "Bis Sie die Daten neu laden, ändert es nichts im Spiel und hält nichts eingefroren: Was es zeigt, kann zu einem " +
+        "anderen Spielstand gehören.",
+    },
 
     refrozen: {
       title: "Wie beim letzten Mal wieder eingefroren",

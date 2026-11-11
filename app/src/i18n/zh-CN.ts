@@ -143,6 +143,8 @@ const errors: ErrorTexts = {
     "FMLibreEditor 尚未针对此游戏版本进行验证，因此不会写入游戏。点击顶部提示中的“仍要编辑”即可启用编辑。",
   "guard.failed": (p) =>
     `此游戏版本的${checkName(p.check)}检查未通过，FMLibreEditor 会保留相关数据不变。`,
+  "guard.saveChanged": () =>
+    "自 FMLibreEditor 读取游戏以来，游戏已载入存档或返回了主菜单，因此在你点击“重新读取数据”之前不会进行任何修改。",
   "memory.noBridge": () =>
     "macOS 不允许 FMLibreEditor 访问游戏：启动游戏时未加载 FMLibreEditor bridge。请先设置 bridge，然后从 Steam 重新启动游戏。",
   "staff.directorTaken": (p) =>
@@ -1223,6 +1225,17 @@ export const zhCN: Strings = {
     detecting: "正在查找 Football Manager…",
     connecting: "正在读取球员、职员和俱乐部…",
     reloading: "正在重新读取球员、职员和俱乐部…",
+
+    /**
+     * The notice under the masthead once the game has loaded a save, or gone back to its main menu, since the data was
+     * read (`SaveChangedNotice`), beside a Reload data button.
+     */
+    saveChanged: {
+      title: "游戏存档已更改",
+      text:
+        "自 FMLibreEditor 读取游戏以来，游戏已载入存档或返回了主菜单。在你点击“重新读取数据”之前，它不会修改游戏中的" +
+        "任何内容，也不会保持任何锁定：当前显示的内容可能属于另一个存档。",
+    },
 
     /** The notice after connecting to a save in which something was frozen before (`FrozenNotice`). */
     refrozen: {

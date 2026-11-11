@@ -129,6 +129,9 @@ const errors: ErrorTexts = {
     "the notice at the top, turns editing on.",
   "guard.failed": (p) =>
     `${checkName(p.check)} did not check out in this version of the game, so FMLibreEditor leaves them unchanged.`,
+  "guard.saveChanged": () =>
+    "The game has loaded a save, or gone back to its main menu, since FMLibreEditor read it, so it changes nothing " +
+    "until you reload the data.",
   "memory.noBridge": () =>
     "macOS does not let FMLibreEditor into the game: the game was started without the FMLibreEditor bridge. Set " +
     "the bridge up, then start the game again from Steam.",
@@ -1127,6 +1130,17 @@ export const en = {
     detecting: "Looking for Football Manager…",
     connecting: "Reading players, staff and clubs…",
     reloading: "Reloading players, staff and clubs…",
+
+    /**
+     * The notice under the masthead once the game has loaded a save, or gone back to its main menu, since the data was
+     * read (`SaveChangedNotice`), beside a Reload data button.
+     */
+    saveChanged: {
+      title: "The game's save has changed",
+      text:
+        "The game has loaded a save, or gone back to its main menu, since FMLibreEditor read it. Until you reload the " +
+        "data, it changes nothing in the game and holds nothing frozen: what it shows may belong to another save.",
+    },
 
     /** The notice after connecting to a save in which something was frozen before (`FrozenNotice`). */
     refrozen: {

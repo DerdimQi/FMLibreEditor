@@ -256,6 +256,9 @@ const errors: ErrorTexts = {
   "guard.failed": (p) =>
     `${checkName(p.check)}: non hanno superato i controlli in questa versione del gioco, quindi FMLibreEditor non ` +
     "li cambia.",
+  "guard.saveChanged": () =>
+    "Il gioco ha caricato un salvataggio, o è tornato al menu principale, da quando FMLibreEditor lo ha letto, quindi " +
+    "non cambia nulla finché non ricarichi i dati.",
   "edit.unknownField": (p) => `Qui non c'è nessun campo modificabile chiamato «${p.field}».`,
   "edit.outOfRange": (p) => `${p.value} non è un valore valido per ${field(p.field)}: accetta da ${p.min} a ${p.max}.`,
   "edit.notADate": (p) => `${p.value} non è una data valida per ${field(p.field)}.`,
@@ -1162,6 +1165,14 @@ export const it: Strings = {
     detecting: "Ricerca di Football Manager…",
     connecting: "Lettura di giocatori, staff e società…",
     reloading: "Nuova lettura di giocatori, staff e società…",
+
+    saveChanged: {
+      title: "Il salvataggio del gioco è cambiato",
+      text:
+        "Il gioco ha caricato un salvataggio, o è tornato al menu principale, da quando FMLibreEditor lo ha letto. " +
+        "Finché non ricarichi i dati, non cambia nulla nel gioco e non mantiene nulla di congelato: ciò che mostra " +
+        "potrebbe appartenere a un altro salvataggio.",
+    },
 
     refrozen: {
       title: "Congelato di nuovo dall'ultima volta",

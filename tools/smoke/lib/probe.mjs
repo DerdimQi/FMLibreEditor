@@ -7,9 +7,13 @@ export class Probe {
     this.path = path;
   }
 
-  /** Runs the probe with `args` and returns what it printed. */
-  run(args) {
-    return execFileSync(this.path, args.map(String), { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  /** Runs the probe with `args`, and the environment variables `env` besides the runner's, and returns what it printed. */
+  run(args, env = {}) {
+    return execFileSync(this.path, args.map(String), {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, ...env },
+    });
   }
 
   /**

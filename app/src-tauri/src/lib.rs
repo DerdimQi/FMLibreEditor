@@ -71,6 +71,8 @@ const SAVE_RECHECK_LATER: Duration = Duration::from_secs(60);
 struct ClubsSeen {
     /// Where the array of clubs began.
     begin: u64,
+    /// How many saves the game had loaded (see `Session::loads`); none while that cannot be read.
+    loads: Option<u64>,
     /// Whether a club whose stadium was renamed was missing, or not where the lists found it.
     lost: bool,
     /// Whether the game had given a stadium renamed in the editor another name.
@@ -84,8 +86,8 @@ struct ClubsSeen {
 }
 
 impl ClubsSeen {
-    fn unknown(begin: u64) -> Self {
-        Self { begin, lost: false, off: false, since: Instant::now(), same_save: None, checked: None }
+    fn unknown(begin: u64, loads: Option<u64>) -> Self {
+        Self { begin, loads, lost: false, off: false, since: Instant::now(), same_save: None, checked: None }
     }
 }
 
@@ -391,8 +393,11 @@ impl Connection {
         let frozen = Frozen::default();
         // The clubs were just read, from this save.
         let begin = clubs_begin(&session).unwrap_or(0);
-        let clubs_seen =
-            ClubsSeen { same_save: Some(true), checked: Some(Instant::now()), ..ClubsSeen::unknown(begin) };
+        let clubs_seen = ClubsSeen {
+            same_save: Some(true),
+            checked: Some(Instant::now()),
+            ..ClubsSeen::unknown(begin, session.loads())
+        };
         Ok(Self { session, players, staff, clubs, human_clubs, log, mass: None, next_id, frozen, save, clubs_seen })
     }
 
@@ -473,7 +478,7 @@ impl Connection {
 
     /// Gives the stadium of the club `uid` the name `name`, unless it has it already: whether it has it now. Not
     /// logged: the rename that chose the name was.
-    fn give_stadium_name(&mut self, uid: u32, name: &str) -> bool {
+    fn give_stadium_name(&self, uid: u32, name: &str) -> bool {
         let Some(club) = self.clubs.get(uid) else {
             return false;
         };
@@ -490,9 +495,9 @@ impl Connection {
 
     /// Gives each stadium renamed in the editor its name again where the game has given it back its own, as it does
     /// whenever it loads the save. Before that, the game is checked to have this save: a save loaded (this one again or
-    /// another) moves the clubs' array or objects, or gives the stadiums the names in the game's database. Once it is
-    /// this one, clubs that moved are read again; while it is another, or none, nothing is written, and it is looked at
-    /// again every little while.
+    /// another) raises the game's count of saves loaded, may move the clubs' array or objects, and gives the stadiums
+    /// the names in the game's database. Once it is this one, clubs that moved are read again; while it is another, or
+    /// none, nothing is written, and it is looked at again every little while.
     fn hold_stadiums(&mut self) {
         if self.frozen.stadiums.is_empty() {
             return;
@@ -500,14 +505,17 @@ impl Connection {
         let Some(begin) = clubs_begin(&self.session) else {
             return;
         };
+        let loads = self.session.loads();
         let lost = self.clubs_lost();
         // Names are read only from clubs where the lists found them.
         let off = !lost && self.stadium_names_off();
         let seen = &self.clubs_seen;
-        if begin != seen.begin || (lost && !seen.lost) || (off && !seen.off) {
-            self.clubs_seen = ClubsSeen { lost, off, ..ClubsSeen::unknown(begin) };
+        let loaded = matches!((seen.loads, loads), (Some(then), Some(now)) if now != then);
+        if begin != seen.begin || loaded || (lost && !seen.lost) || (off && !seen.off) {
+            self.clubs_seen = ClubsSeen { lost, off, ..ClubsSeen::unknown(begin, loads) };
         }
         self.clubs_seen.off = off;
+        self.clubs_seen.loads = loads.or(self.clubs_seen.loads);
         let seen = &self.clubs_seen;
         let every = if seen.since.elapsed() < SAVE_SETTLES { SAVE_RECHECK } else { SAVE_RECHECK_LATER };
         if (seen.same_save != Some(true) || lost) && seen.checked.is_none_or(|at| at.elapsed() >= every) {
@@ -524,17 +532,18 @@ impl Connection {
             self.clubs_seen.checked = Some(Instant::now());
         }
         if self.clubs_seen.same_save == Some(true) {
+            // Checked here to be a save of this career, its clubs read again where they moved: the names are given
+            // even after the game has loaded it again, when nothing else is written until the lists are read again.
+            let _vouched = self.session.vouch_for_save();
             self.give_stadium_names();
         }
     }
 
     /// Gives every stadium renamed in the editor the name it was given, where it has another (see
     /// `give_stadium_name`). For the save the lists were read from only.
-    fn give_stadium_names(&mut self) {
-        let names: Vec<(u32, String)> =
-            self.frozen.stadiums.iter().map(|(&uid, held)| (uid, held.name.clone())).collect();
-        for (uid, name) in names {
-            self.give_stadium_name(uid, &name);
+    fn give_stadium_names(&self) {
+        for (&uid, held) in &self.frozen.stadiums {
+            self.give_stadium_name(uid, &held.name);
         }
     }
 
@@ -1421,9 +1430,17 @@ impl Connection {
     /// the attributes of every frozen member of staff from getting worse: what the game took is put back, and what it
     /// gave raises what they are held at. The position ratings of a frozen player are held exactly: what the game gave
     /// is put back too. These writes are not logged; unfreezing ends them.
+    ///
+    /// Once the game has loaded a save, or gone back to its main menu, since the lists were read, nothing is held at
+    /// what they found until they are read again: the people and clubs there may be another save's, at the same places.
+    /// Only the names of renamed stadiums are given again then, where the game is checked to have a save of this career
+    /// (see `hold_stadiums`).
     fn hold_frozen(&mut self) {
-        self.hold_money();
         self.hold_stadiums();
+        if self.session.save_changed() {
+            return;
+        }
+        self.hold_money();
         if !self.frozen.attributes.is_empty() {
             let fields = self.attribute_fields(Entity::Player);
             let target_of = |uid| self.players.get(uid).map(|player| player.target());
@@ -2206,6 +2223,15 @@ fn allow_editing(state: State<'_, AppState>) -> Result<ConnectionInfo, Failure> 
     let connection = guard.as_ref().ok_or_else(not_connected)?;
     connection.session.allow_unknown_build();
     Ok(connection.info(0))
+}
+
+/// Whether the game has loaded a save, or gone back to its main menu, since the lists were read (see
+/// `Session::save_changed`): until they are read again (`reload`), nothing is written and nothing frozen is held, but
+/// for the names of stadiums renamed in a save of the same career. False while not connected, or reading again.
+#[tauri::command]
+fn save_changed(state: State<'_, AppState>) -> Result<bool, Failure> {
+    let guard = state.0.lock()?;
+    Ok(guard.as_ref().is_some_and(|connection| connection.session.save_changed()))
 }
 
 /// Reads everything again, e.g. after the game has moved on. A list not found when the app connected, as while the
@@ -3768,6 +3794,7 @@ pub fn run() {
             connect,
             current_connection,
             allow_editing,
+            save_changed,
             reload,
             diagnostics,
             search_players,

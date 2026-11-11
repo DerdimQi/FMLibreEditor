@@ -2541,27 +2541,32 @@ fn type_infos(process: &Process, plugin: &Module) -> Vec<(u64, String)> {
             }
         }
     };
-    // Strings that read as a class's name, each after the NUL that ends the string before it.
-    let mut names: std::collections::HashMap<u64, String> = std::collections::HashMap::new();
-    chunks(&mut |base, chunk, limit| {
-        for nul in memchr::memchr_iter(0, &chunk[..limit]) {
-            if let Some(name) = chunk.get(nul + 1..).and_then(demangle) {
-                names.insert(base + nul as u64 + 1, name);
-            }
-        }
-    });
-    // Those a type info points at: the word before is a pointer out of the plugin, into the runtime.
-    let mut found = Vec::new();
+    // What may be a type info: a pointer out of the plugin, into the runtime, then a pointer into the plugin.
+    let mut infos: Vec<(u64, u64)> = Vec::new();
     chunks(&mut |base, chunk, limit| {
         let words: Vec<u64> = chunk[..limit].as_chunks::<8>().0.iter().map(|w| u64::from_le_bytes(*w)).collect();
         for (i, pair) in words.windows(2).enumerate() {
             let name = pair[1] & !NON_UNIQUE;
-            if is_user_pointer(pair[0]) && !plugin.contains(pair[0]) && names.contains_key(&name) {
-                found.push((base + (i * 8) as u64, names[&name].clone()));
+            if is_user_pointer(pair[0]) && !plugin.contains(pair[0]) && plugin.contains(name) {
+                infos.push((base + (i * 8) as u64, name));
             }
         }
     });
-    found
+    // The class names they point at, read where they start whatever comes before: some names follow other bytes with
+    // no NUL between (`game_plugin::GAME_UI` on Steam build 26385295).
+    let mut wanted: Vec<u64> = infos.iter().map(|&(_, name)| name).collect();
+    wanted.sort_unstable();
+    wanted.dedup();
+    let mut names: std::collections::HashMap<u64, String> = std::collections::HashMap::new();
+    chunks(&mut |base, chunk, limit| {
+        let first = wanted.partition_point(|&name| name < base);
+        for &name in wanted[first..].iter().take_while(|&&name| name < base + limit as u64) {
+            if let Some(class) = demangle(&chunk[(name - base) as usize..]) {
+                names.insert(name, class);
+            }
+        }
+    });
+    infos.into_iter().filter_map(|(info, name)| Some((info, names.get(&name)?.clone()))).collect()
 }
 
 fn types(process: &Process, modules: &[Module], text: &str, max: usize) -> Result<()> {
@@ -2989,6 +2994,25 @@ fn print_checks(health: &fmlibre_core::Health) {
     }
 }
 
+/// Where the static pointer to the game's own object is, how it was found, and the saves the game has loaded since it
+/// started, which that object counts.
+fn game_ui_line(session: &Session) -> String {
+    if session.layout.game.is_none() {
+        return "not read on this system yet".to_owned();
+    }
+    match (session.game_place(), session.loads()) {
+        (Some(place), Some(loads)) => {
+            format!(
+                "{GAME_PLUGIN}+{:#x} ({}): {loads} loaded since the game started",
+                place.rva,
+                place.found.describe()
+            )
+        }
+        (Some(place), None) => format!("{GAME_PLUGIN}+{:#x} ({}), count unreadable", place.rva, place.found.describe()),
+        (None, _) => "not found".to_owned(),
+    }
+}
+
 fn calibrate(session: &Session) -> Result<()> {
     println!("{GAME_PLUGIN} build: {}", session.fingerprint);
     match &session.profile {
@@ -2997,6 +3021,7 @@ fn calibrate(session: &Session) -> Result<()> {
     }
     println!("In-game date: {}", date_line(session));
     println!("Retirement manager: {}", retirement_line(session));
+    println!("Saves loaded: {}", game_ui_line(session));
     print_arrays(session);
     Ok(())
 }
@@ -3089,6 +3114,33 @@ fn profile(session: &Session, out: Option<&Path>) -> Result<()> {
         planned.map_or_else(String::new, |count| format!(", {count} planned retirements"))
     );
 
+    let game_ui = match &session.layout.game {
+        Some(game) => {
+            let started = Instant::now();
+            let guesses = fmlibre_core::game_ui_guesses(session);
+            let guessed: Vec<u64> =
+                guesses.iter().copied().filter(|&rva| fmlibre_core::holds_game_ui(session, rva)).collect();
+            let searched = fmlibre_core::search_game_ui(session);
+            println!("The game's own object, {} ({:.1} s):", game.class, started.elapsed().as_secs_f64());
+            println!(
+                "  as far from the players' array as in other builds: {} of {} guesses hold it",
+                guessed.len(),
+                guesses.len()
+            );
+            // More than one static may point at it; the profile keeps the one other builds keep.
+            println!("  pointers to it in the plugin's writable data: {}", hex(&searched));
+            if guessed.first().is_some_and(|rva| !searched.contains(rva)) {
+                println!("  note: the guess is not among the pointers the search found");
+            }
+            println!("  -> {}", game_ui_line(session));
+            session.game_place()
+        }
+        None => {
+            println!("The game's own object: not read on this system yet, so the profile leaves it out.");
+            None
+        }
+    };
+
     println!("Checks with what was found:");
     print_checks(&health);
 
@@ -3112,6 +3164,7 @@ fn profile(session: &Session, out: Option<&Path>) -> Result<()> {
         arrays: ArrayRvas { players: players.pair_rva, staff: staff.pair_rva, clubs: clubs.pair_rva },
         current_date: date.map(|place| place.rva),
         retirement_manager: retirement.map(|place| place.rva),
+        game_ui: game_ui.map(|place| place.rva),
     };
 
     let failed = health.failed();
@@ -3150,6 +3203,16 @@ fn profile(session: &Session, out: Option<&Path>) -> Result<()> {
             ),
         ];
     }
+    if let (Some(place), Some(game)) = (game_ui, &session.layout.game) {
+        let before = players.pair_rva.wrapping_sub(place.rva);
+        notes.game_ui = vec![
+            format!("The static pointer to the game's own object ({}), whose count of saves loaded", game.class),
+            format!(
+                "tells a load from a save: {before:#X} before the players pair{}.",
+                session.loads().map_or_else(String::new, |loads| format!("; {loads} loaded when it was found"))
+            ),
+        ];
+    }
     let text = profile_text(&found, &notes);
 
     match &session.profile {
@@ -3170,6 +3233,13 @@ fn profile(session: &Session, out: Option<&Path>) -> Result<()> {
                     "retirement_manager {} built in, {} found",
                     hex_or_none(built_in.retirement_manager),
                     hex_or_none(found.retirement_manager)
+                ));
+            }
+            if built_in.game_ui != found.game_ui {
+                differences.push(format!(
+                    "game_ui {} built in, {} found",
+                    hex_or_none(built_in.game_ui),
+                    hex_or_none(found.game_ui)
                 ));
             }
             if differences.is_empty() {

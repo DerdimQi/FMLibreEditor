@@ -367,6 +367,9 @@ const errors: ErrorTexts = {
   "memory.invalidMachO": () => "게임 모듈을 읽을 수 없습니다.",
   "memory.mach": (p) => `macOS가 작업을 거부했습니다(${p.operation}, 오류 ${p.code}).`,
   "memory.posix": (p) => `macOS가 작업을 거부했습니다(${p.operation}, errno ${p.code}).`,
+  "guard.saveChanged": () =>
+    "FMLibreEditor가 게임을 읽은 뒤 게임이 세이브를 불러왔거나 메인 메뉴로 돌아갔으므로, '데이터 다시 불러오기'를 " +
+    "누를 때까지 아무것도 바꾸지 않습니다.",
   "memory.noBridge": () =>
     "macOS가 FMLibreEditor의 게임 접근을 막고 있습니다. 게임이 FMLibreEditor 브리지 없이 실행되었습니다. 브리지를 " +
     "설정한 뒤 Steam에서 게임을 다시 실행하세요.",
@@ -1123,6 +1126,18 @@ export const ko: Strings = {
     detecting: "풋볼 매니저를 찾는 중…",
     connecting: "선수, 스태프, 구단을 읽는 중…",
     reloading: "선수, 스태프, 구단을 다시 읽는 중…",
+
+    /**
+     * The notice under the masthead once the game has loaded a save, or gone back to its main menu, since the data was
+     * read (`SaveChangedNotice`), beside a Reload data button.
+     */
+    saveChanged: {
+      title: "게임의 세이브가 바뀌었습니다",
+      text:
+        "FMLibreEditor가 게임을 읽은 뒤 게임이 세이브를 불러왔거나 메인 메뉴로 돌아갔습니다. '데이터 다시 불러오기'를 " +
+        "누를 때까지 게임에서 아무것도 바꾸지 않고 고정도 유지하지 않습니다. 지금 보이는 내용은 다른 세이브의 것일 수 " +
+        "있습니다.",
+    },
 
     refrozen: {
       title: "지난번 고정 항목을 다시 고정했습니다",

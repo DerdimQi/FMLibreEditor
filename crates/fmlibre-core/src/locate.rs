@@ -1,14 +1,16 @@
 //! Finding the game's own variables in a build the editor has no profile for.
 //!
 //! Each build of the game moves its static data. A build profile ([`BuildProfile`]) places the entity arrays, the
-//! in-game date and the static pointer to the retirement manager for each build the editor was checked with. For any
-//! other build, or where a place a profile names does not check out, the editor looks for them:
+//! in-game date, the static pointer to the retirement manager and the one to the game's own object for each build the
+//! editor was checked with. For any other build, or where a place a profile names does not check out, the editor looks
+//! for them:
 //! - the entity arrays, by scanning the game plugin ([`crate::calibrate`]);
 //! - the in-game date, among the values in the plugin's writable data that read as dates: the one the game's own data
 //!   agrees with, which [`crate::health`] works out from contracts and injuries, the values about as far from the
 //!   players' array as another build keeps its date marked as such;
-//! - the retirement manager's static, as far from the players' array as another build keeps it, or else by searching
-//!   the plugin's writable data for a pointer to the one object of its class (see [`crate::rtti`]).
+//! - the retirement manager's static and the game object's, each as far from the players' array as another build keeps
+//!   it, or else by searching the plugin's writable data for a pointer to the one object of its class (see
+//!   [`crate::rtti`]).
 //!
 //! Only reads memory.
 
@@ -162,6 +164,42 @@ pub fn retirement_guesses(session: &Session) -> Vec<u64> {
     guesses(session, |profile| profile.retirement_manager)
 }
 
+/// Where the static pointer to the game's own object is ([`crate::profile::GameLayout`]): where the build profile puts
+/// it, or as far from the players' array as another build keeps it, or else wherever the plugin's writable data points
+/// at the object. `None` when the layout does not place the object's count of saves loaded, or nothing checks out.
+pub(crate) fn find_game_ui(session: &Session) -> Option<Place> {
+    session.layout.game.as_ref()?;
+    let profiled = session.placed_game_ui();
+    if let Some(rva) = profiled.filter(|&rva| holds_game_ui(session, rva)) {
+        return Some(Place { rva, found: Found::Profile });
+    }
+    let guessed = game_ui_guesses(session).into_iter().find(|&rva| holds_game_ui(session, rva));
+    if let Some(rva) = guessed {
+        return Some(Place { rva, found: Found::Guessed });
+    }
+    // More than one static points at the object (two on Game Pass 0.9.2409.0); each leads to it.
+    search_game_ui(session).first().map(|&rva| Place { rva, found: Found::Searched })
+}
+
+/// Where other builds would have the static pointer to the game's own object, as [`retirement_guesses`] works it out.
+pub fn game_ui_guesses(session: &Session) -> Vec<u64> {
+    guesses(session, |profile| profile.game_ui)
+}
+
+/// Whether the 8 bytes at `rva` in the plugin point at the game's own object.
+pub fn holds_game_ui(session: &Session, rva: u64) -> bool {
+    session
+        .process
+        .read_u64(session.plugin.base + rva)
+        .is_ok_and(|object| is_user_pointer(object) && session.is_game_ui(object))
+}
+
+/// Every place in the plugin's writable data that points at an object of the class of the game's own object, by RVA;
+/// none when the layout does not name it.
+pub fn search_game_ui(session: &Session) -> Vec<u64> {
+    session.layout.game.as_ref().map_or_else(Vec::new, |game| pointers_to(session, &game.class))
+}
+
 /// Where other builds would have the in-game date, worked out as [`retirement_guesses`] works out the retirement
 /// manager's static. The date's own variable has kept nearly the same distance from the players' array in every build
 /// of a storefront, where the value the game keeps for the day before, which can fit the contracts and injuries as well
@@ -170,7 +208,8 @@ pub fn date_guesses(session: &Session) -> Vec<u64> {
     guesses(session, |profile| profile.current_date)
 }
 
-/// The guesses of [`retirement_guesses`] and [`date_guesses`], for a static that `place` reads from a profile.
+/// The guesses of [`retirement_guesses`], [`game_ui_guesses`] and [`date_guesses`], for a static that `place` reads
+/// from a profile.
 fn guesses(session: &Session, place: impl Fn(&BuildProfile) -> Option<u64>) -> Vec<u64> {
     let Some(players) = session.arrays.players.as_ref() else {
         return Vec::new();
@@ -221,8 +260,13 @@ pub fn holds_retirement_manager(session: &Session, rva: u64) -> bool {
 /// Every place in the plugin's writable data that points at an object of the retirement manager's class, by RVA. Its
 /// vtables are found from the class's name, which takes a second or so.
 pub fn search_retirement_manager(session: &Session) -> Vec<u64> {
-    let vtables: HashSet<u64> =
-        crate::rtti::vtables(&session.process, &session.plugin, MANAGER_CLASS).into_iter().collect();
+    pointers_to(session, MANAGER_CLASS)
+}
+
+/// Every place in the plugin's writable data that points at an object of `class` (as written in C++), by RVA. Its
+/// vtables are found from the class's name, which takes a second or so.
+fn pointers_to(session: &Session, class: &str) -> Vec<u64> {
+    let vtables: HashSet<u64> = crate::rtti::vtables(&session.process, &session.plugin, class).into_iter().collect();
     if vtables.is_empty() {
         return Vec::new();
     }

@@ -653,7 +653,8 @@ dd,
 
 /* A version of the game the editor was not checked with, or data that did not check out: like the update notice, in
    the colour of pending changes, with what it means under the headline. */
-.compatibility-notice {
+.compatibility-notice,
+.save-changed-notice {
   display: flex;
   flex-wrap: wrap;
   align-items: center;

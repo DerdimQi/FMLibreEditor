@@ -24,6 +24,12 @@ export async function run({ app, report, probe, connection: c, known }) {
   const aged = page.rows.filter((player) => player.age != null).length;
   report.check("the players have ages", aged === page.rows.length, `${aged} of ${page.rows.length}`);
 
+  // The game's count of the saves it loaded, which tells the app when the game has loaded a save since it read it: the
+  // probe looks for it as the app does, without the profiles too.
+  const saves = probe.run(["calibrate"], { FMLIBRE_IGNORE_PROFILES: "1" }).match(/^Saves loaded: (.*)$/m)?.[1] ?? "";
+  report.check("finds the game's count of saves by itself", saves.includes("loaded since the game started"), saves);
+  report.check("the game has the save it was read from", (await app.must("save_changed")) === false);
+
   const [retiring] = retiringPlayers(probe);
   if (retiring == null) {
     report.skip("finds the planned retirements by itself", "the game plans no player's retirement on this save");

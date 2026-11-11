@@ -284,6 +284,14 @@ person = 0x00
 date = 0x0C
 player_person = 0x390     # in the identity block, 8 bytes in, as on Windows
 
+# The game's one object of the class game_plugin::GAME_UI, laid out as on Windows: the count of the saves loaded since
+# the game started at +0x100. Read on the Arsenal save (Steam build 26385295, Apple silicon): 1 after the save was
+# loaded once. Two statics of the plugin point at the object, as on Windows: one among other singletons' (the
+# multiplayer manager's, the match coordinator's), which the code loads at 5 places, and one it loads at 470.
+[game]
+class = "game_plugin::GAME_UI"
+loads = 0x100
+
 # What a human manager has picked for his club. The match engine keeps it, for each tactic, as prepared tactics: 26
 # slots of the game's person ids (a player's `player_person`), the starting eleven in the order of the formation's
 # positions, then the substitutes; an empty slot holds 0xFFFFFFFF. Measured on the Arsenal save on

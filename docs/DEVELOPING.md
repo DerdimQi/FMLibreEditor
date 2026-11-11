@@ -41,7 +41,8 @@ code). On Windows it puts no code of its own in the
 game; on macOS the game loads one small library of ours, the bridge (see
 [On macOS](#on-macos)).
 
-Before every write it checks four things:
+Before every write it checks five things:
+- the game still has the save the editor read (see [When the game loads a save](#when-the-game-loads-a-save));
 - the object still belongs to the same person;
 - the new value is one the field can take;
 - the current value looks like that field's (otherwise the layout does not fit);
@@ -49,10 +50,33 @@ Before every write it checks four things:
 
 If any check fails, nothing changes.
 
+### When the game loads a save
+
+The editor reads the game's lists when it connects, and again when the data is reloaded, and writes to the objects
+they found. A save loaded in the game meanwhile, the same one or another, gives the game new objects, mostly at other
+places but not always: the lists can stay where they were, with a player of the same UID at the same place in another
+career, where a check of the object alone would let a freeze of the other save through. To tell, the editor reads a
+count the game keeps (issue #122): its one object of the class `game_plugin::GAME_UI`, which a static of the plugin
+points at, counts the saves loaded since the game started (`[game] loads` in `layout.toml`, `+0x100`). Loading a save
+adds one; saving does not, as only the code that loads a save writes it. Neither does starting a new game, which the
+main menu tells instead: there the lists are empty.
+
+Once the count has changed, or the lists were seen empty, since the editor read them, `Session::save_changed` says so
+until they are read again (`Session::recheck`). Meanwhile the editor writes nothing (`Lock::SaveChanged`, which
+`field_lock` and `structure_lock` give before any other check), holds nothing frozen, and says so under the masthead,
+with Reload data. The names of stadiums renamed in the editor are the one exception, as the game drops them on every
+load: their hold checks for itself that the game has a save of the same career (the same human managers), reads the
+clubs again where they moved, and only then gives the names back (`Session::vouch_for_save`).
+
+The build profiles place the static (`game_ui`, 0x3C80 before the players pair on both Windows builds of November
+2026); a build without a profile finds it as it finds the retirement manager's (below). The Mac keeps the count in the
+same object at the same place (read on Steam build 26385295, where loading the save again raised it from 1 to 2).
+
 ### After an update of the game
 
 Each build of the game moves its static data. A build profile in `profiles/` (identified by `game_plugin`'s headers)
-places the entity arrays, the in-game date and the retirement manager for each build the editor was checked with.
+places the entity arrays, the in-game date, the retirement manager and the game's own object for each build the editor
+was checked with.
 For a build without one, or where a place a profile names does not check out, the editor looks for them itself
 (`crates/fmlibre-core/src/locate.rs`):
 - **The entity arrays** by scanning the plugin, in about half a second.
@@ -80,6 +104,10 @@ For a build without one, or where a place a profile names does not check out, th
 - **The retirement manager's static** where other builds keep it, as far from the players' array, checked by the
   name of the class its object has. Otherwise the plugin's writable data is searched for a pointer to an object of
   the class `RETIREMENT_MANAGER`, which takes about half a second.
+- **The game object's static**, whose count of saves loaded tells a load from a save, the same way: where other builds
+  keep it, else by a search for a pointer to the one object of the class `game_plugin::GAME_UI`. Two statics point at
+  it on Game Pass 0.9.2409.0 (0x5670EC8 and 0x5680140); either leads to it, and the profiles keep the second, which
+  is where Steam build 26340721 keeps its own.
 
 With those, a build that keeps the object layout of the last one (as both updates of November 2026 did) shows ages
 and planned retirements as before. What stays different for such a build:
@@ -110,7 +138,8 @@ read-only until `profiles/fm27/layout.toml` is fixed.
    shows, and that it read it where the other builds keep their date.
 2. `fmlibre-probe profile --out profiles/fm27/<storefront>-<version>.toml` looks for everything as for a build
    without a profile, runs the checks with what it found, and writes the profile. It lists the values that read as a
-   plausible date, and whether the guessed and the searched place of the retirement manager agree.
+   plausible date, and whether the guessed and the searched places of the retirement manager and of the game object
+   agree.
 3. Add the file to `BUILDS` in `crates/fmlibre-core/src/profile.rs`; a unit test fails until it is there.
 4. Build the app (`npm run release`), and run the smoke tests on both storefronts (see
    [`tools/smoke`](../tools/smoke/README.md)).
@@ -281,7 +310,7 @@ Start FM27, load a save, then run:
 
 ```powershell
 fmlibre-probe info                                   # process, storefront, modules, game_plugin.dll layout
-fmlibre-probe calibrate                              # identify the build; locate players, staff, clubs, the date
+fmlibre-probe calibrate                              # identify the build; locate players, staff, clubs, the date, the saves loaded
 fmlibre-probe health                                 # the checks the editor makes before it writes, and what each found
 fmlibre-probe diagnostics                            # what the app's Copy diagnostics copies: no names or paths
 fmlibre-probe profile                                # a build profile for this build, looked for as for a new build
@@ -331,7 +360,7 @@ fmlibre-probe find "c7 80 ea 07" --as hex --module game_plugin.dll
 
 Addresses and lengths are hexadecimal. Add `--json report.json` to `info` or `scan`
 to save the results. `calibrate --scan` ignores the build profile and finds the
-arrays, the in-game date and the retirement manager the way it would on an unknown build.
+arrays, the in-game date, the retirement manager and the game object the way it would on an unknown build.
 
 Only `set`, `move`, `swap`, `release`, `staff-move`, `staff-job`, `staff-sign`, `heal --heal`,
 `bans --lift`, `tie-set`, `tie-add`, `tie-remove`, `captain`, `cohesion --set` and `prizes` with an amount to change

@@ -13,6 +13,7 @@ import { SettingsMenu } from "./SettingsMenu";
 import { appText, changesText, clubListText, playerListText, scoutingText, staffListText } from "./labels";
 import { PlayerBrowser } from "./PlayerBrowser";
 import { restored, useSnapshot } from "./restore";
+import { SaveChangedNotice, useSaveChanged } from "./SaveChangedNotice";
 import { ScoutingBrowser } from "./ScoutingBrowser";
 import { StaffBrowser } from "./StaffBrowser";
 import type { BridgeInfo, ConnectionInfo, Detection, Refrozen, ReloadInfo } from "./types";
@@ -72,6 +73,8 @@ function App() {
   const update = useUpdateCheck();
   // Whether Check for updates was pressed: only then does the foot of the window say what was found.
   const [askedUpdate, setAskedUpdate] = useState(false);
+  // Whether the game has loaded a save, or gone back to its main menu, since the data was read.
+  const saveChanged = useSaveChanged(connection !== null, dataVersion);
 
   const run = useCallback(async (label: string, task: () => Promise<void>) => {
     setBusy(label);
@@ -247,6 +250,7 @@ function App() {
             }}
           />
         )}
+        {connection && saveChanged && <SaveChangedNotice busy={busy !== null} onReload={reload} />}
         {connection && refrozen && <FrozenNotice refrozen={refrozen} onDismiss={() => setRefrozen(null)} />}
         {error && <div className="banner">{error}</div>}
 

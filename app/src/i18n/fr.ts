@@ -414,6 +414,9 @@ const errors: ErrorTexts = {
   "memory.invalidMachO": () => "Impossible de lire le module du jeu.",
   "memory.mach": (p) => `macOS a refusé une opération (${p.operation}, erreur ${p.code}).`,
   "memory.posix": (p) => `macOS a refusé une opération (${p.operation}, errno ${p.code}).`,
+  "guard.saveChanged": () =>
+    "Le jeu a chargé une partie, ou est revenu à son menu principal, depuis que FMLibreEditor l'a lu\u00a0: rien n'est " +
+    "modifié tant que vous ne rechargez pas les données.",
   "memory.noBridge": () =>
     "macOS ne laisse pas FMLibreEditor accéder au jeu\u00a0: le jeu a été lancé sans le bridge de FMLibreEditor. " +
     "Installez le bridge, puis relancez le jeu depuis Steam.",
@@ -1209,6 +1212,18 @@ export const fr: Strings = {
     detecting: "Recherche de Football Manager…",
     connecting: "Lecture des joueurs, du staff et des clubs…",
     reloading: "Relecture des joueurs, du staff et des clubs…",
+
+    /**
+     * The notice under the masthead once the game has loaded a save, or gone back to its main menu, since the data was
+     * read (`SaveChangedNotice`), beside a Reload data button.
+     */
+    saveChanged: {
+      title: "La partie du jeu a changé",
+      text:
+        "Le jeu a chargé une partie, ou est revenu à son menu principal, depuis que FMLibreEditor l'a lu. Tant que vous " +
+        "ne rechargez pas les données, il ne modifie rien dans le jeu et ne maintient aucun blocage\u00a0: ce qu'il affiche " +
+        "peut appartenir à une autre partie.",
+    },
 
     refrozen: {
       title: "De nouveau bloqués, comme la dernière fois",

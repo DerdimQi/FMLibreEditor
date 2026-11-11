@@ -145,6 +145,9 @@ const errors: ErrorTexts = {
     "pemberitahuan paling atas, menyalakan pengeditan.",
   "guard.failed": (p) =>
     `${checkName(p.check)} tidak lolos pemeriksaan di versi game ini, jadi FMLibreEditor tidak mengubahnya.`,
+  "guard.saveChanged": () =>
+    "Game sudah memuat save, atau kembali ke menu utamanya, sejak FMLibreEditor membacanya, jadi FMLibreEditor tidak " +
+    "mengubah apa pun sampai kamu memuat ulang data.",
   "clause.noContract": () => "Pemain tidak punya kontrak.",
   "clause.missing": () => `Klausul ini sudah tidak ada di kontrak; ${reload}.`,
   "clause.notInClause": (p) => `Klausul ini tidak punya ${p.field === "clause.amount" ? "jumlah" : "syarat"} untuk diubah.`,
@@ -1067,6 +1070,14 @@ export const id: Strings = {
     detecting: "Mencari Football Manager…",
     connecting: "Membaca pemain, staf, dan klub…",
     reloading: "Memuat ulang pemain, staf, dan klub…",
+
+    saveChanged: {
+      title: "Save di game sudah berganti",
+      text:
+        "Game sudah memuat save, atau kembali ke menu utamanya, sejak FMLibreEditor membacanya. Sampai kamu memuat ulang " +
+        "data, FMLibreEditor tidak mengubah apa pun di game dan tidak menahan yang dibekukan: yang ditampilkannya " +
+        "mungkin milik save lain.",
+    },
 
     refrozen: {
       title: "Dibekukan lagi dari sesi sebelumnya",

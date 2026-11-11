@@ -232,6 +232,9 @@ const errors: ErrorTexts = {
   "guard.failed": (p) =>
     `${checkName(p.check)}: no han superado las comprobaciones en esta versión del juego, así que FMLibreEditor no ` +
     "los cambia.",
+  "guard.saveChanged": () =>
+    "El juego ha cargado una partida, o ha vuelto a su menú principal, desde que FMLibreEditor lo leyó, así que no " +
+    "cambia nada hasta que se recarguen los datos.",
   "edit.unknownField": (p) => `Aquí no hay ningún campo editable llamado «${p.field}».`,
   "edit.outOfRange": (p) => `${p.value} no es un valor válido para ${field(p.field)}: admite de ${p.min} a ${p.max}.`,
   "edit.notADate": (p) => `${p.value} no es una fecha válida para ${field(p.field)}.`,
@@ -1122,6 +1125,14 @@ export const es: Strings = {
     detecting: "Buscando Football Manager…",
     connecting: "Leyendo jugadores, personal y clubes…",
     reloading: "Recargando jugadores, personal y clubes…",
+
+    saveChanged: {
+      title: "La partida del juego ha cambiado",
+      text:
+        "El juego ha cargado una partida, o ha vuelto a su menú principal, desde que FMLibreEditor lo leyó. Hasta que " +
+        "se recarguen los datos, no cambia nada en el juego ni mantiene nada congelado: lo que muestra puede ser de " +
+        "otra partida.",
+    },
 
     refrozen: {
       title: "Congelado de nuevo desde la última vez",
