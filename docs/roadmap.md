@@ -325,7 +325,9 @@ changes many at once, and undo.
     gives it again on connecting, on a reload and within seconds of the game loading the save, while it is open;
     undone, or renamed back, it is forgotten. An (i) beside the name, and beside every freeze, says the app has to stay
     open for it.
-  - [ ] Sponsors, ticket prices and league prize money (`sicomps::PRIZE_MONEY_PROVIDER`).
+  - [ ] Sponsors (#114), ticket prices and prize money. What a competition pays by final position and per match is
+    in the settings of its stages (`sicomps::LEAGUE_SETTINGS`, #123), which the probe's `prizes` reads and changes, to
+    find out whether the game pays from them: see the [prize money notes](recon/fm27-prize-money.md).
   - [x] Jadedness: how worn out a player is by playing, which rest takes away (an `i16` at player `+0x25A`,
     -500 when rested). Found from the numbers FMRTE shows for three players, read without editing in FMRTE;
     shown in the profile and the squad tab, editable, and a team's Refresh rests it to -500. Checked on the

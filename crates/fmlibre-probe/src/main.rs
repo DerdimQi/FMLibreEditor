@@ -15,9 +15,9 @@ use fmlibre_core::{
     ATTRIBUTE_GROUPS, ArrayCandidate, ArrayRvas, ArraySource, AttributeBound, BuildProfile, Buyer, CaptainRole,
     ClubIndex, Entity, ExportFormat, ExportHeader, Exported, Field, FmDate, Found, GAME_EXE, GAME_PLUGIN, GameInfo,
     GraphicsIndex, Kind, Loan, MANAGER, MoveTerms, PERSONALITY, POSITIONS, Picture, PlayerFilter, PlayerIndex,
-    PlayerOrder, PlayerSort, ProfileNotes, Purpose, STAFF_ATTRIBUTE_GROUPS, SUPPORTER_MIX, SUPPORTER_TRAITS, Scale,
-    ScanOptions, ScoutOrder, ScoutRequest, Session, SessionError, StaffIndex, Target, Tie, TieTarget, find_game,
-    job_name, nations, profile_text, scan_object_arrays, sort_players,
+    PlayerOrder, PlayerSort, PrizeAmount, PrizeMoney, PrizeStage, ProfileNotes, Purpose, STAFF_ATTRIBUTE_GROUPS,
+    SUPPORTER_MIX, SUPPORTER_TRAITS, Scale, ScanOptions, ScoutOrder, ScoutRequest, Session, SessionError, StaffIndex,
+    Target, Tie, TieTarget, find_game, job_name, nations, profile_text, scan_object_arrays, sort_players,
 };
 #[cfg(target_os = "macos")]
 use fmlibre_mem::MachImage;
@@ -287,6 +287,37 @@ enum Command {
         #[arg(long)]
         restore: bool,
         /// With --restore, how many seconds to wait before putting it back, to look at the game meanwhile.
+        #[arg(long, default_value_t = 0)]
+        hold: u64,
+    },
+    /// Show the prize money competitions pay by final position and per match, as the settings of their stages hold
+    /// it, optionally only for those matching TEXT. With --place, --win, --draw or --loss, change it in the running
+    /// game, in each settings of the one competition TEXT names, to see whether the game pays what they say.
+    Prizes {
+        /// Words to look for in the competitions' names (accents and case are ignored), or a competition's UID.
+        text: Option<String>,
+        /// Only the settings at this address, as listed: for one of a competition's groups.
+        #[arg(long, value_name = "ADDR")]
+        settings: Option<String>,
+        /// Change what a final position pays (1 for the first place) to AMOUNT pounds; may be given more than once.
+        #[arg(long, num_args = 2, value_names = ["POSITION", "AMOUNT"])]
+        place: Option<Vec<u32>>,
+        /// Change what a win pays to AMOUNT pounds (both of the words the game keeps for it).
+        #[arg(long, value_name = "AMOUNT")]
+        win: Option<u32>,
+        /// Change what a draw pays to AMOUNT pounds.
+        #[arg(long, value_name = "AMOUNT")]
+        draw: Option<u32>,
+        /// Change what a loss pays to AMOUNT pounds.
+        #[arg(long, value_name = "AMOUNT")]
+        loss: Option<u32>,
+        /// Also list the settings that pay nothing, and those no stage holds.
+        #[arg(long)]
+        all: bool,
+        /// Put the amounts back afterwards and check them: tests the change without changing the save.
+        #[arg(long)]
+        restore: bool,
+        /// With --restore, how many seconds to wait before putting them back, to look at the game meanwhile.
         #[arg(long, default_value_t = 0)]
         hold: u64,
     },
@@ -1004,6 +1035,10 @@ fn run(cli: Cli) -> Result<()> {
                 | Command::Move { .. }
                 | Command::Permanent { .. }
                 | Command::StadiumName { name: Some(_), .. }
+                | Command::Prizes { place: Some(_), .. }
+                | Command::Prizes { win: Some(_), .. }
+                | Command::Prizes { draw: Some(_), .. }
+                | Command::Prizes { loss: Some(_), .. }
                 | Command::Release { .. }
                 | Command::StaffMove { .. }
                 | Command::StaffJob { .. }
@@ -1101,6 +1136,19 @@ fn run(cli: Cli) -> Result<()> {
         }
         Command::StadiumName { club, name, restore, hold } => {
             stadium_name(&connect(process, ArraySource::ProfileFirst)?, club, name.as_deref(), restore.then_some(hold))
+        }
+        Command::Prizes { text, settings, place, win, draw, loss, all, restore, hold } => {
+            let mut amounts: Vec<(PrizeAmount, u32)> = place
+                .unwrap_or_default()
+                .chunks(2)
+                .map(|pair| (PrizeAmount::Place(pair[0] as usize), pair[1]))
+                .collect();
+            amounts.extend(win.map(|amount| (PrizeAmount::Win, amount)));
+            amounts.extend(draw.map(|amount| (PrizeAmount::Draw, amount)));
+            amounts.extend(loss.map(|amount| (PrizeAmount::Loss, amount)));
+            let settings = settings.as_deref().map(parse_hex).transpose()?;
+            let session = connect(process, ArraySource::ProfileFirst)?;
+            prizes(&session, text.as_deref(), settings, &amounts, all, restore.then_some(hold))
         }
         Command::Plan { uid, club, release } => {
             plan_move(&connect(process, ArraySource::ProfileFirst)?, uid, club, release)
@@ -2913,16 +2961,27 @@ fn calibrate(session: &Session) -> Result<()> {
 }
 
 fn print_arrays(session: &Session) {
-    let source = if session.arrays.from_profile { "from the build profile, checked" } else { "found by scanning" };
-    println!("Entity arrays ({source}):");
     let arrays = &session.arrays;
+    if arrays.from_profile {
+        println!("Entity arrays (from the build profile, checked):");
+    } else {
+        println!("Entity arrays:");
+    }
     for (label, array) in [("players", &arrays.players), ("staff", &arrays.staff), ("clubs", &arrays.clubs)] {
         match array {
             Some(a) => println!(
-                "  {label:<8} {GAME_PLUGIN}+{:#x}  {:>7} elements  {:>3.0}% of samples decoded",
+                "  {label:<8} {GAME_PLUGIN}+{:#x}  {:>7} elements  {:>3.0}% of samples decoded, {:>3.0}% by a name{}",
                 a.pair_rva,
                 a.count,
-                a.confidence * 100.0
+                a.confidence * 100.0,
+                a.named * 100.0,
+                if arrays.from_profile {
+                    ""
+                } else if a.from_profile {
+                    " (from the build profile)"
+                } else {
+                    " (found by scanning)"
+                }
             ),
             None => println!("  {label:<8} not found"),
         }
@@ -4516,6 +4575,188 @@ fn stadium_name(session: &Session, club: Option<u32>, name: Option<&str>, restor
         show("restored")?;
     }
     Ok(())
+}
+
+/// Lists the prize money the competitions matching `text` (or the settings at `settings`) pay, and changes `amounts` in
+/// each settings of the one competition they name.
+fn prizes(
+    session: &Session,
+    text: Option<&str>,
+    settings: Option<u64>,
+    amounts: &[(PrizeAmount, u32)],
+    all: bool,
+    restore: Option<u64>,
+) -> Result<()> {
+    let started = Instant::now();
+    let found = session.prize_money()?;
+    let count = |stage: PrizeStage| found.iter().filter(|prize| prize.stage == stage).count();
+    println!(
+        "{} league settings: {} of a stage being played or played, {} of one not started yet, {} held by no stage; {} \
+         pay something (read in {:.1} s)",
+        found.len(),
+        count(PrizeStage::Started),
+        count(PrizeStage::Future),
+        count(PrizeStage::Unheld),
+        found.iter().filter(|prize| prize.pays()).count(),
+        started.elapsed().as_secs_f64()
+    );
+    let uid = text.and_then(|text| text.trim().parse::<u32>().ok());
+    let words: Vec<String> =
+        text.map(fmlibre_core::fold).unwrap_or_default().split_whitespace().map(str::to_owned).collect();
+    let wanted = |prize: &PrizeMoney| match (settings, &prize.competition) {
+        (Some(address), _) => prize.settings == address,
+        (None, Some(competition)) => match uid {
+            Some(uid) => competition.uid == uid,
+            None => {
+                let short = competition.short_name.as_deref().unwrap_or_default();
+                let names = fmlibre_core::fold(&format!("{} {short}", competition.name));
+                words.iter().all(|word| names.contains(word.as_str()))
+            }
+        },
+        (None, None) => text.is_none(),
+    };
+    let held = |prize: &PrizeMoney| prize.stage != PrizeStage::Unheld;
+    let rank = |stage: PrizeStage| match stage {
+        PrizeStage::Started => 0,
+        PrizeStage::Future => 1,
+        PrizeStage::Unheld => 2,
+    };
+    let mut shown: Vec<&PrizeMoney> =
+        found.iter().filter(|prize| wanted(prize) && (all || (prize.pays() && held(prize)))).collect();
+    shown.sort_by_cached_key(|prize| {
+        (prize.competition.as_ref().map(|c| fmlibre_core::fold(&c.name)), rank(prize.stage), prize.settings)
+    });
+    // A competition's groups often pay alike: one entry for them all.
+    let mut groups: Vec<(&PrizeMoney, Vec<u64>)> = Vec::new();
+    for prize in shown {
+        let alike = |other: &PrizeMoney| {
+            other.competition == prize.competition
+                && other.stage == prize.stage
+                && other.by_position == prize.by_position
+                && (other.win, other.win_again, other.draw, other.loss)
+                    == (prize.win, prize.win_again, prize.draw, prize.loss)
+        };
+        match groups.iter_mut().find(|(first, _)| alike(first)) {
+            Some((_, addresses)) => addresses.push(prize.settings),
+            None => groups.push((prize, vec![prize.settings])),
+        }
+    }
+    for (prize, addresses) in &groups {
+        print_prize_money(prize, addresses);
+    }
+    if groups.is_empty() {
+        let hint = if all { "" } else { " (--all also lists those that pay nothing, or that no stage holds)" };
+        println!("No settings match{hint}");
+    }
+    if amounts.is_empty() {
+        return Ok(());
+    }
+
+    ensure!(text.is_some() || settings.is_some(), "name the competition to change, or its settings (--settings)");
+    let targets: Vec<&PrizeMoney> = found.iter().filter(|prize| wanted(prize) && held(prize)).collect();
+    ensure!(!targets.is_empty(), "no settings that a stage holds match, so nothing was changed");
+    let mut names: Vec<String> = targets
+        .iter()
+        .map(|prize| {
+            prize
+                .competition
+                .as_ref()
+                .map_or_else(|| "no competition".to_owned(), |c| format!("{} (UID {})", c.name, c.uid))
+        })
+        .collect();
+    names.sort();
+    names.dedup();
+    ensure!(
+        names.len() == 1,
+        "{} competitions match ({}): name one by its UID, or its settings with --settings",
+        names.len(),
+        names.join("; ")
+    );
+    let plan = session.plan_prize_change(&targets, amounts)?;
+    let done = session.apply_prize_change(&plan)?;
+    println!();
+    println!("Changed in the running game, {}:", names[0]);
+    for edit in &done.edits {
+        println!("  settings {:#x}, {}: {} -> {}", edit.settings, edit.amount, pounds(edit.from), pounds(edit.to));
+    }
+    match restore {
+        Some(hold) => {
+            if hold > 0 {
+                println!("  putting them back in {hold} s");
+                std::thread::sleep(std::time::Duration::from_secs(hold));
+            }
+            session.undo_prize_change(&done)?;
+            println!("Put back, and read back.");
+        }
+        None => {
+            let mut by_settings: BTreeMap<u64, Vec<String>> = BTreeMap::new();
+            for edit in &done.edits {
+                let arg = match edit.amount {
+                    PrizeAmount::Place(place) => format!("--place {place} {}", edit.from),
+                    PrizeAmount::Win => format!("--win {}", edit.from),
+                    PrizeAmount::Draw => format!("--draw {}", edit.from),
+                    PrizeAmount::Loss => format!("--loss {}", edit.from),
+                };
+                by_settings.entry(edit.settings).or_default().push(arg);
+            }
+            println!("To put it back while the game still holds these settings:");
+            for (address, args) in by_settings {
+                println!("  fmlibre-probe prizes --settings {address:#x} {}", args.join(" "));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// One entry of `prizes`: the competition, the stage, the settings that pay alike and what they pay.
+fn print_prize_money(prize: &PrizeMoney, addresses: &[u64]) {
+    let competition = match &prize.competition {
+        Some(c) => {
+            let short = c.short_name.as_deref().filter(|short| *short != c.name).map(|short| format!(", {short}"));
+            format!("{} (UID {}{})", c.name, c.uid, short.unwrap_or_default())
+        }
+        None => "No competition".to_owned(),
+    };
+    let stage = match prize.stage {
+        PrizeStage::Started => "a stage being played or played",
+        PrizeStage::Future => "a stage not started yet",
+        PrizeStage::Unheld => "held by no stage",
+    };
+    let at: Vec<String> = addresses.iter().map(|address| format!("{address:#x}")).collect();
+    let settings = match at.as_slice() {
+        [one] => format!("settings {one}"),
+        _ => format!("{} settings alike: {}", at.len(), at.join(" ")),
+    };
+    println!("{competition} · {stage} · {settings}");
+    if !prize.by_position.is_empty() {
+        println!("  by position, {} places:", prize.by_position.len());
+        for (row, amounts) in prize.by_position.chunks(6).enumerate() {
+            let cells: Vec<String> = amounts
+                .iter()
+                .enumerate()
+                .map(|(i, &amount)| format!("{:>3}. {:>11}", row * 6 + i + 1, pounds(amount)))
+                .collect();
+            println!("   {}", cells.join("  "));
+        }
+    }
+    let win = match prize.win_again == prize.win {
+        true => pounds(prize.win),
+        false => format!("{} and {}", pounds(prize.win), pounds(prize.win_again)),
+    };
+    println!("  per match: win {win}, draw {}, loss {}", pounds(prize.draw), pounds(prize.loss));
+}
+
+/// An amount with commas between thousands: 10,222,480.
+fn pounds(amount: u32) -> String {
+    let digits = amount.to_string();
+    let mut text = String::with_capacity(digits.len() + digits.len() / 3);
+    for (i, digit) in digits.chars().enumerate() {
+        if i > 0 && (digits.len() - i).is_multiple_of(3) {
+            text.push(',');
+        }
+        text.push(digit);
+    }
+    text
 }
 
 fn plan_move(session: &Session, uid: u32, club: u32, release: Option<u32>) -> Result<()> {
@@ -6467,6 +6708,21 @@ fn write_json(path: &Path, value: &impl Serialize) -> Result<()> {
     println!();
     println!("JSON report written to {}", path.display());
     Ok(())
+}
+
+#[cfg(test)]
+mod format_tests {
+    use super::*;
+
+    #[test]
+    fn amounts_have_commas_between_thousands() {
+        assert_eq!(pounds(0), "0");
+        assert_eq!(pounds(999), "999");
+        assert_eq!(pounds(1_229), "1,229");
+        assert_eq!(pounds(236_234), "236,234");
+        assert_eq!(pounds(10_222_480), "10,222,480");
+        assert_eq!(pounds(u32::MAX), "4,294,967,295");
+    }
 }
 
 #[cfg(all(test, target_os = "macos"))]
