@@ -1286,9 +1286,10 @@ export const id: Strings = {
     button: "Ekspor",
     buttonTitle: {
       player: "Tulis pemain yang ditampilkan daftar ke berkas CSV atau JSON, untuk spreadsheet atau skrip",
+      staff: "Tulis staf yang ditampilkan daftar ke berkas CSV atau JSON, untuk spreadsheet atau skrip",
       club: "Tulis klub yang ditampilkan daftar ke berkas CSV atau JSON, untuk spreadsheet atau skrip",
     },
-    title: { player: "Ekspor pemain", club: "Ekspor klub" },
+    title: { player: "Ekspor pemain", staff: "Ekspor staf", club: "Ekspor klub" },
     scope: (entity, count) =>
       count === 0
         ? `Tidak ada ${nouns[entity]} yang cocok dengan pencarian dan filter.`
@@ -1305,6 +1306,7 @@ export const id: Strings = {
         "Untuk Excel yang menulis desimal dengan koma: misalnya dalam bahasa Indonesia, Turki, Spanyol, atau Jerman",
       json: {
         player: "Untuk skrip: posisi, atribut, dan kepribadian sebagai objek tersendiri",
+        staff: "Untuk skrip: atribut, kepribadian, dan kontrak sebagai objek tersendiri",
         club: "Untuk skrip: suporter, fasilitas, stadion, dan keuangan sebagai objek tersendiri",
       },
     },
@@ -1313,6 +1315,10 @@ export const id: Strings = {
         "Kemampuan, posisi dan rating posisi setiap pemain, atribut dalam skala 1–20 (termasuk yang tersembunyi), " +
         "kepribadian, reputasi, penampilan, dan kontrak beserta klausulnya, dengan tanggal dalam game. Uang dalam " +
         "pound, seperti yang disimpan game. Tidak ada yang berubah di game.",
+      staff:
+        "Jabatan dan klub setiap staf, kemampuan, atribut dalam skala 1–20, kepribadian, reputasi, dan kontrak " +
+        "(gaji dan tanggal), dengan tanggal dalam game. Uang dalam pound, seperti yang disimpan game. Tidak ada yang " +
+        "berubah di game.",
       club:
         "Reputasi setiap klub, tahun berdiri, tiket musiman, pengikut media sosial, komposisi dan sifat suporter, " +
         "fasilitas, stadion, dan keuangan: saldo, anggaran transfer, pengeluaran dan anggaran gaji mingguan, serta " +

@@ -2957,14 +2957,18 @@ export async function mockInvoke<T>(command: string, args?: Record<string, unkno
     case "freeze_team":
       return freezeTeam(Number(args?.club), Number(args?.team), args?.kind as FreezeKind, Boolean(args?.frozen)) as T;
     case "export_players":
+    case "export_staff":
     case "export_clubs": {
       // Nothing is written in a browser: the report names the file a real export would have.
       const query = String(args?.query ?? "");
+      const filter = args?.filter ?? {};
       const selected =
         command === "export_clubs"
-          ? selectTargets("club", query, { clubFilter: (args?.filter ?? {}) as ClubFilter })
-          : selectTargets("player", query, { playerFilter: (args?.filter ?? {}) as PlayerFilter });
-      const what = command === "export_clubs" ? "clubs" : "players";
+          ? selectTargets("club", query, { clubFilter: filter as ClubFilter })
+          : command === "export_staff"
+            ? selectTargets("staff", query, { staffFilter: filter as StaffFilter })
+            : selectTargets("player", query, { playerFilter: filter as PlayerFilter });
+      const what = command === "export_clubs" ? "clubs" : command === "export_staff" ? "staff" : "players";
       const folder = "C:\\Users\\you\\Documents\\FMLibreEditor\\Exports";
       const two = (n: number) => String(n).padStart(2, "0");
       const stem = gameDate ? `${what}-${gameDate.year}-${two(gameDate.month)}-${two(gameDate.day)}` : what;

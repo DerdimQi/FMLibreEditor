@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Ability } from "./Ability";
+import { ExportButton } from "./ExportDialog";
 import { formatDate } from "./format";
 import { jobLabel, profileText, staffListText } from "./labels";
 import { ListBrowser } from "./ListBrowser";
@@ -87,7 +88,12 @@ export function StaffBrowser({ version, active, genderKnown }: StaffBrowserProps
           }
         />
       }
-      toolbarActions={(list) => <MassEditButton entity="staff" filters={{ staffFilter: filter }} list={list} />}
+      toolbarActions={(list) => (
+        <>
+          <ExportButton entity="staff" list={list} args={{ filter, order: order ?? undefined }} />
+          <MassEditButton entity="staff" filters={{ staffFilter: filter }} list={list} />
+        </>
+      )}
       tableClass="staff-grid"
       header={
         <>

@@ -1393,9 +1393,10 @@ export const it: Strings = {
     button: "Esporta",
     buttonTitle: {
       player: "Scrive in un file CSV o JSON i giocatori mostrati dall'elenco, per un foglio di calcolo o uno script",
+      staff: "Scrive in un file CSV o JSON i membri dello staff mostrati dall'elenco, per un foglio di calcolo o uno script",
       club: "Scrive in un file CSV o JSON le società mostrate dall'elenco, per un foglio di calcolo o uno script",
     },
-    title: { player: "Esporta giocatori", club: "Esporta società" },
+    title: { player: "Esporta giocatori", staff: "Esporta staff", club: "Esporta società" },
     scope: (entity, count) =>
       count === 0
         ? `${nouns[entity].feminine ? "Nessuna" : "Nessun"} ${nouns[entity].one} corrisponde alla ricerca e ai filtri.`
@@ -1411,6 +1412,7 @@ export const it: Strings = {
       csvSemicolon: "Per Excel dove i decimali si scrivono con la virgola: in italiano, spagnolo o tedesco, per esempio",
       json: {
         player: "Per gli script: ruoli, attributi e personalità come oggetti a sé",
+        staff: "Per gli script: attributi, personalità e contratto come oggetti a sé",
         club: "Per gli script: tifosi, strutture, stadio e finanze come oggetti a sé",
       },
     },
@@ -1419,6 +1421,10 @@ export const it: Strings = {
         "Per ogni giocatore: abilità, ruoli e valutazioni per ruolo, attributi sulla scala 1–20 (anche quelli " +
         "nascosti), personalità, reputazione, presenze e contratto con le sue clausole, con la data del gioco. Il " +
         "denaro è in sterline, come lo tiene il gioco. Nel gioco non cambia nulla.",
+      staff:
+        "Per ogni membro dello staff: ruolo e società, abilità, attributi sulla scala 1–20, personalità, reputazione e " +
+        "contratto (stipendio e date), con la data del gioco. Il denaro è in sterline, come lo tiene il gioco. Nel gioco " +
+        "non cambia nulla.",
       club:
         "Per ogni società: reputazione, anno di fondazione, abbonamenti, follower sui social media, composizione e " +
         "caratteristiche dei tifosi, strutture, stadio e finanze (saldo, budget trasferimenti, spesa e budget " +

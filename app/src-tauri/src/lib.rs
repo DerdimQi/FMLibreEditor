@@ -253,9 +253,9 @@ struct ExportReport {
     path: PathBuf,
     file: String,
     folder: PathBuf,
-    /// The players or clubs written.
+    /// The players, staff or clubs written.
     count: usize,
-    /// Players or clubs whose objects changed while they were read: left out.
+    /// Players, staff or clubs whose objects changed while they were read: left out.
     skipped: usize,
 }
 
@@ -2360,6 +2360,29 @@ async fn export_players(
     .await
 }
 
+/// Writes the staff `query` and `filter` select, in `order` or as the list shows them (the human manager first, then by
+/// current ability), to a new file in the exports folder as `format`: what their profiles hold, with the in-game date in
+/// the file and in its name ("staff-2027-01-02.csv"). Only reads memory.
+#[tauri::command]
+async fn export_staff(
+    app: tauri::AppHandle,
+    query: String,
+    filter: Option<StaffFilter>,
+    order: Option<StaffOrder>,
+    format: ExportFormat,
+) -> Result<ExportReport, Failure> {
+    export_list(app, "staff", format, move |connection, header, out| {
+        let filter = filter.unwrap_or_default();
+        let mut hits = connection.staff.search(&query);
+        hits.retain(|member| filter.matches(member));
+        if let Some(order) = order {
+            sort_staff(&mut hits, order);
+        }
+        connection.session.export_staff(&hits, format, header, out)
+    })
+    .await
+}
+
 /// Writes the clubs `query` and `filter` select, highest reputation first as the list shows them, to a new file in the
 /// exports folder as `format`: what their profiles hold, with the in-game date in the file and in its name
 /// ("clubs-2027-01-02.csv"). Only reads memory.
@@ -2379,7 +2402,7 @@ async fn export_clubs(
     .await
 }
 
-/// Writes an export of `what` ("players", "clubs") with `write` to a new file in the exports folder, named after it and
+/// Writes an export of `what` ("players", "staff", "clubs") with `write` to a new file in the exports folder, named after it and
 /// the in-game date. Only reads memory.
 async fn export_list(
     app: tauri::AppHandle,
@@ -2421,7 +2444,7 @@ async fn export_list(
     .await?
 }
 
-/// A new file for an export of `what` ("players", "clubs") in `folder`, named after the in-game date: the first of
+/// A new file for an export of `what` ("players", "staff", "clubs") in `folder`, named after the in-game date: the first of
 /// "players-2027-01-02.json", "players-2027-01-02-2.json", ... that is not there yet.
 fn new_export_file(
     folder: &Path,
@@ -3751,6 +3774,7 @@ pub fn run() {
             search_staff,
             search_clubs,
             export_players,
+            export_staff,
             export_clubs,
             open_export,
             show_export,

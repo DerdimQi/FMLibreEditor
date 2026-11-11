@@ -110,22 +110,22 @@ export interface ReloadInfo {
 }
 
 /**
- * How an export writes the players or clubs (`ExportFormat` in export.rs): CSV with commas or with semicolons (what
+ * How an export writes the players, staff or clubs (`ExportFormat` in export.rs): CSV with commas or with semicolons (what
  * Excel takes where decimals are written with a comma), or JSON.
  */
 export type ExportFormat = "csv" | "csvSemicolon" | "json";
 
-/** What can be exported: the player list and the club list. */
-export type ExportEntity = Extract<Entity, "player" | "club">;
+/** What can be exported: the player, staff and club lists. */
+export type ExportEntity = Entity;
 
 /** What an export wrote, and where: the file, its name and its folder. */
 export interface ExportReport {
   path: string;
   file: string;
   folder: string;
-  /** The players or clubs written. */
+  /** The players, staff or clubs written. */
   count: number;
-  /** Players or clubs whose objects changed while they were read: left out. */
+  /** Players, staff or clubs whose objects changed while they were read: left out. */
   skipped: number;
 }
 

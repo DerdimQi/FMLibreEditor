@@ -221,7 +221,9 @@ changes many at once, and undo.
     mark) or JSON, in `Documents\FMLibreEditor\Exports`, named after the in-game date. A row or object per player:
     abilities, positions and position ratings, attributes on the 1–20 scale, personality, reputation, caps, contract
     and clauses, money in pounds, the in-game date on every row. Only reads; the whole Steam save (37,971 players)
-    takes under a second. The probe writes the same with `players --export FILE`. Staff and clubs could follow.
+    takes under a second. The probe writes the same with `players --export FILE`. The staff and club lists export
+    the same way (`staff --export`, `clubs --export`): a member of staff's job, employer, abilities, attributes,
+    personality, reputation and contract; a club's reputation, supporters, facilities, stadium and finances.
   - [x] Updates from inside the app: an installed Windows copy downloads the new installer, checks its signature
     (Tauri's updater, the key in the repository's secrets) and runs it, then opens again; the release workflow
     signs the installer and writes `latest.json`. Portable copies keep the Download link.

@@ -1448,9 +1448,11 @@ export const fr: Strings = {
     button: "Exporter",
     buttonTitle: {
       player: "Écrire les joueurs affichés par la liste dans un fichier CSV ou JSON, pour un tableur ou un script",
+      staff:
+        "Écrire les membres du staff affichés par la liste dans un fichier CSV ou JSON, pour un tableur ou un script",
       club: "Écrire les clubs affichés par la liste dans un fichier CSV ou JSON, pour un tableur ou un script",
     },
-    title: { player: "Exporter les joueurs", club: "Exporter les clubs" },
+    title: { player: "Exporter les joueurs", staff: "Exporter le staff", club: "Exporter les clubs" },
     scope: (entity, count) =>
       count === 0
         ? `Aucun ${nouns[entity].one} ne correspond à la recherche et aux filtres.`
@@ -1469,6 +1471,7 @@ export const fr: Strings = {
         "exemple",
       json: {
         player: "Pour les scripts\u00a0: les postes, les attributs et la personnalité en objets à part",
+        staff: "Pour les scripts\u00a0: les attributs, la personnalité et le contrat en objets à part",
         club: "Pour les scripts\u00a0: les supporters, les infrastructures, le stade et les finances en objets à part",
       },
     },
@@ -1477,6 +1480,10 @@ export const fr: Strings = {
         "Pour chaque joueur\u00a0: niveaux, postes et notes par poste, attributs sur l'échelle 1–20 (y compris les " +
         "attributs cachés), personnalité, réputation, sélections, et contrat avec ses clauses, avec la date du jeu. " +
         "L'argent est en livres, comme le jeu le garde. Rien ne change dans le jeu.",
+      staff:
+        "Pour chaque membre du staff\u00a0: fonction et club, niveaux, attributs sur l'\u00e9chelle 1\u201320, personnalit\u00e9, " +
+        "r\u00e9putation et contrat (salaire et dates), avec la date du jeu. L'argent est en livres, comme le jeu le garde. " +
+        "Rien ne change dans le jeu.",
       club:
         "Pour chaque club\u00a0: réputation, année de fondation, abonnements, followers sur les réseaux sociaux, profil " +
         "et caractéristiques des supporters, infrastructures, stade et finances (solde, budget transferts, dépenses " +

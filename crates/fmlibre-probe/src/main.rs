@@ -107,6 +107,13 @@ enum Command {
         /// How many to print.
         #[arg(long, default_value_t = 25)]
         limit: usize,
+        /// Also write every matching member of staff, not only the ones printed, to this file: what their profiles
+        /// hold, as CSV, or as JSON for a name ending in .json.
+        #[arg(long, value_name = "FILE")]
+        export: Option<PathBuf>,
+        /// In the CSV file, semicolons between the values instead of commas, as Excel takes them in many languages.
+        #[arg(long, requires = "export")]
+        semicolon: bool,
     },
     /// List clubs, highest reputation first, optionally only those matching TEXT.
     Clubs {
@@ -1114,7 +1121,11 @@ fn run(cli: Cli) -> Result<()> {
         }
         Command::Profile { out } => profile(&connect(process, ArraySource::ScanOnly)?, out.as_deref()),
         Command::Player { uid } => player(&connect(process, ArraySource::ProfileFirst)?, uid),
-        Command::Staff { text, limit } => staff(&connect(process, ArraySource::ProfileFirst)?, text.as_deref(), limit),
+        Command::Staff { text, limit, export, semicolon } => {
+            let session = connect(process, ArraySource::ProfileFirst)?;
+            let export = export.as_deref().map(|path| (path, export_format(path, semicolon)));
+            staff(&session, text.as_deref(), limit, export)
+        }
         Command::StaffMember { uid } => staff_member(&connect(process, ArraySource::ProfileFirst)?, uid),
         Command::StaffPlaces { club_offset: Some(offset), .. } => {
             club_slot(&connect(process, ArraySource::ProfileFirst)?, offset)
@@ -3200,7 +3211,7 @@ fn export_format(path: &Path, semicolon: bool) -> ExportFormat {
     }
 }
 
-/// Writes an export of `what` ("players", "clubs") to `path` with `write`, and says how it went.
+/// Writes an export of `what` ("players", "staff", "clubs") to `path` with `write`, and says how it went.
 fn export_to(
     session: &Session,
     path: &Path,
@@ -3475,11 +3486,14 @@ fn player(session: &Session, uid: u32) -> Result<()> {
     Ok(())
 }
 
-fn staff(session: &Session, text: Option<&str>, limit: usize) -> Result<()> {
+fn staff(session: &Session, text: Option<&str>, limit: usize, export: Option<(&Path, ExportFormat)>) -> Result<()> {
     let started = Instant::now();
     let index = StaffIndex::new(session.staff()?);
     let elapsed = started.elapsed();
     let hits = index.search(text.unwrap_or(""));
+    if let Some((path, format)) = export {
+        export_to(session, path, "staff", |header, out| session.export_staff(&hits, format, header, out))?;
+    }
     println!(
         "Read {} staff in {:.1} s; {} shown of {} matching.",
         index.len(),
