@@ -16,9 +16,10 @@ const GAP = 4;
 
 /**
  * The flag of each language, in a box of 3:2: the Union Jack for English, as FM is British (cut to 3:2 at the sides,
- * as flag sets do), and the flags of Turkey, Spain, Indonesia and Italy whole. Spain's is drawn without the coat of
- * arms, as its civil flag is: at this size the arms would be a smudge. Indonesia's is 2:3 in law; drawn at 3:2 like the
- * others. Italy's is the tricolour, three vertical bands.
+ * as flag sets do), and the flags of Turkey, Spain, Indonesia, Italy and South Korea whole. Spain's is drawn without
+ * the coat of arms, as its civil flag is: at this size the arms would be a smudge. Indonesia's is 2:3 in law; drawn at
+ * 3:2 like the others. Italy's is the tricolour, three vertical bands. South Korea's follows its construction sheet:
+ * the taegeuk on the diagonal, and around it the four trigrams, each of three bars that are whole or broken.
  */
 const FLAGS: Record<Locale, ReactNode> = {
   en: (
@@ -61,6 +62,32 @@ const FLAGS: Record<Locale, ReactNode> = {
       <rect x="2" width="1" height="2" fill="#ce2b37" shapeRendering="crispEdges" />
     </svg>
   ),
+  ko: (
+    <svg className="language-flag" viewBox="0 0 3 2" aria-hidden="true">
+      <rect width="3" height="2" fill="#fff" />
+      <g transform="translate(1.5 1) rotate(33.69)">
+        <circle r="0.5" fill="#cd2e3a" />
+        <path d="M-0.5 0a0.5 0.5 0 0 0 1 0z" fill="#0047a0" />
+        <circle cx="-0.25" r="0.25" fill="#cd2e3a" />
+        <circle cx="0.25" r="0.25" fill="#0047a0" />
+      </g>
+      <g fill="none" stroke="#000" strokeWidth="0.0833">
+        <path transform="translate(1.5 1) rotate(213.69)" d="M0.792-0.25v0.5M0.917-0.25v0.5M1.042-0.25v0.5" />
+        <path
+          transform="translate(1.5 1) rotate(146.31)"
+          d="M0.792-0.25v0.5M0.917-0.25v0.229m0 0.042v0.229M1.042-0.25v0.5"
+        />
+        <path
+          transform="translate(1.5 1) rotate(-33.69)"
+          d="M0.792-0.25v0.229m0 0.042v0.229M0.917-0.25v0.5M1.042-0.25v0.229m0 0.042v0.229"
+        />
+        <path
+          transform="translate(1.5 1) rotate(33.69)"
+          d="M0.792-0.25v0.229m0 0.042v0.229M0.917-0.25v0.229m0 0.042v0.229M1.042-0.25v0.229m0 0.042v0.229"
+        />
+      </g>
+    </svg>
+  ),
 };
 
 /** The languages on offer, in the order of the menu, each with its own name. */
@@ -70,6 +97,7 @@ const LANGUAGES: readonly { id: Locale; name: string }[] = [
   { id: "es", name: "Español" },
   { id: "id", name: "Bahasa Indonesia" },
   { id: "it", name: "Italiano" },
+  { id: "ko", name: "한국어" },
 ];
 
 /** The name and hover text of the button: "Settings: English, Euro". */
