@@ -1311,10 +1311,10 @@ export const tr: Strings = {
     button: "Dışa aktar",
     buttonTitle: {
       player: "Listedeki oyuncuları bir tablo programı ya da betik için CSV veya JSON dosyasına yaz",
-      staff: "Write the staff the list shows to a CSV or JSON file, for a spreadsheet or a script",
+      staff: "Listedeki personeli bir tablo programı ya da betik için CSV veya JSON dosyasına yaz",
       club: "Listedeki kulüpleri bir tablo programı ya da betik için CSV veya JSON dosyasına yaz",
     },
-    title: { player: "Oyuncuları dışa aktar", staff: "Export staff", club: "Kulüpleri dışa aktar" },
+    title: { player: "Oyuncuları dışa aktar", staff: "Personeli dışa aktar", club: "Kulüpleri dışa aktar" },
     scope: (entity, count) =>
       count === 0
         ? `Arama ve filtrelere uyan ${nouns[entity].plain} yok.`
@@ -1330,7 +1330,7 @@ export const tr: Strings = {
       csvSemicolon: "Ondalıkları virgülle yazan Excel için: Türkçe, İspanyolca ya da Almanca Excel gibi",
       json: {
         player: "Betikler için: pozisyonlar, özellikler ve kişilik ayrı nesneler olarak",
-        staff: "For scripts: the attributes, personality and contract as objects of their own",
+        staff: "Betikler için: özellikler, kişilik ve sözleşme ayrı nesneler olarak",
         club: "Betikler için: taraftarlar, tesisler, stadyum ve mali durum ayrı nesneler olarak",
       },
     },
@@ -1340,9 +1340,8 @@ export const tr: Strings = {
         "kişiliği, itibarı, milli maçları, sözleşmesi ve maddeleri; oyun tarihiyle birlikte. Paralar oyunun tuttuğu " +
         "gibi sterlin. Oyunda hiçbir şey değişmez.",
       staff:
-        "Each member of staff's job and employer, abilities, attributes on the 1–20 scale, personality, reputation, " +
-        "and contract (wage and dates), with the in-game date. Money is in pounds, as the game keeps it. Nothing in " +
-        "the game changes.",
+        "Her personelin görevi ve kulübü, yetenekleri, 1–20 ölçeğinde özellikleri, kişiliği, itibarı ve sözleşmesi (maaş " +
+        "ve tarihler); oyun tarihiyle birlikte. Paralar oyunun tuttuğu gibi sterlin. Oyunda hiçbir şey değişmez.",
       club:
         "Her kulübün itibarı, kuruluş yılı, kombine bilet sayısı, sosyal medya takipçileri, taraftar dağılımı ve " +
         "özellikleri, tesisleri, stadyumu ve mali durumu: bakiye, transfer bütçesi, haftalık maaş harcaması ile maaş " +

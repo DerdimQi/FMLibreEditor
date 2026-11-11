@@ -1428,11 +1428,14 @@ export const de: Strings = {
       player:
         "Schreibt die Spieler, die die Liste zeigt, in eine CSV- oder JSON-Datei, für eine Tabellenkalkulation oder ein " +
         "Skript",
+      staff:
+        "Schreibt die Mitarbeiter, die die Liste zeigt, in eine CSV- oder JSON-Datei, für eine Tabellenkalkulation oder " +
+        "ein Skript",
       club:
         "Schreibt die Vereine, die die Liste zeigt, in eine CSV- oder JSON-Datei, für eine Tabellenkalkulation oder ein " +
         "Skript",
     },
-    title: { player: "Spieler exportieren", club: "Vereine exportieren" },
+    title: { player: "Spieler exportieren", staff: "Mitarbeiter exportieren", club: "Vereine exportieren" },
     scope: (entity, count) =>
       count === 0
         ? `Kein ${nouns[entity].one} passt zur Suche und zu den Filtern.`
@@ -1448,6 +1451,7 @@ export const de: Strings = {
       csvSemicolon: "Für Excel, wo Dezimalzahlen mit Komma geschrieben werden: etwa auf Deutsch, Türkisch oder Spanisch",
       json: {
         player: "Für Skripte: Positionen, Attribute und Persönlichkeit als eigene Objekte",
+        staff: "Für Skripte: Attribute, Persönlichkeit und Vertrag als eigene Objekte",
         club: "Für Skripte: Fans, Einrichtungen, Stadion und Finanzen als eigene Objekte",
       },
     },
@@ -1456,6 +1460,10 @@ export const de: Strings = {
         "Für jeden Spieler: Fähigkeiten, Positionen und Positionsbewertungen, Attribute auf der Skala 1–20 (auch die " +
         "verborgenen), Persönlichkeit, Ansehen, Länderspiele und Vertrag mit seinen Klauseln, mit dem Spieldatum. " +
         "Geldbeträge sind in Pfund, wie das Spiel sie speichert. Im Spiel ändert sich nichts.",
+      staff:
+        "Für jeden Mitarbeiter: Job und Verein, Fähigkeiten, Attribute auf der Skala 1–20, Persönlichkeit, Ansehen und " +
+        "Vertrag (Gehalt und Daten), mit dem Spieldatum. Geldbeträge sind in Pfund, wie das Spiel sie speichert. Im " +
+        "Spiel ändert sich nichts.",
       club:
         "Für jeden Verein: Ansehen, Gründungsjahr, Dauerkarten, Follower in sozialen Medien, Fantypen und " +
         "Fan-Eigenschaften, Einrichtungen, Stadion und Finanzen (Kontostand, Transferbudget, wöchentliche " +
