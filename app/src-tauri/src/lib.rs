@@ -13,8 +13,8 @@ use fmlibre_core::{
     NewContract, NewStaffContract, Operation, Paid, Picture, Planned, PlayerDetails, PlayerFilter, PlayerIndex,
     PlayerOrder, PlayerSummary, ROLES, RelationSet, RetirementSet, Role, SCOUT_POSITIONS, ScoutError, ScoutPosition,
     ScoutRequest, Scouted, SearchIndex, Session, SessionError, Skipped, SquadReport, StadiumName, StadiumRename,
-    StaffChange, StaffDetails, StaffFilter, StaffIndex, StaffOrder, StaffPlan, Target, Tie, TieTarget, find_game,
-    nations, sort_players, sort_staff,
+    StaffChange, StaffDetails, StaffFilter, StaffIndex, StaffOrder, StaffPlan, Target, Tie, TieTarget,
+    diagnostics_report, find_game, nations, sort_players, sort_staff,
 };
 use fmlibre_mem::{Process, find_processes, is_current_process_elevated, list_modules};
 use serde::{Deserialize, Serialize};
@@ -2242,6 +2242,21 @@ async fn reload(state: State<'_, AppState>, file: State<'_, FrozenFile>) -> Resu
     Ok(info)
 }
 
+/// The report Copy diagnostics puts on the clipboard for a bug report, built now from the connection as it is, with
+/// the lists Reload data may have found since the app connected (see `fmlibre_core::diagnostics_report`). Off the
+/// window's thread, as the retirement manager may be looked for then.
+#[tauri::command]
+async fn diagnostics(app: tauri::AppHandle) -> Result<String, Failure> {
+    let version = app.package_info().version.to_string();
+    tauri::async_runtime::spawn_blocking(move || -> Result<String, Failure> {
+        let state = app.state::<AppState>();
+        let guard = state.0.lock()?;
+        let connection = guard.as_ref().ok_or_else(not_connected)?;
+        Ok(diagnostics_report(&connection.session, &version))
+    })
+    .await?
+}
+
 /// Players matching `query`, highest current ability first; at most `limit` rows.
 #[tauri::command]
 fn search_players(
@@ -3731,6 +3746,7 @@ pub fn run() {
             current_connection,
             allow_editing,
             reload,
+            diagnostics,
             search_players,
             search_staff,
             search_clubs,

@@ -156,9 +156,21 @@ pub struct CheckResult {
     pub passed: bool,
     pub fit: u64,
     pub sampled: u64,
-    /// What else it measured, in a few words, for the probe.
+    /// What else it measured, in a few words, for the probe and the diagnostics report.
     #[serde(skip)]
     pub note: String,
+}
+
+impl fmt::Display for CheckResult {
+    /// The check as the probe and the diagnostics report list it: "pass  staff   1980 of  2000 fit; ...".
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let verdict = if self.passed { "pass" } else { "FAIL" };
+        write!(f, "{verdict}  {:<12} {:>5} of {:>5} fit", self.check.key(), self.fit, self.sampled)?;
+        if !self.note.is_empty() {
+            write!(f, "; {}", self.note)?;
+        }
+        Ok(())
+    }
 }
 
 /// What the checks found on the running game.
@@ -774,7 +786,7 @@ fn pick_date(candidates: &[DatePlace], evidence: &DateEvidence) -> Result<(DateP
 }
 
 /// A date as YYYY-MM-DD.
-fn iso(date: FmDate) -> String {
+pub(crate) fn iso(date: FmDate) -> String {
     format!("{:04}-{:02}-{:02}", date.year, date.month, date.day)
 }
 

@@ -17,7 +17,8 @@ use fmlibre_core::{
     GraphicsIndex, Kind, Loan, MANAGER, MoveTerms, PERSONALITY, POSITIONS, Picture, PlayerFilter, PlayerIndex,
     PlayerOrder, PlayerSort, PrizeAmount, PrizeMoney, PrizeStage, ProfileNotes, Purpose, STAFF_ATTRIBUTE_GROUPS,
     SUPPORTER_MIX, SUPPORTER_TRAITS, Scale, ScanOptions, ScoutOrder, ScoutRequest, Session, SessionError, StaffIndex,
-    Target, Tie, TieTarget, find_game, job_name, nations, profile_text, scan_object_arrays, sort_players,
+    Target, Tie, TieTarget, date_line, diagnostics_report, find_game, job_name, nations, profile_text, retirement_line,
+    scan_object_arrays, sort_players,
 };
 #[cfg(target_os = "macos")]
 use fmlibre_mem::MachImage;
@@ -77,6 +78,9 @@ enum Command {
     Info,
     /// Run the checks the editor makes before it writes, and show what each found.
     Health,
+    /// Print the report the app's Copy diagnostics copies for a bug report: the game and its build, where its data was
+    /// found, and what the checks found. It holds no names or paths.
+    Diagnostics,
     /// Identify the build and locate the player, staff and club arrays, the in-game date and the retirement manager.
     Calibrate {
         /// Ignore the build profile and look for everything, as for an unknown build.
@@ -1100,6 +1104,10 @@ fn run(cli: Cli) -> Result<()> {
             info(&process, &game, &modules, elevated, json)
         }
         Command::Health => health(&connect(process, ArraySource::ProfileFirst)?),
+        Command::Diagnostics => {
+            print!("{}", diagnostics_report(&connect(process, ArraySource::ProfileFirst)?, env!("CARGO_PKG_VERSION")));
+            Ok(())
+        }
         Command::Calibrate { scan } => {
             let source = if scan { ArraySource::ScanOnly } else { ArraySource::ProfileFirst };
             calibrate(&connect(process, source)?)
@@ -2966,27 +2974,7 @@ fn health(session: &Session) -> Result<()> {
 
 fn print_checks(health: &fmlibre_core::Health) {
     for result in &health.results {
-        let verdict = if result.passed { "pass" } else { "FAIL" };
-        let note = if result.note.is_empty() { String::new() } else { format!("; {}", result.note) };
-        println!("  {verdict}  {:<12} {:>5} of {:>5} fit{note}", result.check.key(), result.fit, result.sampled);
-    }
-}
-
-/// The in-game date, where it was read and how that place was found.
-fn date_line(session: &Session) -> String {
-    match session.date_place() {
-        Some(place) => {
-            format!("{} ({GAME_PLUGIN}+{:#x}, {})", iso_date(session.game_date()), place.rva, place.found.describe())
-        }
-        None => "- (see the gameDate check of `health`)".to_owned(),
-    }
-}
-
-/// Where the static pointer to the retirement manager is, and how it was found.
-fn retirement_line(session: &Session) -> String {
-    match session.retirement_place() {
-        Some(place) => format!("{GAME_PLUGIN}+{:#x} ({})", place.rva, place.found.describe()),
-        None => "not found".to_owned(),
+        println!("  {result}");
     }
 }
 
@@ -3003,30 +2991,8 @@ fn calibrate(session: &Session) -> Result<()> {
 }
 
 fn print_arrays(session: &Session) {
-    let arrays = &session.arrays;
-    if arrays.from_profile {
-        println!("Entity arrays (from the build profile, checked):");
-    } else {
-        println!("Entity arrays:");
-    }
-    for (label, array) in [("players", &arrays.players), ("staff", &arrays.staff), ("clubs", &arrays.clubs)] {
-        match array {
-            Some(a) => println!(
-                "  {label:<8} {GAME_PLUGIN}+{:#x}  {:>7} elements  {:>3.0}% of samples decoded, {:>3.0}% by a name{}",
-                a.pair_rva,
-                a.count,
-                a.confidence * 100.0,
-                a.named * 100.0,
-                if arrays.from_profile {
-                    ""
-                } else if a.from_profile {
-                    " (from the build profile)"
-                } else {
-                    " (found by scanning)"
-                }
-            ),
-            None => println!("  {label:<8} not found"),
-        }
+    for line in session.arrays.describe() {
+        println!("{line}");
     }
 }
 

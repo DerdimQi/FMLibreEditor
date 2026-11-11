@@ -132,6 +132,9 @@ export const compatibilityText = strings.compatibility;
 /** What each of the checks the editor makes before it writes is about, as the notice and the errors name them. */
 export const CHECK_NAMES = strings.checks;
 
+/** Copy diagnostics: the report for a bug report, at the foot of the window and in the notice under the masthead. */
+export const diagnosticsText = strings.diagnostics;
+
 /** Editing a person or a club: the Edit button, the inputs, and the footer under the profile. */
 export const editText = strings.edit;
 

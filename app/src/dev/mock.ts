@@ -6,6 +6,7 @@ import { fold } from "../format";
 import { scoutingOverview, scoutingSuggest } from "./mockScouting";
 import type {
   ApplyReport,
+  ArrayRef,
   AttributeBound,
   ClubMoney,
   FeePlan,
@@ -2657,6 +2658,40 @@ function mockHealth(): Health {
   };
 }
 
+/** The report Copy diagnostics copies, worded as the Rust side words it (`diagnostics_report`), for the fixtures. */
+function mockReport(connection: ConnectionInfo): string {
+  const share = (value: number) => `${Math.round(value * 100)}`.padStart(3);
+  const array = (label: string, found: ArrayRef | null) =>
+    found
+      ? `  ${label.padEnd(8)} game_plugin.dll+0x${found.pairRva.toString(16)}  ${String(found.count).padStart(7)} ` +
+        `elements  ${share(found.confidence)}% of samples decoded, ${share(found.named)}% by a name`
+      : `  ${label.padEnd(8)} not found`;
+  const allowed = connection.knownBuild
+    ? ""
+    : `; editing this build ${connection.editable ? "was allowed" : "is not allowed yet"} (Edit anyway)`;
+  const { arrays, health } = connection;
+  return [
+    "FMLibreEditor (browser preview, sample data)",
+    `Game: FM27 Game Pass ${game.packageVersion}`,
+    "game_plugin.dll build: size of image 0x175da000, link timestamp 0x6ae563a1",
+    `Build profile: ${connection.profile ?? "none for this build"}`,
+    `Writing: the system lets the app write to the game${allowed}`,
+    `In-game date: ${connection.gameDate ? "2026-09-09 (game_plugin.dll+0x56257c8, from the build profile)" : "none"}`,
+    "Retirement manager: game_plugin.dll+0x5675060 (from the build profile)",
+    arrays.fromProfile ? "Entity arrays (from the build profile, checked):" : "Entity arrays:",
+    array("players", arrays.players),
+    array("staff", arrays.staff),
+    array("clubs", arrays.clubs),
+    "Checks:",
+    ...health.results.map(
+      (result) =>
+        `  ${result.passed ? "pass" : "FAIL"}  ${result.check.padEnd(12)} ${String(result.fit).padStart(5)} of ` +
+        `${String(result.sampled).padStart(5)} fit`,
+    ),
+    "",
+  ].join("\n");
+}
+
 /**
  * `?macos` in the address previews the connect panel on macOS: the bridge is not set up, Steam is running, and the game
  * was started without the bridge. The first set-up meets a running Steam, as the real one would; the next one works.
@@ -2771,6 +2806,11 @@ export async function mockInvoke<T>(command: string, args?: Record<string, unkno
       mockConnection = { ...mockConnection, editable: mockConnection.writable };
       return mockConnection as T;
     }
+    case "diagnostics":
+      if (!mockConnection) {
+        throw failure("app.notConnected", "Not connected to the game");
+      }
+      return mockReport(mockConnection) as T;
     case "current_connection":
       // Like the real command after a window reload; here a reload starts the fixtures afresh, so it is null then.
       return (mockConnection && { ...mockConnection, loadMs: 0 }) as T;

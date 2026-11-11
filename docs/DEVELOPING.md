@@ -274,6 +274,7 @@ Start FM27, load a save, then run:
 fmlibre-probe info                                   # process, storefront, modules, game_plugin.dll layout
 fmlibre-probe calibrate                              # identify the build; locate players, staff, clubs, the date
 fmlibre-probe health                                 # the checks the editor makes before it writes, and what each found
+fmlibre-probe diagnostics                            # what the app's Copy diagnostics copies: no names or paths
 fmlibre-probe profile                                # a build profile for this build, looked for as for a new build
 fmlibre-probe players "arda guler"                   # search players (accents ignored), best first
 fmlibre-probe players --position st --max-age 20 --min-pa 170 --sort pa   # wonderkid strikers
