@@ -1838,9 +1838,9 @@ export const tr: Strings = {
     liftNone: "Bu takımda cezalı oyuncu yok",
     inspireAll: "Hepsine moral ver",
     inspireAllTitle: "Bu takımdaki her oyuncunun moralini en yüksek değer olan 20'ye ayarla; mutsuzluk nedenlerini de kaldır",
-    maxCohesion: "Uyumu en üste çıkar",
+    maxCohesion: "Uyumu tamamla",
     maxCohesionTitle:
-      "Bu takımdaki her oyuncunun kulüple uyumunu en yüksek değer olan 100'e ayarla. Oyun takım uyumunu Dinamikler sayfasında oyun bir kez ilerleyince gösterir: oyunda Devam'a basın",
+      "Bu takımdaki her oyuncunun kulüple uyumunu en yüksek değer olan 100'e ayarla. Oyun, takım uyumunu Dinamikler sayfasında bir kez ilerleyince gösterir: oyunda Devam'a basın",
     cohesionNone:
       "Editör bu takımın uyumunu okuyamıyor: oyunun bu sürümü bunun için kontrol edilmedi ya da oyuncuların hiçbirinin kulüple uyumu yok",
     cohesionWithout: (count: number) => `${format(count)} oyuncunun henüz kulüple uyumu yok`,
