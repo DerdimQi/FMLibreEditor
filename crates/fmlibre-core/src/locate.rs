@@ -5,7 +5,8 @@
 //! other build, or where a place a profile names does not check out, the editor looks for them:
 //! - the entity arrays, by scanning the game plugin ([`crate::calibrate`]);
 //! - the in-game date, among the values in the plugin's writable data that read as dates: the one the game's own data
-//!   agrees with, which [`crate::health`] works out from contracts and injuries;
+//!   agrees with, which [`crate::health`] works out from contracts and injuries, the values about as far from the
+//!   players' array as another build keeps its date marked as such;
 //! - the retirement manager's static, as far from the players' array as another build keeps it, or else by searching
 //!   the plugin's writable data for a pointer to the one object of its class (see [`crate::rtti`]).
 //!
@@ -17,6 +18,7 @@ use fmlibre_mem::{Region, is_user_pointer, regions};
 use serde::Serialize;
 
 use crate::date::FmDate;
+use crate::game::Storefront;
 use crate::profile::{BuildProfile, PluginFingerprint, built_in_profiles};
 use crate::retirement::MANAGER_CLASS;
 use crate::session::Session;
@@ -28,6 +30,12 @@ const CHUNK: u64 = 1 << 20;
 /// the large section that is writable and executable, which holds no such variables and is left out.
 const MOST_SEARCHED: u64 = 64 << 20;
 
+/// How far a value may be from where another build would have the in-game date and still count as found there. From
+/// one build of a storefront to the next, the date's distance from the players' array has changed by 0x38 bytes at
+/// most (Steam on macOS, 27.0.0 to 27.0.1), while the value the game keeps for the day before sits some 0x2F000 bytes
+/// from the date (Game Pass).
+pub const NEAR_GUESS: u64 = 0x400;
+
 /// How the editor found a place in the game plugin.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -38,7 +46,8 @@ pub enum Found {
     /// in the builds before November 2026. Later builds keep the date there too, but only once the game has moved on
     /// a day after a save is loaded.
     BesideArrays,
-    /// As far from the players' array as another build keeps it.
+    /// As far from the players' array as another build keeps it: exactly, for the retirement manager's static, and
+    /// within [`NEAR_GUESS`] for the in-game date.
     Guessed,
     /// By searching the plugin's writable data.
     Searched,
@@ -50,7 +59,7 @@ impl Found {
         match self {
             Found::Profile => "from the build profile",
             Found::BesideArrays => "beside the entity arrays",
-            Found::Guessed => "as far from the players' array as in another build",
+            Found::Guessed => "about as far from the players' array as in another build",
             Found::Searched => "found by searching",
         }
     }
@@ -101,11 +110,14 @@ pub(crate) fn each_stretch(session: &Session, mut visit: impl FnMut(u64, &[u8]))
 
 /// Every value in the plugin's writable data, at a multiple of 4 bytes, that reads as a date the game could be on: the
 /// in-game date among them, if the game keeps it there. The places the build profile (unless every place is searched
-/// for) and the layout name for it are marked as such.
+/// for) and the layout name for it are marked as such, and so are those near where other builds keep their date
+/// ([`date_guesses`]).
 pub fn date_candidates(session: &Session) -> Vec<DatePlace> {
     let base = session.plugin.base;
     let beside = session.arrays.players.as_ref().map(|players| players.pair_rva + session.layout.cluster.current_date);
     let profiled = session.placed_date().filter(|&(_, found)| found == Found::Profile).map(|(rva, _)| rva);
+    let guesses = date_guesses(session);
+    let near_guess = |rva: u64| guesses.iter().any(|&guess| rva.abs_diff(guess) <= NEAR_GUESS);
     let mut found = Vec::new();
     each_stretch(session, |start, bytes| {
         for (i, word) in bytes.as_chunks::<4>().0.iter().enumerate() {
@@ -116,6 +128,7 @@ pub fn date_candidates(session: &Session) -> Vec<DatePlace> {
             let how = match Some(rva) {
                 at if at == profiled => Found::Profile,
                 at if at == beside => Found::BesideArrays,
+                _ if near_guess(rva) => Found::Guessed,
                 _ => Found::Searched,
             };
             found.push(DatePlace { rva, date, found: how });
@@ -146,27 +159,51 @@ pub(crate) fn find_retirement_manager(session: &Session) -> Option<Place> {
 /// built-in profile of the same kind of plugin keeps it, those of the same storefront first. This build's own profile
 /// is left out, so that a build the editor knows can stand in for a new one.
 pub fn retirement_guesses(session: &Session) -> Vec<u64> {
+    guesses(session, |profile| profile.retirement_manager)
+}
+
+/// Where other builds would have the in-game date, worked out as [`retirement_guesses`] works out the retirement
+/// manager's static. The date's own variable has kept nearly the same distance from the players' array in every build
+/// of a storefront, where the value the game keeps for the day before, which can fit the contracts and injuries as well
+/// as the date, is far from it.
+pub fn date_guesses(session: &Session) -> Vec<u64> {
+    guesses(session, |profile| profile.current_date)
+}
+
+/// The guesses of [`retirement_guesses`] and [`date_guesses`], for a static that `place` reads from a profile.
+fn guesses(session: &Session, place: impl Fn(&BuildProfile) -> Option<u64>) -> Vec<u64> {
     let Some(players) = session.arrays.players.as_ref() else {
         return Vec::new();
     };
+    let this = (players.pair_rva, session.fingerprint, session.game.storefront);
+    guesses_from(this, built_in_profiles(), place).into_iter().filter(|&guess| guess < session.plugin.size).collect()
+}
+
+/// The guesses of [`guesses`] from `profiles`, for a build whose players' array pair is at an RVA, of a plugin and a
+/// storefront, as `this` gives them; some may lie past the end of the plugin.
+fn guesses_from(
+    this: (u64, PluginFingerprint, Storefront),
+    profiles: impl Iterator<Item = BuildProfile>,
+    place: impl Fn(&BuildProfile) -> Option<u64>,
+) -> Vec<u64> {
+    let (players, fingerprint, storefront) = this;
     let same_kind = |profile: &BuildProfile| {
         matches!(
-            (profile.plugin, session.fingerprint),
+            (profile.plugin, fingerprint),
             (PluginFingerprint::Pe { .. }, PluginFingerprint::Pe { .. })
                 | (PluginFingerprint::MachO { .. }, PluginFingerprint::MachO { .. })
         )
     };
     let mut others: Vec<BuildProfile> =
-        built_in_profiles().filter(|profile| profile.plugin != session.fingerprint && same_kind(profile)).collect();
-    others.sort_by_key(|profile| profile.storefront != session.game.storefront);
+        profiles.filter(|profile| profile.plugin != fingerprint && same_kind(profile)).collect();
+    others.sort_by_key(|profile| profile.storefront != storefront);
     let mut guesses = Vec::new();
     for profile in others {
-        let Some(manager) = profile.retirement_manager else {
+        let Some(static_rva) = place(&profile) else {
             continue;
         };
-        let distance = profile.arrays.players.wrapping_sub(manager);
-        let guess = players.pair_rva.wrapping_sub(distance);
-        if guess < session.plugin.size && !guesses.contains(&guess) {
+        let guess = players.wrapping_sub(profile.arrays.players.wrapping_sub(static_rva));
+        if !guesses.contains(&guess) {
             guesses.push(guess);
         }
     }
@@ -224,5 +261,37 @@ mod tests {
         assert_eq!(game_date_from(u32::from_le_bytes([0x01, 0x00, 0x6C, 0x07])), None);
         assert_eq!(game_date_from(u32::from_le_bytes([0x01, 0x00, 0xCF, 0x07])), None);
         assert_eq!(game_date_from(u32::from_le_bytes([0x00, 0x02, 0xEA, 0x07])), None);
+    }
+
+    #[test]
+    fn builds_keep_the_date_about_as_far_from_the_players_array() {
+        let profiles: Vec<BuildProfile> = built_in_profiles().collect();
+        let guesses_for = |profile: &BuildProfile| {
+            let this = (profile.arrays.players, profile.plugin, profile.storefront);
+            guesses_from(this, profiles.iter().cloned(), |other| other.current_date)
+        };
+        let near = |guesses: &[u64], rva: u64| guesses.iter().any(|guess| guess.abs_diff(rva) <= NEAR_GUESS);
+        // Each build whose date is a variable of its own has it near one of the places the other builds guess for it,
+        // where another of its storefront has such a variable. On macOS that is a guess from a build of the same
+        // half: the Intel and the Apple silicon half each keep the date at a distance of their own.
+        let kind = |profile: &BuildProfile| std::mem::discriminant(&profile.plugin);
+        for profile in profiles.iter().filter(|profile| profile.current_date.is_some()) {
+            let date = profile.current_date.expect("a date");
+            let siblings = profiles.iter().any(|other| {
+                other.plugin != profile.plugin
+                    && other.storefront == profile.storefront
+                    && kind(other) == kind(profile)
+                    && other.current_date.is_some()
+            });
+            if siblings {
+                assert!(near(&guesses_for(profile), date), "{}: {date:#x}", profile.name);
+            }
+        }
+        // The value the game keeps for the day before, on Game Pass, is far from every guess.
+        for (version, day_before) in [("0.9.2409.0", 0x56546F8), ("0.9.2435.0", 0x53886F8)] {
+            let profile = profiles.iter().find(|p| p.package_version.as_deref() == Some(version)).expect(version);
+            assert!(!near(&guesses_for(profile), day_before), "{version}");
+            assert!(near(&guesses_for(profile), profile.current_date.expect("a date")), "{version}");
+        }
     }
 }

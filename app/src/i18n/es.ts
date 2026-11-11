@@ -586,6 +586,7 @@ export const es: Strings = {
     "tie.workPermit": "Sin permiso de trabajo en",
     club: "Club",
     injuries: "Lesiones",
+    cohesion: "Cohesión",
     bans: "Sanciones",
     retirement: "Retirada",
     clause: "Cláusula del contrato",
@@ -1214,11 +1215,21 @@ export const es: Strings = {
     reloadHint: "Si una partida aún se estaba cargando, «Recargar datos» vuelve a comprobarlo.",
     noDate: "La fecha del juego no ha superado las comprobaciones, así que no se muestran las edades.",
     failed: (names) => `Quedan en solo lectura: ${names}.`,
+    failedCheck: (name, fit, sampled) => `${name} (${format(fit)} de ${format(sampled)} encajan)`,
     join: (names) =>
       names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} y ${names[names.length - 1]}`,
     allow: "Editar de todos modos",
     allowTitle:
       "Activa la edición hasta que se cierre FMLibreEditor o se vuelva a conectar. Haz antes una copia de tu partida.",
+  },
+
+  diagnostics: {
+    copy: "Copiar diagnóstico",
+    copyTitle:
+      "Copia lo que FMLibreEditor ha encontrado en el juego, para pegarlo en un informe de error. No contiene " +
+      "nombres ni rutas.",
+    copied: "Copiado",
+    failed: (reason) => `No se ha podido copiar el diagnóstico: ${reason}`,
   },
 
   checks: {
@@ -1232,6 +1243,7 @@ export const es: Strings = {
     teams: "los equipos",
     staff: "el personal",
     clubs: "los clubes",
+    cohesion: "la cohesión con los clubes",
   },
 
   update: {
@@ -1895,6 +1907,15 @@ export const es: Strings = {
     liftNone: "Nadie en este equipo está sancionado",
     inspireAll: "Motivar a todos",
     inspireAllTitle: "Poner la moral de todos los jugadores de este equipo en 20, la más alta",
+    maxCohesion: "Máxima cohesión",
+    maxCohesionTitle:
+      "Poner en 100, la más alta, la cohesión con el club de todos los jugadores de este equipo. El juego la muestra en la página de Dinámicas cuando avanza: pulsa Continuar en el juego",
+    cohesionNone:
+      "El editor no puede leer la cohesión de este equipo: esta versión del juego no se ha comprobado, o ninguno de sus jugadores tiene cohesión con el club",
+    cohesionWithout: (count: number) =>
+      count === 1
+        ? "1 jugador aún no tiene cohesión con el club"
+        : `${format(count)} jugadores aún no tienen cohesión con el club`,
     refreshAll: "Recuperar a todos",
     refreshAllTitle:
       "Poner la energía y el ritmo de competición de todos los jugadores de este equipo al 100 % y dejarlos " +
@@ -1978,6 +1999,7 @@ export const es: Strings = {
       matchSharpness: "Ritmo",
       jadedness: "Fatiga",
       morale: "Moral",
+      cohesion: "Cohesión",
       actions: "Capitanía",
     },
     sortBy: (by) => `Ordenar por ${by}`,
@@ -1991,6 +2013,7 @@ export const es: Strings = {
       matchSharpness: "ritmo de competición",
       jadedness: "fatiga",
       morale: "moral",
+      cohesion: "cohesión",
     },
 
     // Las etiquetas tras un nombre
