@@ -11,6 +11,7 @@ import { fr } from "./fr";
 import { id } from "./id";
 import { it } from "./it";
 import { ko } from "./ko";
+import { ru } from "./ru";
 import { tr } from "./tr";
 import { zhCN } from "./zh-CN";
 
@@ -27,6 +28,7 @@ const LANGUAGES = {
   id: { strings: id, intl: "id-ID" },
   it: { strings: it, intl: "it-IT" },
   ko: { strings: ko, intl: "ko-KR" },
+  ru: { strings: ru, intl: "ru-RU" },
   "zh-CN": { strings: zhCN, intl: "zh-CN" },
 } satisfies Record<string, { strings: Strings; intl: string }>;
 
