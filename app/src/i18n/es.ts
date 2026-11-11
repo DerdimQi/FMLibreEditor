@@ -1365,11 +1365,10 @@ export const es: Strings = {
     buttonTitle: {
       player:
         "Escribir los jugadores que muestra la lista en un archivo CSV o JSON, para una hoja de cálculo o un script",
-      staff:
-        "Escribir los empleados que muestra la lista en un archivo CSV o JSON, para una hoja de cálculo o un script",
+      staff: "Write the staff the list shows to a CSV or JSON file, for a spreadsheet or a script",
       club: "Escribir los clubes que muestra la lista en un archivo CSV o JSON, para una hoja de cálculo o un script",
     },
-    title: { player: "Exportar jugadores", staff: "Exportar empleados", club: "Exportar clubes" },
+    title: { player: "Exportar jugadores", staff: "Export staff", club: "Exportar clubes" },
     scope: (entity, count) =>
       count === 0
         ? `Ningún ${nouns[entity].one} coincide con la búsqueda y los filtros.`
@@ -1385,7 +1384,7 @@ export const es: Strings = {
       csvSemicolon: "Para Excel donde los decimales se escriben con coma: en español, turco o alemán, por ejemplo",
       json: {
         player: "Para scripts: las posiciones, los atributos y la personalidad como objetos propios",
-        staff: "Para scripts: los atributos, la personalidad y el contrato como objetos propios",
+        staff: "For scripts: the attributes, personality and contract as objects of their own",
         club: "Para scripts: la afición, las instalaciones, el estadio y las finanzas como objetos propios",
       },
     },
@@ -1395,9 +1394,9 @@ export const es: Strings = {
         "(también los ocultos), personalidad, reputación, partidos internacionales, y contrato con sus cláusulas, " +
         "con la fecha del juego. El dinero va en libras, como lo guarda el juego. No cambia nada en el juego.",
       staff:
-        "De cada empleado: puesto y club, habilidades, atributos en la escala de 1 a 20, personalidad, reputación y " +
-        "contrato (salario y fechas), con la fecha del juego. El dinero va en libras, como lo guarda el juego. No " +
-        "cambia nada en el juego.",
+        "Each member of staff's job and employer, abilities, attributes on the 1–20 scale, personality, reputation, " +
+        "and contract (wage and dates), with the in-game date. Money is in pounds, as the game keeps it. Nothing in " +
+        "the game changes.",
       club:
         "De cada club: reputación, año de fundación, abonados, seguidores en redes sociales, composición y rasgos de " +
         "la afición, instalaciones, estadio y finanzas (saldo, presupuesto de fichajes, gasto y presupuesto salarial " +

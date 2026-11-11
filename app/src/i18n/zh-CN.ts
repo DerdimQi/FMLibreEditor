@@ -1515,10 +1515,10 @@ export const zhCN: Strings = {
     button: "导出",
     buttonTitle: {
       player: "将当前列表中的球员导出为 CSV 或 JSON 文件，供表格或脚本使用。",
-      staff: "将当前列表中的职员导出为 CSV 或 JSON 文件，供表格或脚本使用。",
+      staff: "Write the staff the list shows to a CSV or JSON file, for a spreadsheet or a script",
       club: "将当前列表中的俱乐部导出为 CSV 或 JSON 文件，供表格或脚本使用。",
     } satisfies Record<ExportEntity, string>,
-    title: { player: "导出球员", staff: "导出职员", club: "导出俱乐部" } satisfies Record<ExportEntity, string>,
+    title: { player: "导出球员", staff: "Export staff", club: "导出俱乐部" } satisfies Record<ExportEntity, string>,
     /** What the export covers: everything the list's search and filters select, in its order. */
     scope: (entity: ExportEntity, count: number) =>
       count === 0
@@ -1535,7 +1535,7 @@ export const zhCN: Strings = {
       csvSemicolon: "适用于小数点使用逗号的 Excel 区域设置，例如土耳其语、西班牙语或德语",
       json: {
         player: "供脚本使用：位置、属性和性格分别作为独立对象导出",
-        staff: "供脚本使用：属性、性格和合同分别作为独立对象导出",
+        staff: "For scripts: the attributes, personality and contract as objects of their own",
         club: "供脚本使用：球迷、设施、球场和财务分别作为独立对象导出",
       } satisfies Record<ExportEntity, string>,
     },
@@ -1543,7 +1543,9 @@ export const zhCN: Strings = {
       player:
         "导出球员的能力、位置与位置能力、1–20 级属性（包括隐藏属性）、性格、声望、国家队出场和带有条款的合同，并附上游戏内日期。金额以英镑表示，与游戏中的记录一致。此操作不会修改游戏。",
       staff:
-        "导出职员的职务与所属俱乐部、能力、1–20 级属性、性格、声望和合同（工资与日期），并附上游戏内日期。金额以英镑表示，与游戏中的记录一致。此操作不会修改游戏。",
+        "Each member of staff's job and employer, abilities, attributes on the 1–20 scale, personality, reputation, " +
+        "and contract (wage and dates), with the in-game date. Money is in pounds, as the game keeps it. Nothing in " +
+        "the game changes.",
       club:
         "导出俱乐部的声望、成立年份、季票、社交媒体关注者、球迷构成与特征、设施、球场及财务信息（余额、转会预算、每周工资支出、工资预算和票价），并附上游戏内日期。FM 只为正在进行的联赛中的俱乐部保存财务数据。金额以英镑表示，与游戏中的记录一致。此操作不会修改游戏。",
     } satisfies Record<ExportEntity, string>,
