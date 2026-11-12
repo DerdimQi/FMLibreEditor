@@ -674,6 +674,12 @@ enum Command {
         /// Set every entry's familiarity × 100 to this, 0..10000.
         #[arg(long, value_parser = clap::value_parser!(u16).range(0..=10_000))]
         set: Option<u16>,
+        /// With --set, first give each senior player an entry for the option the tactic in use takes in each area
+        /// whose list has none (a player new to the club has only his old club's): the list grown into memory the
+        /// probe takes in the game, as the editor grows a player's relations, with room for 3 more entries. The old
+        /// buffer stays.
+        #[arg(long, requires = "set", conflicts_with = "restore")]
+        add: bool,
         #[command(flatten)]
         restore: RestoreArgs,
     },
@@ -698,6 +704,12 @@ enum Command {
         /// the eight areas.
         #[arg(long)]
         max: bool,
+        /// With --max, give a player whose history has fewer than 18 entries for each area, as a player long at the
+        /// club has, a longer one, in memory the probe takes in the game, as the editor grows a player's relations: 18
+        /// for each area, with room for 3 more, in a block as large as the game's allocator gives a buffer of that
+        /// capacity. His old buffer stays.
+        #[arg(long, requires = "max")]
+        grow: bool,
         /// Print each entry.
         #[arg(long)]
         entries: bool,
@@ -1369,17 +1381,20 @@ fn run(cli: Cli) -> Result<()> {
                 near.map(|near| Ok::<_, anyhow::Error>((parse_bytes(&near)?, parse_hex(&within)?))).transpose()?;
             find(&process, &modules, &pattern, kind, module.as_deref(), max, near)
         }
-        Command::TrainingHistory { club, options, player, max, entries, restore } => {
+        Command::TrainingHistory { club, options, player, max, grow, entries, restore } => {
             let session = connect(process, ArraySource::ProfileFirst)?;
             let options = options
                 .map(|options| <[i8; 6]>::try_from(options).map_err(|_| anyhow::anyhow!("give six options")))
                 .transpose()?;
-            training_history(&session, club, options, player, max, entries, restore)
+            training_history(&session, club, options, player, (max, grow), entries, restore)
         }
-        Command::Familiarity { club, record, set, restore } => {
+        Command::Familiarity { club, record, set, add, restore } => {
             let session = connect(process, ArraySource::ProfileFirst)?;
             let record = parse_hex(&record)?;
             familiarity(&session, club, record)?;
+            if let (Some(value), true) = (set, add) {
+                add_familiarity(&session, club, record, value)?;
+            }
             match set {
                 Some(value) => set_familiarity(&session, club, record, value, restore),
                 None => Ok(()),
@@ -6477,6 +6492,104 @@ fn set_familiarity(session: &Session, uid: u32, record: u64, value: u16, restore
     Ok(())
 }
 
+/// `familiarity --set --add`: gives each senior player of the club `uid` an entry at `value` for the option the tactic
+/// in use takes in each area whose list has none. Such a list is grown into a block of the probe's own, as large as
+/// the game's allocator gives a buffer of its capacity, so that the game, letting it go, takes it into that class's
+/// free blocks; the old buffer stays.
+fn add_familiarity(session: &Session, uid: u32, record: u64, value: u16) -> Result<()> {
+    const ROOM: u64 = 3;
+    let process = &session.process;
+    let players = PlayerIndex::new(session.players()?);
+    let clubs = ClubIndex::new(session.clubs()?);
+    let club = clubs.get(uid).with_context(|| format!("no club with UID {uid}"))?;
+    let options =
+        session.senior_area_options(club)?.with_context(|| format!("the tactic {} plays was not found", club.name))?;
+    let team = session.club_teams(club, &players)?.into_iter().next().context("the club has no team")?;
+    // Each list to grow: its header, what it holds, and its entries with the new one.
+    let mut grown = Vec::new();
+    for player in team.players.iter().filter(|m| m.plays_here).filter_map(|m| players.get(m.uid)) {
+        let at = process.read_u64(player.address + record)?;
+        if !is_user_pointer(at) {
+            println!("  {:>10}  {:<24} no record; left as it is", player.uid, clip(&player.name, 24));
+            continue;
+        }
+        for area in 0..6u64 {
+            let header = at + area * 0x20;
+            let head = process.read_bytes(header, 0x20)?;
+            let word = |i: usize| u64::from_le_bytes(head[i * 8..i * 8 + 8].try_into().expect("8 bytes"));
+            let was = [word(0), word(1), word(2)];
+            ensure!(head[0x18] as u64 == area, "player {}: list {area} names area {}", player.uid, head[0x18]);
+            ensure!(
+                is_user_pointer(was[0])
+                    && was[1] >= was[0]
+                    && was[2] >= was[1]
+                    && (was[1] - was[0]).is_multiple_of(4)
+                    && (was[2] - was[0]).is_multiple_of(4)
+                    && was[1] - was[0] <= 0x100,
+                "player {}: list {area} does not check out",
+                player.uid
+            );
+            let mut bytes = process.read_bytes(was[0], (was[1] - was[0]) as usize)?;
+            let option = options[area as usize];
+            if bytes.as_chunks::<4>().0.iter().any(|e| familiarity_entry(*e).0 == i32::from(option)) {
+                continue;
+            }
+            // The option's code in six bits from bit 14, the familiarity in bits 0–13; the last byte as the list's
+            // first entry has it.
+            let packed = (u32::from(option as u8 & 0x3F) << 14) | u32::from(value);
+            let mut entry = packed.to_le_bytes();
+            entry[3] = bytes.get(3).copied().unwrap_or(0);
+            bytes.extend_from_slice(&entry);
+            grown.push((player.uid, player.name.clone(), area, header, was, bytes));
+        }
+    }
+    if grown.is_empty() {
+        println!("\nEvery senior player has an entry for the tactic's options; nothing to add.");
+        return Ok(());
+    }
+    let sizes = grown
+        .iter()
+        .map(|g| {
+            let capacity = g.5.len() as u64 + ROOM * 4;
+            let block = session.layout.heap.grown_block(capacity).context("no block for so long a list")?;
+            Ok((capacity, block.div_ceil(16) * 16))
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let region = process.allocate(sizes.iter().map(|s| s.1).sum::<u64>() as usize)?;
+    let words = |words: [u64; 3]| words.iter().flat_map(|w| w.to_le_bytes()).collect::<Vec<u8>>();
+    let mut headers = Vec::new();
+    let mut at = region;
+    println!();
+    for ((uid, name, area, header, was, bytes), (capacity, block)) in grown.iter().zip(&sizes) {
+        process.write_bytes(at, bytes)?;
+        ensure!(process.read_bytes(at, bytes.len())? == *bytes, "{at:#x} does not hold what was written");
+        println!(
+            "  {uid:>10}  {:<24} area {area}: option {} added, {} entries now, in a block of {block} bytes at {at:#x}",
+            clip(name, 24),
+            options[*area as usize],
+            bytes.len() / 4
+        );
+        headers.push((*header, words(*was), words([at, at + bytes.len() as u64, at + capacity])));
+        at += block;
+    }
+    let write = |at: u64, expected: &[u8], new: &[u8]| -> Result<()> {
+        ensure!(process.read_bytes(at, expected.len())? == expected, "the game changed {at:#x} since it was read");
+        process.write_bytes(at, new)?;
+        ensure!(process.read_bytes(at, new.len())? == new, "{at:#x} does not hold what was written");
+        Ok(())
+    };
+    for (i, (at, old, new)) in headers.iter().enumerate() {
+        if let Err(err) = write(*at, old, new) {
+            for (at, old, new) in headers[..i].iter().rev() {
+                let _ = write(*at, new, old);
+            }
+            return Err(err);
+        }
+    }
+    println!("  {} lists grown.", headers.len());
+    Ok(())
+}
+
 /// How much an entry of training history adds to its area for its age in days, the first age at most each one
 /// (game_plugin+0x54014d4, and +0x54014ec when the entry's byte +7 is set); none after the last.
 const TRAINING_AGE: [&[(i32, f32)]; 2] = [
@@ -6552,7 +6665,7 @@ fn training_history(
     uid: u32,
     options: Option<[i8; 6]>,
     only: Option<u32>,
-    max: bool,
+    (max, grow): (bool, bool),
     show_entries: bool,
     restore: RestoreArgs,
 ) -> Result<()> {
@@ -6611,18 +6724,24 @@ fn training_history(
         let head = process.read_bytes(node, 0x40)?;
         let word = |i: usize| u64::from_le_bytes(head[i..i + 8].try_into().expect("8 bytes"));
         let id = u32::from_le_bytes(head[0x20..0x24].try_into().expect("4 bytes"));
-        nodes.push((id, word(0x28), word(0x30)));
+        nodes.push((id, word(0x28), word(0x30), node, word(0x38)));
         stack.push(word(0));
         stack.push(word(8));
     }
     nodes.sort_unstable_by_key(|n| people.get(&n.0).map_or((usize::MAX, String::new()), |p| (p.2, p.1.clone())));
-    // Each player's entries, read once.
+    // Each player's entries, read once; and where his node keeps the vector (begin, end, capacity), as it is.
     let mut histories = Vec::new();
-    for &(id, begin, end) in &nodes {
+    let mut vectors: HashMap<u32, (u64, [u64; 3])> = HashMap::new();
+    for &(id, begin, end, node, capacity) in &nodes {
         ensure!(
             is_user_pointer(begin) && end >= begin && (end - begin).is_multiple_of(12) && end - begin <= 12 * 4000,
             "person {id}: the history does not check out"
         );
+        ensure!(
+            capacity >= end && (capacity - begin).is_multiple_of(12),
+            "person {id}: the history's capacity does not check out"
+        );
+        vectors.insert(id, (node + 0x28, [begin, end, capacity]));
         let bytes = process.read_bytes(begin, (end - begin) as usize)?;
         let entries: Vec<[u8; 12]> = bytes.as_chunks::<12>().0.to_vec();
         histories.push((id, begin, entries));
@@ -6699,16 +6818,24 @@ fn training_history(
     }
     // Every entry dated today, on the tactic's options and shapes, at the factors' most, the areas taken in turn.
     let mut written: Vec<(u64, Vec<u8>, Vec<u8>)> = Vec::new();
+    // With --grow, the players whose history is too short, with the entries for their new buffers.
+    let mut grown: Vec<(u32, Vec<[u8; 12]>)> = Vec::new();
     let mut after = Vec::new();
     for (id, begin, entries) in &histories {
         let mine = people.get(id).is_some_and(|p| p.2 == 0 && only.is_none_or(|o| o == p.0));
         let shapes = shapes_of(entries);
-        // The areas to fill: the six, and the shapes the player has a code for.
+        // The areas to fill: the six, and the shapes the player has a code for. Each takes 9 entries of today's.
         let areas: Vec<usize> = (0..8).filter(|&a| a < 6 || shapes[a - 6].is_some()).collect();
-        if !mine || entries.len() < 9 * areas.len() {
+        let short = entries.len() < 9 * areas.len();
+        // With --grow, a history of fewer than 18 entries for each area gets 18, as a player long at the club has:
+        // dated today they keep each area at 100 for six weeks, where 9 fall below it after one, and 10 to 70 after
+        // three (seen in the game).
+        let full = 18 * areas.len();
+        let grows = grow && entries.len() < full;
+        if !mine || (short && !grow) {
             if mine {
                 println!(
-                    "  person {id}: {} entries, too few to fill {} areas; left as they are",
+                    "  person {id}: {} entries, too few to fill {} areas; left as they are (--grow grows it)",
                     entries.len(),
                     areas.len()
                 );
@@ -6716,10 +6843,8 @@ fn training_history(
             after.push((*id, *begin, entries.clone()));
             continue;
         }
-        let new: Vec<[u8; 12]> = entries
-            .iter()
-            .enumerate()
-            .map(|(i, old)| {
+        let new: Vec<[u8; 12]> = (0..if grows { full } else { entries.len() })
+            .map(|i| {
                 let area = areas[i % areas.len()];
                 let mut e = [0u8; 12];
                 e[..2].copy_from_slice(&(today as u16).to_le_bytes());
@@ -6732,14 +6857,18 @@ fn training_history(
                     e[8] = 1;
                 }
                 e[4] = area as u8;
-                e[7] = old[7];
+                e[7] = entries.get(i).or(entries.first()).map_or(0, |old| old[7]);
                 e[9] = 20;
                 e[10] = 20;
                 e[11] = 156;
                 e
             })
             .collect();
-        written.push((*begin, entries.concat(), new.concat()));
+        if grows {
+            grown.push((*id, new.clone()));
+        } else {
+            written.push((*begin, entries.concat(), new.concat()));
+        }
         after.push((*id, *begin, new));
     }
     let write = |at: u64, expected: &[u8], new: &[u8]| -> Result<()> {
@@ -6749,7 +6878,43 @@ fn training_history(
         Ok(())
     };
     println!();
-    println!("Rewriting the history of {} players.", written.len());
+    let rewritten = written.len();
+    // The grown histories, each in a block of the probe's own as large as the game's allocator gives a buffer of its
+    // capacity (so that the game, letting it go, takes it into that class's free blocks): the entries written first,
+    // the node pointed at them with the other writes.
+    if !grown.is_empty() {
+        const ROOM: u64 = 3;
+        let sizes = grown
+            .iter()
+            .map(|(id, new)| {
+                let capacity = (new.len() as u64 + ROOM) * 12;
+                let block = session.layout.heap.grown_block(capacity).with_context(|| {
+                    format!("person {id}: the game's allocator would give a buffer of {capacity} bytes to the system")
+                })?;
+                Ok((capacity, block.div_ceil(16) * 16))
+            })
+            .collect::<Result<Vec<_>>>()?;
+        let region = process.allocate(sizes.iter().map(|s| s.1).sum::<u64>() as usize)?;
+        let words = |words: [u64; 3]| words.iter().flat_map(|w| w.to_le_bytes()).collect::<Vec<u8>>();
+        let mut at = region;
+        for ((id, new), (capacity, block)) in grown.iter().zip(&sizes) {
+            let (header, was) = vectors[id];
+            let bytes = new.concat();
+            process.write_bytes(at, &bytes)?;
+            ensure!(process.read_bytes(at, bytes.len())? == bytes, "{at:#x} does not hold what was written");
+            println!(
+                "  person {id}: grown from {} to {} entries, room for {}, in a block of {block} bytes at {at:#x}; the \
+                 old buffer at {:#x} left as it was",
+                (was[1] - was[0]) / 12,
+                new.len(),
+                capacity / 12,
+                was[0]
+            );
+            written.push((header, words(was), words([at, at + bytes.len() as u64, at + capacity])));
+            at += block;
+        }
+    }
+    println!("Rewriting the history of {} players, {} of them grown.", rewritten + grown.len(), grown.len());
     for (i, (at, old, new)) in written.iter().enumerate() {
         if let Err(err) = write(*at, old, new) {
             for (at, old, new) in written[..i].iter().rev() {
@@ -6767,7 +6932,7 @@ fn training_history(
         for (at, old, new) in written.iter().rev() {
             write(*at, new, old)?;
         }
-        println!("  restored: {} players' history as it was.", written.len());
+        println!("  restored: {} players' history as it was.", rewritten + grown.len());
     }
     Ok(())
 }
