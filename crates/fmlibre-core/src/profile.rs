@@ -1010,6 +1010,8 @@ const BUILDS: &[&str] = &[
     include_str!("../../../profiles/fm27/steam-26340721-macos-arm64.toml"),
     include_str!("../../../profiles/fm27/steam-26385295-macos-x86_64.toml"),
     include_str!("../../../profiles/fm27/steam-26385295-macos-arm64.toml"),
+    include_str!("../../../profiles/fm27/steam-26577676-macos-x86_64.toml"),
+    include_str!("../../../profiles/fm27/steam-26577676-macos-arm64.toml"),
 ];
 
 /// The built-in object layout for `edition`, if there is one.
@@ -1376,6 +1378,28 @@ mod tests {
         assert_eq!(profile.retirement_manager, Some(0x5CD_9EF0));
         assert_eq!(profile.game_ui, Some(0x5D0_4CA8));
 
+        // The update of 12 November 2026 (Steam build 26577676, 27.0.1.2503222): new UUIDs again, but every place, the
+        // managers' statics included, where 27.0.1 keeps it, in both halves.
+        for (old, new) in [
+            (
+                [0x2A, 0x2D, 0x0E, 0xD6, 0x32, 0x4E, 0x3D, 0x0D, 0xA2, 0x7D, 0x10, 0xAE, 0xDB, 0xD0, 0xE2, 0x70],
+                [0xA8, 0x55, 0x0B, 0x47, 0xFD, 0xE0, 0x3D, 0x0D, 0xA6, 0xCB, 0x1B, 0x63, 0xDE, 0xE8, 0xDA, 0x19],
+            ),
+            (
+                [0x94, 0xCD, 0xDC, 0x80, 0x84, 0x74, 0x32, 0x7A, 0x85, 0xE0, 0xE4, 0xFF, 0x95, 0xDC, 0x68, 0x93],
+                [0xDD, 0x0E, 0xE1, 0x57, 0x4C, 0x9C, 0x31, 0xA7, 0x81, 0xDD, 0x0D, 0x11, 0x22, 0xE6, 0x2F, 0xC7],
+            ),
+        ] {
+            let old = profile_for(PluginFingerprint::MachO { uuid: old }).expect("a half of 27.0.1");
+            let new = profile_for(PluginFingerprint::MachO { uuid: new }).expect("a half of Steam build 26577676");
+            assert_eq!(new.storefront, Storefront::Steam);
+            assert_eq!(new.arrays, old.arrays);
+            assert_eq!(
+                (new.current_date, new.retirement_manager, new.game_ui, new.tactics_manager, new.training_manager),
+                (old.current_date, old.retirement_manager, old.game_ui, old.tactics_manager, old.training_manager)
+            );
+        }
+
         // On Windows the Launch Preview's date sits with the arrays.
         let fingerprint = PluginFingerprint::Pe { size_of_image: 0x19E6_9000, link_timestamp: 0x6ADF_B11C };
         assert_eq!(profile_for(fingerprint).and_then(|profile| profile.current_date), None);
@@ -1394,6 +1418,8 @@ mod tests {
                 "FM27 Steam build 26577676",
                 "FM27 Steam build 26385295 (27.0.1, macOS, Intel)",
                 "FM27 Steam build 26385295 (27.0.1, macOS, Apple silicon)",
+                "FM27 Steam build 26577676 (macOS, Intel)",
+                "FM27 Steam build 26577676 (macOS, Apple silicon)",
             ]
         );
     }

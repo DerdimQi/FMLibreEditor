@@ -432,6 +432,25 @@ ties changed, added (a full list grown), and removed; a release clause changed a
 into a full department, new jobs, a member of staff with no club signed, a manager moved and one signed, and a director
 of football moved.
 
+## The update of 12 November 2026 (Steam build 26577676)
+
+Steam's update of 12 November 2026 (version 27.0.1.2503222; the Windows side has its own profile) gave both halves of
+`game_plugin` new UUIDs again: arm64 `A8550B47-…`, Intel `DD0EE157-…`. Nothing moved this time: `__DATA` starts where
+27.0.1's does in both halves (`0x5740000`, `0x5CD6000`), and every variable sits where 27.0.1 keeps it. Without a
+profile the editor found them all by itself, and the game stayed read-only until Edit anyway.
+
+- **arm64:** read on the maintainer's save (Arsenal, 12 July 2027). `fmlibre-probe profile` found the date, the
+  retirement manager, the game's own object and the arrays at 27.0.1's places, and all twelve checks passed. The two
+  managers Max tactics reads sit at 27.0.1's places too: `instances` finds one `TACTICS_MANAGER` and one
+  `TRAINING_MANAGER`, and `refs` one pointer in the plugin to each, `game_plugin+0x5744310` and `+0x5741740`.
+- **Intel:** not run; checked in the file. Its code's RIP-relative loads peak at 27.0.1's places exactly as often: 7,625
+  at the date, 185 and 173 at the players' begin and end, 18 and 18 at the staff's, 105 and 93 at the clubs', 63 at
+  the retirement manager's static and 527 at the game's own object's.
+
+The new profiles take 27.0.1's places with the new UUIDs. With the arm64 one the `tactics` check passed (1,059 of 1,059
+records, 40 histories of training), and Max tactics, written to Arsenal's 25 senior players and undone, left every
+record and every history entry as it was.
+
 ## The game's own object and its count of saves loaded
 
 The object of the class `game_plugin::GAME_UI` (see `layout.toml`'s `[game]`) is laid out as on Windows: at `+0x100`
