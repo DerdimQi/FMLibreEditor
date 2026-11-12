@@ -1,0 +1,52 @@
+name: Windows executable
+
+on:
+  push:
+    branches:
+      - performance/lazy-lists-and-search
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-exe-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install interface dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Build interface
+        working-directory: app
+        run: npm run build
+
+      # Build the standalone app, not an installer. This avoids the updater signing
+      # secrets required by the release workflow and produces target/release/FMLibreEditor.exe.
+      - name: Build standalone executable
+        working-directory: app
+        run: npm run release
+
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: FMLibreEditor-Windows-EXE
+          path: target/release/FMLibreEditor.exe
+          if-no-files-found: error
+          retention-days: 14
