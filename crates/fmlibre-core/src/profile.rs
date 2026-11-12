@@ -1279,6 +1279,9 @@ mod tests {
         let steam = profile_for(fingerprint).expect("Steam build 26385295 profile");
         assert_eq!((steam.tactics_manager, steam.training_manager), (Some(0x581_2E20), Some(0x580_F3F0)));
         assert_eq!(steam.tactics_manager, steam.retirement_manager.map(|rva| rva + 0xD0));
+        let fingerprint = PluginFingerprint::Pe { size_of_image: 0x185F_A000, link_timestamp: 0x6AF3_8E5C };
+        let update = profile_for(fingerprint).expect("Steam build 26577676 profile");
+        assert_eq!((update.tactics_manager, update.training_manager), (steam.tactics_manager, steam.training_manager));
         // The Windows layout walks MSVC's maps; the Mac's does not say, and walks libc++'s.
         let familiarity = layout.familiarity.as_ref().expect("the Windows layout places familiarity");
         assert_eq!((familiarity.tree, layout.tactics.as_ref().map(|t| t.tree)), (Tree::Msvc, Some(Tree::Msvc)));

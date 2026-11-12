@@ -190,8 +190,9 @@ before trusting them.
   `tactical_areas.rs` and the Steam macOS notes). Max tactics writes both, growing the
   lists of players new to the club into the editor's memory. On the Mac and on Windows,
   where the maps are MSVC's (`tree.rs`), for the builds whose profiles place the two
-  managers: 27.0.0 and 27.0.1 on the Mac (Apple silicon), Steam build 26385295 and Game
-  Pass 0.9.2435.0 on Windows. On the others the column stays empty and the button waits.
+  managers: 27.0.0 and 27.0.1 on the Mac (Apple silicon), Steam builds 26385295 and
+  26577676 and Game Pass 0.9.2435.0 on Windows. On the others the column stays empty and
+  the button waits.
 
 ## Phase 7: what FMRTE, FM Live Editor and FM27€0 users reach for (in progress)
 
