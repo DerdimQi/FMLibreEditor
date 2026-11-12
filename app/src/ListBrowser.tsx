@@ -231,7 +231,7 @@ export function ListBrowser<Row extends { uid: number }>(props: ListBrowserProps
               <tr>{header}</tr>
             </thead>
             <tbody>
-              {page?.rows.map((row) => {
+              {active ? page?.rows.map((row) => {
                 const isSelected = row.uid === selected?.uid;
                 return (
                   <tr
@@ -250,7 +250,7 @@ export function ListBrowser<Row extends { uid: number }>(props: ListBrowserProps
                     {cells(row)}
                   </tr>
                 );
-              })}
+              }) : null}
             </tbody>
           </table>
           {page && page.rows.length === 0 && <p className="empty">{empty(query)}</p>}
