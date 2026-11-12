@@ -27,8 +27,11 @@ How to install and use it: [docs/INSTALL.md](docs/INSTALL.md).
 ## What it does
 
 - Browse, search and filter every player, member of staff and club.
+- Opens on **My club**: the club you manage, its money, who needs a look (the injured, the
+  banned, low morale, the tired, unrest, contracts about to end) and the actions on the whole
+  team one click away. With no club of your own, pick one to follow.
 - Find anyone from anywhere: **Ctrl+K** (**⌘K** on macOS) opens one search over players, staff,
-  clubs and the app's commands. The tabs (Ctrl+1 to 5), the list's search (Ctrl+F), Edit
+  clubs and the app's commands. The tabs (Ctrl+1 to 6), the list's search (Ctrl+F), Edit
   (Ctrl+E), Apply (Ctrl+S) and Reload data (Ctrl+R) have shortcuts too, with ⌘ on macOS.
 - Edit attributes, abilities, positions, personality, traits, contracts with their bonuses and
   clauses, reputation, finances, stadiums and more.

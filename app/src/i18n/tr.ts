@@ -2301,5 +2301,38 @@ export const tr: Strings = {
     keys: { ctrl: "Ctrl", shift: "Shift", enter: "Enter", escape: "Esc" },
   },
 
+  /** "My club", the page the app opens on (see en.ts). */
+  home: {
+    nav: "Kulübüm",
+    loading: "Kulübünüz aranıyor…",
+    failed: (reason: string) => `Kulübünüz aranamadı: ${reason}`,
+    manager: (name: string) => `Teknik direktör: ${name}`,
+    following: "Takip ettiğiniz kulüp",
+    clubsLabel: "Kulüpleriniz",
+    openProfile: "Kulüp profili",
+    openProfileTitle: "Bu kulübü Kulüpler sekmesinde aç: tesisler, finans, stadyum ve daha fazlası",
+    noClubTitle: "Bu kayıtta yönettiğiniz bir kulüp yok",
+    noClubText:
+      "Onun yerine burada takip edeceğiniz bir kulüp seçin: kadrosu, ilgilenilmesi gerekenler ve tüm takıma " +
+      "uygulanan işlemler.",
+    chooseAnother: "Başka kulüp seç",
+    searchLabel: "Takip edilecek kulüp",
+    squad: "Kadro",
+    cards: {
+      label: "İlgilenilmesi gerekenler",
+      lowMorale: "Düşük moral",
+      tired: "Yorgun",
+      contracts: "Sözleşmesi bitenler",
+      injuredHint: "Sakatlığı olan oyuncular",
+      bannedHint: "Cezası olan oyuncular",
+      lowMoraleHint: (below: string) => `Morali ${below} değerinin altında olan oyuncular`,
+      tiredHint: (below: string) => `Enerjisi ${below} değerinin altında olan oyuncular`,
+      unrestHint: "Bazı takım arkadaşlarının memnun olmadığı oyuncular",
+      contractsHint: (months: number) => `Sözleşmesi ${months} ay içinde biten oyuncular`,
+      none: "Yok",
+      more: (count: number) => `ve ${format(count)} kişi daha`,
+    },
+  },
+
   errors,
 };

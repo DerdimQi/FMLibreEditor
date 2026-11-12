@@ -2310,5 +2310,37 @@ export const ko: Strings = {
     keys: { ctrl: "Ctrl", shift: "Shift", enter: "Enter", escape: "Esc" },
   },
 
+  /** "My club", the page the app opens on (see en.ts). */
+  home: {
+    nav: "내 구단",
+    loading: "구단을 찾는 중…",
+    failed: (reason: string) => `구단을 찾을 수 없습니다: ${reason}`,
+    manager: (name: string) => `감독: ${name}`,
+    following: "팔로우하는 구단",
+    clubsLabel: "내 구단들",
+    openProfile: "구단 프로필",
+    openProfileTitle: "구단 탭에서 이 구단 열기: 시설, 재정, 경기장 등",
+    noClubTitle: "이 세이브에는 맡고 있는 구단이 없습니다",
+    noClubText:
+      "대신 여기서 팔로우할 구단을 선택하세요: 선수단, 살펴봐야 할 선수, 팀 전체에 적용하는 기능을 볼 수 있습니다.",
+    chooseAnother: "다른 구단 선택",
+    searchLabel: "팔로우할 구단",
+    squad: "선수단",
+    cards: {
+      label: "살펴봐야 할 선수",
+      lowMorale: "낮은 사기",
+      tired: "피로",
+      contracts: "계약 만료 임박",
+      injuredHint: "부상 중인 선수",
+      bannedHint: "출장 정지 중인 선수",
+      lowMoraleHint: (below: string) => `사기가 ${below} 미만인 선수`,
+      tiredHint: (below: string) => `컨디션이 ${below} 미만인 선수`,
+      unrestHint: "일부 동료가 불만을 가진 선수",
+      contractsHint: (months: number) => `계약이 ${months}개월 안에 끝나는 선수`,
+      none: "없음",
+      more: (count: number) => `외 ${format(count)}명`,
+    },
+  },
+
   errors,
 };

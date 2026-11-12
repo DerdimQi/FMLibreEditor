@@ -2282,5 +2282,37 @@ export const ru: Strings = {
     keys: { ctrl: "Ctrl", shift: "Shift", enter: "Enter", escape: "Esc" },
   },
 
+  /** "My club", the page the app opens on (see en.ts). */
+  home: {
+    nav: "Мой клуб",
+    loading: "Поиск вашего клуба…",
+    failed: (reason: string) => `Не удалось найти ваш клуб: ${reason}`,
+    manager: (name: string) => `Менеджер: ${name}`,
+    following: "Клуб, за которым вы следите",
+    clubsLabel: "Ваши клубы",
+    openProfile: "Профиль клуба",
+    openProfileTitle: "Открыть этот клуб на вкладке «Клубы»: инфраструктура, финансы, стадион и другое",
+    noClubTitle: "В этом сохранении вы не руководите клубом",
+    noClubText:
+      "Выберите клуб, за которым хотите следить здесь: его состав, кому нужно внимание, и действия для всей команды.",
+    chooseAnother: "Выбрать другой клуб",
+    searchLabel: "Клуб для отслеживания",
+    squad: "Состав",
+    cards: {
+      label: "Кому нужно внимание",
+      lowMorale: "Низкая мораль",
+      tired: "Усталость",
+      contracts: "Контракты истекают",
+      injuredHint: "Игроки с травмой",
+      bannedHint: "Игроки с дисквалификацией",
+      lowMoraleHint: (below: string) => `Игроки с моралью ниже ${below}`,
+      tiredHint: (below: string) => `Игроки с энергией ниже ${below}`,
+      unrestHint: "Игроки, которыми недовольны некоторые партнёры по команде",
+      contractsHint: (months: number) => `Игроки, чьи контракты истекают в течение ${months} мес.`,
+      none: "Нет",
+      more: (count: number) => `и ещё ${format(count)}`,
+    },
+  },
+
   errors,
 };

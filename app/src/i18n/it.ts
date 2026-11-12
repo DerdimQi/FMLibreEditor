@@ -2403,5 +2403,38 @@ export const it: Strings = {
     keys: { ctrl: "Ctrl", shift: "Maiusc", enter: "Invio", escape: "Esc" },
   },
 
+  /** "My club", the page the app opens on (see en.ts). */
+  home: {
+    nav: "La mia società",
+    loading: "Ricerca della tua società…",
+    failed: (reason: string) => `Non è stato possibile cercare la tua società: ${reason}`,
+    manager: (name: string) => `Allenatore: ${name}`,
+    following: "Una società che segui",
+    clubsLabel: "Le tue società",
+    openProfile: "Profilo della società",
+    openProfileTitle: "Apri questa società nella scheda Società: strutture, finanze, stadio e altro",
+    noClubTitle: "Non alleni nessuna società in questo salvataggio",
+    noClubText:
+      "Scegli invece una società da seguire qui: la sua rosa, chi ha bisogno di attenzione e le azioni su tutta la " +
+      "squadra.",
+    chooseAnother: "Scegli un'altra società",
+    searchLabel: "Società da seguire",
+    squad: "Rosa",
+    cards: {
+      label: "Chi ha bisogno di attenzione",
+      lowMorale: "Morale basso",
+      tired: "Stanchi",
+      contracts: "Contratti in scadenza",
+      injuredHint: "Giocatori con un infortunio",
+      bannedHint: "Giocatori con una squalifica",
+      lowMoraleHint: (below: string) => `Giocatori con il morale sotto ${below}`,
+      tiredHint: (below: string) => `Giocatori con l'energia sotto ${below}`,
+      unrestHint: "Giocatori di cui alcuni compagni sono scontenti",
+      contractsHint: (months: number) => `Giocatori il cui contratto scade entro ${months} mesi`,
+      none: "Nessuno",
+      more: (count: number) => `e altri ${format(count)}`,
+    },
+  },
+
   errors,
 };

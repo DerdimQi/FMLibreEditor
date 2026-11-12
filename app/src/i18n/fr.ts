@@ -2485,5 +2485,38 @@ export const fr: Strings = {
     keys: { ctrl: "Ctrl", shift: "Maj", enter: "Entrée", escape: "Échap" },
   },
 
+  /** "My club", the page the app opens on (see en.ts). */
+  home: {
+    nav: "Mon club",
+    loading: "Recherche de votre club…",
+    failed: (reason: string) => `Impossible de rechercher votre club\u00a0: ${reason}`,
+    manager: (name: string) => `Entraîneur\u00a0: ${name}`,
+    following: "Un club que vous suivez",
+    clubsLabel: "Vos clubs",
+    openProfile: "Profil du club",
+    openProfileTitle: "Ouvrir ce club dans l'onglet Clubs\u00a0: installations, finances, stade et plus",
+    noClubTitle: "Vous n'entraînez aucun club dans cette partie",
+    noClubText:
+      "Choisissez plutôt un club à suivre ici\u00a0: son effectif, les joueurs à surveiller et les actions sur toute " +
+      "une équipe.",
+    chooseAnother: "Choisir un autre club",
+    searchLabel: "Club à suivre",
+    squad: "Effectif",
+    cards: {
+      label: "Joueurs à surveiller",
+      lowMorale: "Moral bas",
+      tired: "Fatigués",
+      contracts: "Fins de contrat",
+      injuredHint: "Joueurs blessés",
+      bannedHint: "Joueurs suspendus",
+      lowMoraleHint: (below: string) => `Joueurs dont le moral est inférieur à ${below}`,
+      tiredHint: (below: string) => `Joueurs dont l'énergie est inférieure à ${below}`,
+      unrestHint: "Joueurs dont certains coéquipiers sont mécontents",
+      contractsHint: (months: number) => `Joueurs dont le contrat se termine dans les ${months} mois`,
+      none: "Aucun",
+      more: (count: number) => `et ${format(count)} de plus`,
+    },
+  },
+
   errors,
 };
