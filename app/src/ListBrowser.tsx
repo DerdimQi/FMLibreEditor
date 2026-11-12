@@ -126,6 +126,11 @@ export function ListBrowser<Row extends { uid: number }>(props: ListBrowserProps
   const pick = (row: Row) => (row.uid === selected?.uid ? setSelected(row) : askToLeave(() => setSelected(row)));
 
   useEffect(() => {
+    // Lists stay mounted to preserve their search, selection and scroll position, but an inactive
+    // list must not search the entire game database in the background. It loads when first shown.
+    if (!active) {
+      return;
+    }
     let cancelled = false;
     const args: Record<string, unknown> = JSON.parse(argsKey);
     // Typing in the search box or a filter waits a little, so a burst of keys makes one request.
@@ -167,7 +172,7 @@ export function ListBrowser<Row extends { uid: number }>(props: ListBrowserProps
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [command, query, argsKey, version]);
+  }, [command, query, argsKey, version, active]);
 
   useEffect(() => {
     if (active) {
