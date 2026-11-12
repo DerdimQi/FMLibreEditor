@@ -741,10 +741,9 @@ export const zhCN: Strings = {
     removeUnhappiness: "全部移除",
     removingUnhappiness: "正在移除…",
     removeUnhappinessTitle: "移除此球员的所有不满原因，效果与 FMRTE 的“全部移除”相同；可在“改动记录”中撤销",
-    removeUnhappinessFollows:
-      "The reasons his teammates hold about him end by themselves once the game moves on: press Continue in the game",
+    removeUnhappinessFollows: "队友针对他的不满原因会在游戏推进后自行消除：在游戏中点击“继续”",
     concernSince: (date: string) => `始于 ${date}`,
-    concernAbout: (name: string) => `about ${name}`,
+    concernAbout: (name: string) => `针对 ${name}`,
     concernKind: (kind: number) => (kind === 1 ? "不满" : kind === 2 ? "内部问题" : `类型 ${kind}`),
     concernMotive: (motive: number) => CONCERN_MOTIVES_ZH[motive] ?? `原因 ${motive}`,
     /** A contract's clauses and bonuses: the heading, and what each kind the game has is called. */
@@ -2298,11 +2297,8 @@ export const zhCN: Strings = {
     banned: "禁赛",
     /** `count` is how many bans he has. */
     bannedTitle: (count: number) => `${format(count)} 项禁赛`,
-    unrest: "Unrest",
-    unrestTitle: (count: number) =>
-      count === 1
-        ? "1 teammate has a reason to be unhappy about him. Remove all, in his profile, settles it once the game moves on"
-        : `${format(count)} teammates have a reason to be unhappy about him. Remove all, in his profile, settles them once the game moves on`,
+    unrest: "队友不满",
+    unrestTitle: (count: number) => `${format(count)} 位队友对他有不满原因。在他的档案中点击“全部移除”，游戏推进后即可化解`,
     onLoan: "外租",
     onLoanTitle: "租借至其他俱乐部",
     loanee: "租入",

@@ -693,9 +693,9 @@ export const tr: Strings = {
     removingUnhappiness: "Kaldırılıyor…",
     removeUnhappinessTitle: "FMRTE'nin Remove all düğmesi gibi, mutsuzluk nedenlerinin hepsini listesinden kaldırır; Değişiklikler'den geri alınabilir",
     removeUnhappinessFollows:
-      "The reasons his teammates hold about him end by themselves once the game moves on: press Continue in the game",
+      "Takım arkadaşlarının onunla ilgili mutsuzluk nedenleri, oyun bir kez ilerleyince kendiliğinden biter: oyunda Devam'a basın",
     concernSince: (date) => `${date} tarihinden beri`,
-    concernAbout: (name) => `about ${name}`,
+    concernAbout: (name) => `${name} hakkında`,
     concernKind: (kind) => (kind === 1 ? "Endişeli" : kind === 2 ? "İçsel" : `Tür ${kind}`),
     concernMotive: (motive) => CONCERN_MOTIVES_TR[motive] ?? `Neden ${motive}`,
     clauses: "Primler ve maddeler",
@@ -1956,11 +1956,11 @@ export const tr: Strings = {
     injuredTitle: (count) => `${format(count)} sakatlık`,
     banned: "Cezalı",
     bannedTitle: (count) => `${format(count)} ceza`,
-    unrest: "Unrest",
+    unrest: "Huzursuzluk",
     unrestTitle: (count) =>
       count === 1
-        ? "1 teammate has a reason to be unhappy about him. Remove all, in his profile, settles it once the game moves on"
-        : `${format(count)} teammates have a reason to be unhappy about him. Remove all, in his profile, settles them once the game moves on`,
+        ? "1 takım arkadaşının onunla ilgili bir mutsuzluk nedeni var. Profilindeki Hepsini kaldır düğmesi, oyun bir kez ilerleyince bunu çözer"
+        : `${format(count)} takım arkadaşının onunla ilgili bir mutsuzluk nedeni var. Profilindeki Hepsini kaldır düğmesi, oyun bir kez ilerleyince bunları çözer`,
     onLoan: "Kirada",
     onLoanTitle: "Başka bir kulübe kiralık gönderildi",
     loanee: "Kiralık",

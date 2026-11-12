@@ -770,9 +770,10 @@ export const de: Strings = {
       "Nimmt jeden Grund für Unzufriedenheit von seiner Liste, wie es „Alle entfernen“ in FMRTE tut; unter Änderungen " +
       "rückgängig zu machen",
     removeUnhappinessFollows:
-      "The reasons his teammates hold about him end by themselves once the game moves on: press Continue in the game",
+      "Die Gründe für Unzufriedenheit, die seine Mitspieler seinetwegen haben, enden von selbst, sobald das Spiel " +
+      "weiterläuft: Klicken Sie im Spiel auf Fortfahren",
     concernSince: (date) => `seit ${date}`,
-    concernAbout: (name) => `about ${name}`,
+    concernAbout: (name) => `wegen ${name}`,
     concernKind: (kind) => (kind === 1 ? "Besorgt" : kind === 2 ? "Intern" : `Art ${kind}`),
     concernMotive: (motive) => CONCERN_MOTIVES_DE[motive] ?? `Grund ${motive}`,
     clauses: "Prämien & Klauseln",
@@ -2106,11 +2107,10 @@ export const de: Strings = {
     injuredTitle: (count) => (count === 1 ? "1 Verletzung" : `${format(count)} Verletzungen`),
     banned: "Gesperrt",
     bannedTitle: (count) => (count === 1 ? "1 Sperre" : `${format(count)} Sperren`),
-    unrest: "Unrest",
+    unrest: "Unruhe",
     unrestTitle: (count) =>
-      count === 1
-        ? "1 teammate has a reason to be unhappy about him. Remove all, in his profile, settles it once the game moves on"
-        : `${format(count)} teammates have a reason to be unhappy about him. Remove all, in his profile, settles them once the game moves on`,
+      `${count === 1 ? "1 Mitspieler hat" : `${format(count)} Mitspieler haben`} einen Grund, seinetwegen unzufrieden zu ` +
+      "sein. „Alle entfernen“ in seinem Profil löst das, sobald das Spiel weiterläuft",
     onLoan: "Verliehen",
     onLoanTitle: "An einen anderen Verein verliehen",
     loanee: "Geliehen",
