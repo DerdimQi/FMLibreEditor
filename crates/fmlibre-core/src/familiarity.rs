@@ -122,6 +122,15 @@ pub struct TacticsSet {
     patches: Vec<Patch>,
 }
 
+/// A player's history of training as the training manager keeps it, for the probe: the person's id, where his node
+/// keeps the list `(begin, end, capacity)`, and those three words.
+#[derive(Debug, Clone, Copy)]
+pub struct TrainingHistory {
+    pub person: u32,
+    pub header: u64,
+    pub list: [u64; 3],
+}
+
 /// One of a player's lists in the game's `(begin, end, capacity)`: where it keeps those, what they are, and its bytes.
 #[derive(Debug, Clone)]
 struct List {
@@ -231,6 +240,26 @@ impl Session {
     /// changes both as it moves on. A grown list is pointed back at its old buffer.
     pub fn undo_tactics(&self, done: &TacticsSet) -> Result<(), MoveError> {
         self.undo_patches(&done.patches)
+    }
+
+    /// The histories of training the training manager keeps for the players of `club`'s human manager, for the probe.
+    /// `None` where the layout or the build does not place them, or it keeps none for the club.
+    pub fn training_histories(&self, club: &ClubSummary) -> Result<Option<Vec<TrainingHistory>>, MoveError> {
+        let (Some(f), Some(rva)) = (&self.layout.familiarity, self.profile.as_ref().and_then(|p| p.training_manager))
+        else {
+            return Ok(None);
+        };
+        let process = &self.process;
+        let Some(keeper) = training_keeper(process, f, process.read_u64(self.plugin.base + rva)?, club.address)? else {
+            return Ok(None);
+        };
+        let histories = histories(process, f, keeper)?.ok_or(MoveError::NotListed)?;
+        Ok(Some(
+            histories
+                .into_iter()
+                .map(|(person, list)| TrainingHistory { person, header: list.header, list: list.was })
+                .collect(),
+        ))
     }
 
     /// The tactic the team at `team` plays and its players' histories; `None` where the layout or the build does not
@@ -385,13 +414,14 @@ fn training_keeper(
 }
 
 /// The history of training the training manager's object at `keeper` holds for each player, by person id: its map's
-/// nodes walked from the root (left child, then right, as the C++ library lays them out). `None` where a node or a
-/// list does not check out.
+/// nodes walked from the root, as the C++ library lays them out (see `tree.rs`). `None` where a node or a list does
+/// not check out.
 fn histories(process: &Process, f: &FamiliarityLayout, keeper: u64) -> Result<Option<HashMap<u32, List>>, MoveError> {
     let mut found = HashMap::new();
-    let mut stack = vec![process.read_u64(keeper + f.players)?];
+    let (walk, root) = f.tree.root(process, keeper + f.players)?;
+    let mut stack = vec![root];
     while let Some(node) = stack.pop() {
-        if !is_user_pointer(node) {
+        if !walk.is_node(process, node)? {
             continue;
         }
         if found.len() >= MOST_NODES {
@@ -405,8 +435,7 @@ fn histories(process: &Process, f: &FamiliarityLayout, keeper: u64) -> Result<Op
             return Ok(None);
         }
         found.insert(id, list);
-        stack.push(process.read_u64(node)?);
-        stack.push(process.read_u64(node + 8)?);
+        stack.extend(walk.children(process, node)?);
     }
     Ok(Some(found))
 }
@@ -474,13 +503,18 @@ pub(crate) fn record_holds(process: &Process, f: &FamiliarityLayout, at: u64) ->
 }
 
 /// How many players the training manager keeps a history for, and whether every one checks out: for the checks.
-/// `None` where the build places no training manager or it keeps no history for anyone.
+/// `None` where the build's profile places no training manager. A manager without a club has none listed.
 pub(crate) fn histories_hold(session: &Session, f: &FamiliarityLayout) -> Option<(u64, bool)> {
     let process = &session.process;
     let rva = session.profile.as_ref().and_then(|p| p.training_manager)?;
-    let manager = process.read_u64(session.plugin.base + rva).ok().filter(|&m| is_user_pointer(m))?;
+    let Some(manager) = process.read_u64(session.plugin.base + rva).ok().filter(|&m| is_user_pointer(m)) else {
+        return Some((0, false));
+    };
     let (first, last) =
         (process.read_u64(manager + f.managers).ok()?, process.read_u64(manager + f.managers + 8).ok()?);
+    if first == last {
+        return Some((0, true));
+    }
     if !is_user_pointer(first) || last < first || last - first > 8 * MOST_MANAGERS {
         return Some((0, false));
     }

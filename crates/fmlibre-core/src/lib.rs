@@ -47,6 +47,7 @@ mod staff_move;
 mod tactical_areas;
 mod text;
 mod transfer;
+mod tree;
 
 pub use calibrate::{ArrayRef, EntityArrays, calibrate};
 pub use clauses::{
@@ -67,7 +68,7 @@ pub use details::{
 pub use diagnostics::{date_line, diagnostics_report, retirement_line, saves_loaded_line};
 pub use edit::{Change, EditError, Entity, Field, Kind, LOAN_EXPIRES, LOAN_OPTION_FEE, Scale, Target, fields};
 pub use export::{ExportFormat, ExportHeader, Exported};
-pub use familiarity::{Familiarity, TacticsPlan, TacticsSet};
+pub use familiarity::{Familiarity, TacticsPlan, TacticsSet, TrainingHistory};
 pub use filter::{
     AttributeBound, ClubFilter, PlayerFilter, PlayerOrder, PlayerSort, StaffFilter, StaffOrder, StaffSort,
     sort_players, sort_staff,
@@ -116,3 +117,4 @@ pub use staff_move::{
 pub use tactical_areas::area_options;
 pub use text::{fold, is_name_like, read_fm_string, read_name_entry};
 pub use transfer::{Amounts, ClubMoney, ClubMove, FeePlan, MAX_FEE, MoveError, MovePlan, MoveTerms, Paid, RoomMaker};
+pub use tree::Tree;

@@ -352,6 +352,41 @@ slot_size = 0x48
 role = 0x10               # in a slot: the u64 role mask
 style = 0x100
 
+# The tactics each human manager keeps for each of his teams, as on macOS (see layout-macos.toml and
+# tactical_areas.rs), which the game reads to tell how well the players know the tactic in use. The build profile's
+# tactics_manager (TACTICS_MANAGER) leads to an object listing one object per human manager; each starts with a map
+# from a team's id to its tactics. The map is MSVC's: it holds a head node, whose +0x08 is the root, and a node keeps
+# its left child at +0x00 and its right at +0x10 (see tree.rs). A team's tactics hold a
+# simatch::PREPARED_TACTICS_CREATOR_ARRAY at +0x1008, whose list of tactic blocks is `tactics` and whose byte after
+# it the index of the one in use.
+[tactics]
+tree = "msvc"
+managers = 0x20           # (begin, end) of pointers, one per human manager
+teams = 0x00              # in one: the map's pointer to its head node
+key = 0x20                # in a node: u32, the team's id
+value = 0x28              # in a node: the team's tactics
+team_id = 0x08            # in a team: u32
+tactics = 0x1010          # in the team's tactics: (begin, end) of pointers to tactic blocks
+current = 0x1028          # in the team's tactics: i8, the index of the one in use
+instructions = 0xE0       # in a tactic: two u64 words
+
+# How well the players know a tactic, as on macOS (see layout-macos.toml and familiarity.rs): a player's record, laid
+# out as there but pointed at 8 bytes further on, and the history of training the training manager (TRAINING_MANAGER,
+# the build profile's training_manager) keeps for each human manager's players, in a map from a person's id that is
+# MSVC's too.
+[familiarity]
+tree = "msvc"
+record = 0x100            # in a player: pointer to his record
+area_step = 0x20          # in the record: the six lists of options, (begin, end, capacity) each
+area_index = 0x18         # in a list's header: u8, its area
+shapes = 0xC0             # in the record: the list of shapes, (begin, end, capacity)
+managers = 0x40           # in the training manager: (begin, end) of pointers, one per human manager
+club = 0x78               # in one: pointer to his club
+players = 0x60            # in one: the map of players' pointer to its head node
+person = 0x20             # in a node: u32, the person's id
+history = 0x28            # in a node: (begin, end, capacity) of 12-byte entries
+player_person = 0x290     # in a player: u32, the person's id, as [retirement] and [selection] read it
+
 # A player on loan has a second contract, of its own class, with the team he is on loan to. His `record` (right after
 # his contract pointer, and shifted with it for player-coaches) points at a record of his other contracts, whose first
 # field points at the loan contract. Only he points at the record, and only the record points at the loan contract.

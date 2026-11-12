@@ -5,6 +5,7 @@ use fmlibre_mem::{Module, Process};
 use serde::{Deserialize, Deserializer};
 
 use crate::game::Storefront;
+use crate::tree::Tree;
 
 /// Field offsets inside FM's objects for one edition. They are shared by every
 /// storefront build of the same game version, unlike the RVAs in [`BuildProfile`].
@@ -205,15 +206,18 @@ pub struct TacticLayout {
 
 /// The tactics each human manager keeps for each of his teams, as the game reads them to tell how well the players
 /// know the tactic in use (see `crate::tactical_areas`). The build's static pointer ([`BuildProfile::tactics_manager`])
-/// leads to an object with a list `(begin, end)` at `managers`, one object per human manager; each has a map, its root
-/// at `teams`, from a team's id to the team's tactics: nodes laid out as the C++ library's (left child, then right),
-/// the id at `key` and the team's tactics at `value`. There, `tactics` holds the list `(begin, end)` of pointers to the
+/// leads to an object with a list `(begin, end)` at `managers`, one object per human manager; each has a map
+/// at `teams`, from a team's id to the team's tactics: nodes laid out as the C++ library's (`tree`, see
+/// [`crate::Tree`]), the id at `key` and the team's tactics at `value`. There, `tactics` holds the list `(begin, end)` of pointers to the
 /// tactics and `current` the index of the one in use. A tactic keeps its team instructions at `instructions`.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TacticsLayout {
     pub managers: u64,
     pub teams: u64,
+    /// Whose layout the map's nodes have; the Mac's where the layout does not say.
+    #[serde(default)]
+    pub tree: Tree,
     /// In a node: the `u32` id of the team.
     pub key: u64,
     pub value: u64,
@@ -231,9 +235,9 @@ pub struct TacticsLayout {
 /// `(begin, end, capacity)` of 4-byte entries, `area_step` apart, each naming its area by the byte at `area_index`, and
 /// then a list of 16-byte entries for his shapes at `shapes`. The build's static pointer to the training manager
 /// ([`BuildProfile::training_manager`]) leads to an object with a list `(begin, end)` at `managers`, one object per
-/// human manager; each names his club at `club` and has a map, its root at `players`, from a person's id (the
-/// player's `player_person`) to his history of training: nodes laid out as the C++ library's (left child, then right),
-/// the id at `person` and the list `(begin, end, capacity)` of 12-byte entries at `history`.
+/// human manager; each names his club at `club` and has a map at `players`, from a person's id (the
+/// player's `player_person`) to his history of training: nodes laid out as the C++ library's (`tree`, see
+/// [`crate::Tree`]), the id at `person` and the list `(begin, end, capacity)` of 12-byte entries at `history`.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct FamiliarityLayout {
@@ -244,6 +248,9 @@ pub struct FamiliarityLayout {
     pub managers: u64,
     pub club: u64,
     pub players: u64,
+    /// Whose layout the map's nodes have; the Mac's where the layout does not say.
+    #[serde(default)]
+    pub tree: Tree,
     pub person: u64,
     pub history: u64,
     /// In a player: the `u32` id the game gives the person, in his identity block.
@@ -1264,6 +1271,16 @@ mod tests {
         );
         assert_eq!(profile.current_date, Some(0x535_97C8));
         assert_eq!(profile.retirement_manager, Some(profile.arrays.players - 0xED70));
+        // The managers of tactics and of training, for Max tactics: the first 0xD0 after the retirement manager's on
+        // both storefronts, the second not as far from it on each.
+        assert_eq!((profile.tactics_manager, profile.training_manager), (Some(0x53A_9140), Some(0x53A_5700)));
+        let fingerprint = PluginFingerprint::Pe { size_of_image: 0x17CB_9000, link_timestamp: 0x6AE8_B5A4 };
+        let steam = profile_for(fingerprint).expect("Steam build 26385295 profile");
+        assert_eq!((steam.tactics_manager, steam.training_manager), (Some(0x581_2E20), Some(0x580_F3F0)));
+        assert_eq!(steam.tactics_manager, steam.retirement_manager.map(|rva| rva + 0xD0));
+        // The Windows layout walks MSVC's maps; the Mac's does not say, and walks libc++'s.
+        let familiarity = layout.familiarity.as_ref().expect("the Windows layout places familiarity");
+        assert_eq!((familiarity.tree, layout.tactics.as_ref().map(|t| t.tree)), (Tree::Msvc, Some(Tree::Msvc)));
 
         // The same version on Steam, packaged differently: another fingerprint and other RVAs, the manager's static
         // 0xDAC0 before the players pair.

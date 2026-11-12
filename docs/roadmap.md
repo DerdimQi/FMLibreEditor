@@ -188,8 +188,10 @@ before trusting them.
   the player's record of familiarity and the history of training the training manager
   keeps, for the options the game works out from the tactic in use (see `familiarity.rs`,
   `tactical_areas.rs` and the Steam macOS notes). Max tactics writes both, growing the
-  lists of players new to the club into the editor's memory. macOS only for now: the
-  Windows layout does not place them yet.
+  lists of players new to the club into the editor's memory. On the Mac and on Windows,
+  where the maps are MSVC's (`tree.rs`), for the builds whose profiles place the two
+  managers: 27.0.0 and 27.0.1 on the Mac (Apple silicon), Steam build 26385295 and Game
+  Pass 0.9.2435.0 on Windows. On the others the column stays empty and the button waits.
 
 ## Phase 7: what FMRTE, FM Live Editor and FM27€0 users reach for (in progress)
 
@@ -377,5 +379,5 @@ changes many at once, and undo.
     has room: 384 of 53,356 contracts on the Game Pass save. Checked there with Kane, Mbappé and Bisseck, restored.
     The competition bonuses (`+0x80`) are not named or edited yet.
   - [x] Keep a player from retiring (see Wave 2 above).
-  - [x] Team cohesion and tactical familiarity (see Phase 6); tactical familiarity on the Mac only for now.
+  - [x] Team cohesion and tactical familiarity (see Phase 6).
   - [ ] Epic.

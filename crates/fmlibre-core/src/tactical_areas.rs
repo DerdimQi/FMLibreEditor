@@ -40,9 +40,9 @@ impl Session {
                 continue;
             }
             // Down the map, by the ids as the game compares them.
-            let mut node = process.read_u64(manager + t.teams)?;
+            let (walk, mut node) = t.tree.root(process, manager + t.teams)?;
             for _ in 0..MOST_DEPTH {
-                if !is_user_pointer(node) {
+                if !walk.is_node(process, node)? {
                     break;
                 }
                 let key = process.read_u32(node + t.key)? as i32;
@@ -57,7 +57,7 @@ impl Session {
                     let block = process.read_u64(begin + 8 * current as u64)?;
                     return Ok(is_user_pointer(block).then_some(block));
                 }
-                node = process.read_u64(node + if key < id { 8 } else { 0 })?;
+                node = walk.children(process, node)?[usize::from(key < id)];
             }
         }
         Ok(None)

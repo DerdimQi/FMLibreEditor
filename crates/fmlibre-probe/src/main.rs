@@ -662,15 +662,16 @@ enum Command {
         find: Option<u64>,
     },
     /// Show each senior player's tactical familiarity, as the Squad view of the Tactical Effectiveness screen shows it:
-    /// the record player +0xF8 points at (macOS), whose six lists of 4-byte entries, one per area, each give an
+    /// the record the player points at (+0xF8 on macOS, +0x100 on Windows), whose six lists of 4-byte entries, one per area, each give an
     /// option's code (6 bits from bit 14) and its familiarity × 100 (bits 0–13). With --set, writes that familiarity
     /// into every entry of the six lists: this writes.
     Familiarity {
         /// The club's UID.
         club: u32,
-        /// Where the player keeps the pointer to his record of familiarity.
-        #[arg(long, default_value = "0xf8")]
-        record: String,
+        /// Where the player keeps the pointer to his record of familiarity: by default where the layout places it
+        /// (0xF8 on macOS, 0x100 on Windows).
+        #[arg(long)]
+        record: Option<String>,
         /// Set every entry's familiarity × 100 to this, 0..10000.
         #[arg(long, value_parser = clap::value_parser!(u16).range(0..=10_000))]
         set: Option<u16>,
@@ -684,9 +685,9 @@ enum Command {
         restore: RestoreArgs,
     },
     /// Show the team's tactical familiarity as the Tactical Effectiveness screen works it out: from the history of
-    /// training the training manager keeps for each of the human manager's players (macOS: the `TRAINING_MANAGER`
-    /// the build profile places, its managers' list at +0x38, each manager's club at +0x98 and his
-    /// map of players by person id at +0x78, each player's 12-byte entries at node +0x28). Each entry adds to its area
+    /// training the training manager keeps for each of the human manager's players (the `TRAINING_MANAGER` the build
+    /// profile places, and in it what the layout's `[familiarity]` places: its managers' list, each manager's club and
+    /// his map of players by person id, each player's 12-byte entries in his node). Each entry adds to its area
     /// a weight for its age (12 in its first week down to 0 after 251 days), times how close its option is to the
     /// tactic's (1 less 0.1 a step), times three factors for the session and the player; an area holds at most 100.
     /// With --max, rewrites each player's entries so that every area adds up to 100: this writes.
@@ -1394,7 +1395,15 @@ fn run(cli: Cli) -> Result<()> {
         }
         Command::Familiarity { club, record, set, add, restore } => {
             let session = connect(process, ArraySource::ProfileFirst)?;
-            let record = parse_hex(&record)?;
+            let record = match record {
+                Some(record) => parse_hex(&record)?,
+                None => session
+                    .layout
+                    .familiarity
+                    .as_ref()
+                    .map(|familiarity| familiarity.record)
+                    .context("this layout does not place the record of familiarity; give it with --record")?,
+            };
             familiarity(&session, club, record)?;
             if let (Some(value), true) = (set, add) {
                 add_familiarity(&session, club, record, value)?;
@@ -6765,43 +6774,24 @@ fn training_history(
     }
     let date = session.date_place().context("the in-game date was not found")?;
     let today = (process.read_u32(session.plugin.base + date.rva)? & 0x1FF) as i32 - 1;
-    let rva = session
-        .profile
-        .as_ref()
-        .and_then(|profile| profile.training_manager)
-        .context("the build profile does not place the training manager")?;
-    let manager = process.read_u64(session.plugin.base + rva)?;
-    ensure!(is_user_pointer(manager), "no training manager at game_plugin+{rva:#x}");
-    let (first, last) = (process.read_u64(manager + 0x38)?, process.read_u64(manager + 0x40)?);
-    ensure!(last >= first && last - first <= 0x400, "the training manager's list of managers does not check out");
-    let mut keeper = None;
-    for at in (first..last).step_by(8) {
-        let object = process.read_u64(at)?;
-        if is_user_pointer(object) && process.read_u64(object + 0x98)? == club.address {
-            keeper = Some(object);
-        }
-    }
-    let keeper = keeper.with_context(|| format!("the training manager keeps no history for {}", club.name))?;
-    // The map of players at +0x78: its root at +0x80, nodes (left, right, parent, colour, key at +0x20, vector +0x28).
-    let mut nodes = Vec::new();
-    let mut stack = vec![process.read_u64(keeper + 0x80)?];
-    while let Some(node) = stack.pop() {
-        if !is_user_pointer(node) {
-            continue;
-        }
-        ensure!(nodes.len() < 10_000, "the map of players does not check out");
-        let head = process.read_bytes(node, 0x40)?;
-        let word = |i: usize| u64::from_le_bytes(head[i..i + 8].try_into().expect("8 bytes"));
-        let id = u32::from_le_bytes(head[0x20..0x24].try_into().expect("4 bytes"));
-        nodes.push((id, word(0x28), word(0x30), node, word(0x38)));
-        stack.push(word(0));
-        stack.push(word(8));
-    }
+    // Each player's history as the editor finds it: the layout places the training manager's lists, and walks its
+    // map of players as the C++ library of the platform lays it out.
+    let mut nodes: Vec<(u32, u64, u64, u64, u64)> = session
+        .training_histories(club)?
+        .with_context(|| {
+            format!(
+                "the training manager keeps no history for {}, or the layout or the build profile does not place it",
+                club.name
+            )
+        })?
+        .into_iter()
+        .map(|h| (h.person, h.list[0], h.list[1], h.header, h.list[2]))
+        .collect();
     nodes.sort_unstable_by_key(|n| people.get(&n.0).map_or((usize::MAX, String::new()), |p| (p.2, p.1.clone())));
     // Each player's entries, read once; and where his node keeps the vector (begin, end, capacity), as it is.
     let mut histories = Vec::new();
     let mut vectors: HashMap<u32, (u64, [u64; 3])> = HashMap::new();
-    for &(id, begin, end, node, capacity) in &nodes {
+    for &(id, begin, end, header, capacity) in &nodes {
         ensure!(
             is_user_pointer(begin) && end >= begin && (end - begin).is_multiple_of(12) && end - begin <= 12 * 4000,
             "person {id}: the history does not check out"
@@ -6810,7 +6800,7 @@ fn training_history(
             capacity >= end && (capacity - begin).is_multiple_of(12),
             "person {id}: the history's capacity does not check out"
         );
-        vectors.insert(id, (node + 0x28, [begin, end, capacity]));
+        vectors.insert(id, (header, [begin, end, capacity]));
         let bytes = process.read_bytes(begin, (end - begin) as usize)?;
         let entries: Vec<[u8; 12]> = bytes.as_chunks::<12>().0.to_vec();
         histories.push((id, begin, entries));
