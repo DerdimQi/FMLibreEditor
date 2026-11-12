@@ -19,8 +19,8 @@ const STORAGE_KEY = "fmlibre.exportFormat";
 
 /**
  * The format chosen last; at first, CSV with semicolons in a language whose Excel writes decimals with a comma (Turkish,
- * Spanish, German, French, Indonesian and Italian), and with commas in English, Korean and Chinese, whose Excel writes
- * them with a point.
+ * Spanish, German, French, Indonesian, Italian and Russian), and with commas in English, Japanese, Korean and Chinese,
+ * whose Excel writes them with a point.
  */
 function startFormat(): ExportFormat {
   try {
@@ -32,7 +32,7 @@ function startFormat(): ExportFormat {
   } catch {
     // No storage: the language decides.
   }
-  return locale === "en" || locale === "ko" || locale === "zh-CN" ? "csv" : "csvSemicolon";
+  return locale === "en" || locale === "ja" || locale === "ko" || locale === "zh-CN" ? "csv" : "csvSemicolon";
 }
 
 /** The command that writes each kind of list. */

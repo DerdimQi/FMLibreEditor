@@ -60,6 +60,7 @@ const CONTRACT_TYPES: Partial<Record<number, string>> = {
   2: "Amatör sözleşme",
   3: "Genç oyuncu sözleşmesi",
   4: "Sözleşmesiz",
+  8: "A takım sözleşmesi",
   10: "Asgari ücretli A takım sözleşmesi",
   11: "A takım sözleşmesi",
 };
@@ -693,7 +694,10 @@ export const tr: Strings = {
     removeUnhappiness: "Hepsini kaldır",
     removingUnhappiness: "Kaldırılıyor…",
     removeUnhappinessTitle: "FMRTE'nin Remove all düğmesi gibi, mutsuzluk nedenlerinin hepsini listesinden kaldırır; Değişiklikler'den geri alınabilir",
+    removeUnhappinessFollows:
+      "Takım arkadaşlarının onunla ilgili mutsuzluk nedenleri, oyun bir kez ilerleyince kendiliğinden biter: oyunda Devam'a basın",
     concernSince: (date) => `${date} tarihinden beri`,
+    concernAbout: (name) => `${name} hakkında`,
     concernKind: (kind) => (kind === 1 ? "Endişeli" : kind === 2 ? "İçsel" : `Tür ${kind}`),
     concernMotive: (motive) => CONCERN_MOTIVES_TR[motive] ?? `Neden ${motive}`,
     clauses: "Primler ve maddeler",
@@ -1964,6 +1968,11 @@ export const tr: Strings = {
     injuredTitle: (count) => `${format(count)} sakatlık`,
     banned: "Cezalı",
     bannedTitle: (count) => `${format(count)} ceza`,
+    unrest: "Huzursuzluk",
+    unrestTitle: (count) =>
+      count === 1
+        ? "1 takım arkadaşının onunla ilgili bir mutsuzluk nedeni var. Profilindeki Hepsini kaldır düğmesi, oyun bir kez ilerleyince bunu çözer"
+        : `${format(count)} takım arkadaşının onunla ilgili bir mutsuzluk nedeni var. Profilindeki Hepsini kaldır düğmesi, oyun bir kez ilerleyince bunları çözer`,
     onLoan: "Kirada",
     onLoanTitle: "Başka bir kulübe kiralık gönderildi",
     loanee: "Kiralık",

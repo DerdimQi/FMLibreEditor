@@ -523,6 +523,43 @@ engagement, pressing intensity and pressing trap. FM27 Editor reads six of them 
 by hand: `dword`s every `0x10` from `+0xC0` to `+0x110`, the value × 100 in their low 14 bits. No team keeps such a
 block: the game works the areas out for each player (see [Tactical familiarity](#tactical-familiarity)).
 
+## Who a reason to be unhappy is about
+
+An entry of the record a contract's `unhappiness` points at (28 bytes: see `[contract]`) holds more than its dates,
+motive and kind. Read with `fmlibre-probe concerns --all` on the Steam save (build 26385295, 30 August 2026): 915
+entries of 843 players, 422 of them not over.
+
+- `+0x19`, a `u8`: the category of the motive. Every one of the 50 motives of this save has one category, of 16.
+- `+0x08`, an `i32`, -1 for none: in the entries of categories 19 and 20, the game's id of a person (a player's
+  `player_person`). It named a player in all 578 of them, a teammate in 564; the rest were players who had played
+  with him and moved on. Motive 808 (thinks a teammate has been treated unfairly) is in category 19, 926 (doesn't
+  believe a teammate deserves the playing time he wants) in 20.
+- In the other categories the same place holds something else, and so does the `i32` at `+0x0C` in some entries of
+  every category: one value for the players of a club, at times the same in both places. It is not a person's id, a
+  club's index or a club's UID. The app reads neither.
+- `+0x18`, the kind: 3, 4, 5 and 255 turn up besides 1 and 2. `+0x1B` is 0, 4 or 6.
+
+**Groups.** The game keeps no record of a group of unhappy players. A group is the entries of categories 19 and 20
+that teammates hold about one player:
+
+- 342 of the 422 entries not over were of these two categories;
+- they formed 41 groups of two or more players, in 32 clubs, the largest 18 about one player;
+- in all 41 the player they were about had an entry of his own, of another category, that was not over.
+
+**The game ends a group itself.** On a copy of the save, the count of two such players' records was set to none, as
+Remove all does, and their teammates' entries left alone:
+
+| Teammates' entries about | Not over | Ended after one day | Ended after two days |
+|---|---|---|---|
+| Sydney Leroux (Angel City) | 18 | 16 | 18 |
+| Ryan Manning (Southampton) | 11 | 3 | 11 |
+| Anyone else, untouched | 312 | 6 | 38 |
+
+The entries ended on the day the game moved on, and those teammates' morale and happiness rose. Among the untouched
+ones, those that ended did so a whole group at a time, as when a player's own reason ends. So the app writes
+nothing more than Remove all does: it names the teammate a reason is about, and marks in the squad tab the players
+their teammates hold reasons about.
+
 ## Tactical familiarity
 
 The Tactical Effectiveness screen shows a player's eight tactical areas from two places. Read on the Benevento save,

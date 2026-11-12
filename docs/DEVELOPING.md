@@ -265,7 +265,7 @@ macOS); `FMLIBRE_EXPORTS` names another folder. The columns and the JSON keys ar
 3. **The `Release` workflow** (`.github/workflows/release.yml`) runs the checks and builds,
    on GitHub's Windows and macOS machines:
    - `FMLibreEditor-Setup.exe`, a per-user NSIS installer in English, Turkish, Spanish, German,
-     French, Italian and Korean;
+     French, Italian, Japanese, Korean and Russian;
    - `FMLibreEditor-portable.zip`;
    - `FMLibreEditor-macOS.zip`, the universal app with the bridge and its launcher;
    - `FMLibreEditor-macOS.app.tar.gz`, the same app, which installed macOS apps update from.
@@ -351,6 +351,7 @@ fmlibre-probe cohesion 680 --raw                     # each senior player's cohe
 fmlibre-probe familiarity 2188                       # each senior player's record of familiarity, area by area (macOS)
 fmlibre-probe training-history 2188                  # the areas each player's history of training adds up to (macOS)
 fmlibre-probe training-history 2188 --max --grow --restore   # Max tactics' history, and back: this writes too
+fmlibre-probe concerns --all                         # every reason to be unhappy, whom it is about, and the groups
 fmlibre-probe captain 680 43425040 --restore         # make a player captain (--vice: vice-captain) and back
 fmlibre-probe prizes                                 # the prize money competitions pay, by final position and per match
 fmlibre-probe prizes 130286 --win 1234567 --restore  # change what a Süper Lig win pays and back: this writes too

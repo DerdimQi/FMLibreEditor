@@ -359,6 +359,12 @@ changes many at once, and undo.
     points at (`+0x30`: a count, then pointers to 28-byte entries); "Remove all" in his profile and the squad tab's
     Inspire set the count to none, which an undo puts back. Three motives are named so far. The contract is laid out
     alike on the Mac, where these and the extras below were read and written too.
+  - [x] Whom a reason to be unhappy is about (#154). A reason a player holds about a teammate names him, by the
+    game's id of the person: the profile shows his name, and the squad tab marks the players their teammates hold
+    reasons about. A group of unhappy players is no more than those entries, and the game ends them itself within two
+    days once the player they are about has none of his own, so Remove all is enough (see the
+    [Steam macOS notes](recon/fm27-steam-macos.md#who-a-reason-to-be-unhappy-is-about)). The other motives and the
+    categories have no names yet.
   - [x] Contract extras: the loyalty bonus (`+0x38`), happiness and playing time happiness, editable, and the list of
     clauses and bonuses (`+0x68`: amount, condition and kind), shown by name. Kinds named against FMRTE's contract
     page for Kane, Haaland, Alex Scott, Courtois and Olise.

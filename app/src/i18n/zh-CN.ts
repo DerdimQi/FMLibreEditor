@@ -67,13 +67,15 @@ const SQUAD_STATUSES: Partial<Record<number, string>> = {
   22: "不再需要",
 };
 
-/** The kinds of contract, by the codes contracts hold them as; 10 and 11 are the MLS's. */
+/** The kinds of contract, by the codes contracts hold them as; 8, 10 and 11 are the MLS's, and the game
+ * shows 8 and 11 under one name. */
 const CONTRACT_TYPES: Partial<Record<number, string>> = {
   0: "兼职合同",
   1: "全职合同",
   2: "业余合同",
   3: "青年合同",
   4: "无合同",
+  8: "资深球员合同",
   10: "资深球员最低工资合同",
   11: "资深球员合同",
 };
@@ -742,7 +744,9 @@ export const zhCN: Strings = {
     removeUnhappiness: "全部移除",
     removingUnhappiness: "正在移除…",
     removeUnhappinessTitle: "移除此球员的所有不满原因，效果与 FMRTE 的“全部移除”相同；可在“改动记录”中撤销",
+    removeUnhappinessFollows: "队友针对他的不满原因会在游戏推进后自行消除：在游戏中点击“继续”",
     concernSince: (date: string) => `始于 ${date}`,
+    concernAbout: (name: string) => `针对 ${name}`,
     concernKind: (kind: number) => (kind === 1 ? "不满" : kind === 2 ? "内部问题" : `类型 ${kind}`),
     concernMotive: (motive: number) => CONCERN_MOTIVES_ZH[motive] ?? `原因 ${motive}`,
     /** A contract's clauses and bonuses: the heading, and what each kind the game has is called. */
@@ -2304,6 +2308,8 @@ export const zhCN: Strings = {
     banned: "禁赛",
     /** `count` is how many bans he has. */
     bannedTitle: (count: number) => `${format(count)} 项禁赛`,
+    unrest: "队友不满",
+    unrestTitle: (count: number) => `${format(count)} 位队友对他有不满原因。在他的档案中点击“全部移除”，游戏推进后即可化解`,
     onLoan: "外租",
     onLoanTitle: "租借至其他俱乐部",
     loanee: "租入",

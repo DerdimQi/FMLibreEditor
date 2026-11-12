@@ -10,6 +10,7 @@ mod clauses;
 mod clubs;
 mod coded;
 mod cohesion;
+mod concerns;
 mod date;
 mod details;
 mod diagnostics;
@@ -57,10 +58,11 @@ pub use clubs::{
 };
 pub use coded::Coded;
 pub use cohesion::{COHESION_RANGE, CohesionPlan, CohesionSet};
+pub use concerns::{ABOUT_A_TEAMMATE, People};
 pub use date::FmDate;
 pub use details::{
-    ATTRIBUTE_GROUPS, Attribute, Clause, Contract, International, PERSONALITY, POSITIONS, PlayerDetails, Reputation,
-    read_player_details,
+    ATTRIBUTE_GROUPS, Attribute, Clause, Concern, ConcernSubject, Contract, International, PERSONALITY, POSITIONS,
+    PlayerDetails, Reputation, read_player_details,
 };
 pub use diagnostics::{date_line, diagnostics_report, retirement_line, saves_loaded_line};
 pub use edit::{Change, EditError, Entity, Field, Kind, LOAN_EXPIRES, LOAN_OPTION_FEE, Scale, Target, fields};

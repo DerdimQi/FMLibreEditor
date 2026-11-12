@@ -67,6 +67,7 @@ const CONTRACT_TYPES: Partial<Record<number, string>> = {
   2: "Contrato amateur",
   3: "Contrato juvenil",
   4: "Sin contrato",
+  8: "Contrato sénior",
   10: "Contrato sénior de salario mínimo",
   11: "Contrato sénior",
 };
@@ -709,7 +710,10 @@ export const es: Strings = {
     removingUnhappiness: "Quitando…",
     removeUnhappinessTitle:
       "Quita de su lista todos los motivos de descontento, como hace Quitar todo en FMRTE; se puede deshacer en Cambios",
+    removeUnhappinessFollows:
+      "Los motivos de descontento que sus compañeros tienen con él terminan solos cuando el juego avanza: pulsa Continuar en el juego",
     concernSince: (date) => `desde el ${date}`,
+    concernAbout: (name) => `sobre ${name}`,
     concernKind: (kind) => (kind === 1 ? "Preocupado" : kind === 2 ? "Interno" : `Tipo ${kind}`),
     concernMotive: (motive) => CONCERN_MOTIVES_ES[motive] ?? `Motivo ${motive}`,
     clauses: "Primas y cláusulas",
@@ -2051,6 +2055,11 @@ export const es: Strings = {
     injuredTitle: (count) => (count === 1 ? "1 lesión" : `${format(count)} lesiones`),
     banned: "Sancionado",
     bannedTitle: (count) => (count === 1 ? "1 sanción" : `${format(count)} sanciones`),
+    unrest: "Malestar",
+    unrestTitle: (count) =>
+      count === 1
+        ? "1 compañero tiene un motivo de descontento con él. «Quitar todo», en su perfil, lo resuelve cuando el juego avanza"
+        : `${format(count)} compañeros tienen un motivo de descontento con él. «Quitar todo», en su perfil, los resuelve cuando el juego avanza`,
     onLoan: "Cedido",
     onLoanTitle: "Cedido a otro club",
     loanee: "En préstamo",

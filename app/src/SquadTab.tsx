@@ -818,8 +818,8 @@ function SquadRow({ player, role, editable, busy, onCaptain, onOpen }: SquadRowP
 }
 
 /**
- * What is out of the ordinary about a player: his injuries, bans, a loan, playing for another team of the club, or
- * being frozen.
+ * What is out of the ordinary about a player: his injuries, bans, teammates unhappy about him, a loan, playing for
+ * another team of the club, or being frozen.
  */
 function Tags({ player }: { player: SquadPlayer }) {
   return (
@@ -832,6 +832,11 @@ function Tags({ player }: { player: SquadPlayer }) {
       {player.bans > 0 && (
         <span className="tag injured" title={text.bannedTitle(player.bans)}>
           {text.banned}
+        </span>
+      )}
+      {player.concernedTeammates > 0 && (
+        <span className="tag injured" title={text.unrestTitle(player.concernedTeammates)}>
+          {text.unrest}
         </span>
       )}
       {player.loan === "out" ? (

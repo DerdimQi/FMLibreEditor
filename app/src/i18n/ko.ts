@@ -92,6 +92,7 @@ const CONTRACT_TYPES: Partial<Record<number, string>> = {
   2: "아마추어 계약",
   3: "유소년 계약",
   4: "무계약",
+  8: "성인 계약",
   10: "성인 최소 급료 계약",
   11: "성인 계약",
 };
@@ -737,7 +738,10 @@ export const ko: Strings = {
     removingUnhappiness: "제거하는 중…",
     removeUnhappinessTitle:
       "FMRTE의 Remove all처럼 이 선수의 불만 사항을 목록에서 모두 지웁니다. 변경 내역에서 되돌릴 수 있습니다",
+    removeUnhappinessFollows:
+      "팀 동료들이 이 선수와 관련해 가진 불만 사항은 게임이 진행되면 저절로 사라집니다. 게임에서 '진행하기'를 누르세요",
     concernSince: (date) => `${date}부터`,
+    concernAbout: (name) => `${name} 관련`,
     concernKind: (kind) => (kind === 1 ? "우려" : kind === 2 ? "내부" : `유형 ${kind}`),
     concernMotive: (motive) => CONCERN_MOTIVES_KO[motive] ?? `사유 ${motive}`,
     clauses: "보너스 및 조항",
@@ -1977,6 +1981,9 @@ export const ko: Strings = {
     injuredTitle: (count) => `부상 ${format(count)}건`,
     banned: "출장 정지",
     bannedTitle: (count) => `출장 정지 ${format(count)}건`,
+    unrest: "동료 불만",
+    unrestTitle: (count) =>
+      `팀 동료 ${format(count)}명이 이 선수와 관련된 불만 사항을 갖고 있습니다. 이 선수 프로필의 '모두 제거'를 누르면 게임이 진행된 뒤 해소됩니다`,
     onLoan: "임대 중",
     onLoanTitle: "다른 구단으로 임대를 떠나 있습니다",
     loanee: "임대생",

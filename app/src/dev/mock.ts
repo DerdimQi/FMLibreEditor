@@ -243,6 +243,12 @@ const PERSONALITY = [
   "adaptability", "ambition", "loyalty", "pressure", "professionalism", "sportsmanship", "temperament", "controversy",
 ];
 
+/** The teammate a made-up reason to be unhappy is about: the first other player of his club, so groups form. */
+function teammateOf(player: PlayerSummary): { uid: number; name: string } | null {
+  const mate = players.find((p) => p.clubUid !== null && p.clubUid === player.clubUid && p.uid !== player.uid);
+  return mate ? { uid: mate.uid, name: mate.name } : null;
+}
+
 /** Made-up but self-consistent profile for a fixture player. */
 function details(player: PlayerSummary): PlayerDetails {
   const next = random(player.uid);
@@ -292,13 +298,22 @@ function details(player: PlayerSummary): PlayerDetails {
             ...(player.uid % 6 === 0 ? [{ index: 6, kind: 9, amount: 2_147_579, condition: 7 }] : []),
             ...(player.uid % 10 === 0 ? [{ index: 7, kind: 13, amount: 118_462, condition: 30 }] : []),
           ]),
-          // A few players have reasons to be unhappy: one over, and one or two that last.
+          // A few players have reasons to be unhappy: one over, and one or two that last, the first of them held about
+          // a teammate.
           concerns:
             next() < 0.3
               ? [
-                  { started: { year: 2026, month: 7, day: 2 }, ended: { year: 2026, month: 7, day: 9 }, motive: 1202, kind: 1 },
-                  { started: { year: 2026, month: 7, day: 12 }, ended: null, motive: 926, kind: 1 },
-                  ...(next() < 0.5 ? [{ started: { year: 2026, month: 7, day: 15 }, ended: null, motive: 596, kind: 2 }] : []),
+                  {
+                    started: { year: 2026, month: 7, day: 2 },
+                    ended: { year: 2026, month: 7, day: 9 },
+                    motive: 1202,
+                    kind: 1,
+                    about: null,
+                  },
+                  { started: { year: 2026, month: 7, day: 12 }, ended: null, motive: 926, kind: 1, about: teammateOf(player) },
+                  ...(next() < 0.5
+                    ? [{ started: { year: 2026, month: 7, day: 15 }, ended: null, motive: 596, kind: 2, about: null }]
+                    : []),
                 ]
               : [],
           // A player moved to another club signed today, without a squad number, off the transfer list.
@@ -2091,6 +2106,15 @@ function clubSquads(clubUid: number): ClubTeam[] {
   if (!clubs.some((c) => c.uid === clubUid)) {
     throw notFound("club", clubUid);
   }
+  // Whom the club's players hold a lasting reason to be unhappy about, each of them once.
+  const concerned = new Map<number, number>();
+  for (const uid of new Set(fixtureTeams(clubUid).flatMap((team) => team.uids))) {
+    const concerns = details(players.find((p) => p.uid === uid)!).contract?.concerns ?? [];
+    const about = new Set(concerns.filter((c) => c.ended === null && c.about !== null).map((c) => c.about!.uid));
+    for (const mate of about) {
+      concerned.set(mate, (concerned.get(mate) ?? 0) + 1);
+    }
+  }
   return fixtureTeams(clubUid).map((team, index) => ({
     index,
     kind: team.kind,
@@ -2111,6 +2135,7 @@ function clubSquads(clubUid: number): ClubTeam[] {
         // The B team and the under-19s play a tactic of their own that the human manager picks too.
         tactics: tacticsOf(uid),
         trains: trainsOf(uid),
+        concernedTeammates: concerned.get(uid) ?? 0,
         injuries: d.injuries.length,
         bans: d.bans.length,
         attributesFrozen: frozenAttributes.has(uid),

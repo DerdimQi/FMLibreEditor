@@ -275,6 +275,20 @@ kind = 0x04               # u8: 1 a club, 2 a nation
 value = 0x05              # i8: the cohesion, 1..100
 club_index = 0x08         # i32 in the club object: the index its entries name it by
 
+# Who a reason to be unhappy is about: what an entry of the record a contract's `unhappiness` points at says besides
+# its dates, motive and kind. Read with `fmlibre-probe concerns --all` on the Steam save (build 26385295, 30 August
+# 2026, 915 entries). Every motive has one category. The entries of categories 19 and 20 are those teammates hold
+# about one player (motive 808 is in 19, 926 in 20), and name him by the game's id of the person: a player in all 578
+# of them, a teammate in 564. They were 342 of the 422 entries not over, in 41 groups of two or more, the largest 18
+# about one player at Angel City, and in every group the player had an entry of his own of another category. With
+# his count set to none on a copy of the save, the game ended his teammates' entries itself: 16 of 18 and 3 of 11
+# after a day, all after two. In the other categories the same place holds something else, as the i32 after it does
+# in some entries of every category: not a person's id, nor a club's index or UID.
+[concern]
+about = 0x08              # in an entry: i32, the game's id of the person it is about; -1 for none
+category = 0x19           # in an entry: u8, the category of its motive
+player_person = 0x390     # in a player: u32, the game's id of the person
+
 # The retirements the game has planned, as on Windows: the manager's two lists and its 24-byte entries are laid out
 # alike. The static pointer to the manager is a variable of its own, which the build profiles place.
 [retirement]

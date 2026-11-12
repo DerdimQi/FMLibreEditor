@@ -78,13 +78,15 @@ const SQUAD_STATUSES: Partial<Record<number, string>> = {
   22: "Surplus to requirements",
 };
 
-/** The kinds of contract, by the codes contracts hold them as; 10 and 11 are the MLS's. */
+/** The kinds of contract, by the codes contracts hold them as; 8, 10 and 11 are the MLS's, and the game
+ * shows 8 and 11 under one name. */
 const CONTRACT_TYPES: Partial<Record<number, string>> = {
   0: "Part-time contract",
   1: "Full-time contract",
   2: "Amateur contract",
   3: "Youth contract",
   4: "Non-contract",
+  8: "Senior contract",
   10: "Senior minimum salary contract",
   11: "Senior contract",
 };
@@ -640,7 +642,12 @@ export const en = {
     removeUnhappiness: "Remove all",
     removingUnhappiness: "Removing…",
     removeUnhappinessTitle: "Take every reason to be unhappy off his list, as FMRTE's Remove all does; Changes can undo it",
+    /** The second line of Remove all's hover text: what the game then does about his teammates. */
+    removeUnhappinessFollows:
+      "The reasons his teammates hold about him end by themselves once the game moves on: press Continue in the game",
     concernSince: (date: string) => `since ${date}`,
+    /** After a reason held about a teammate: who he is. */
+    concernAbout: (name: string) => `about ${name}`,
     concernKind: (kind: number) => (kind === 1 ? "Concerned" : kind === 2 ? "Internal" : `Type ${kind}`),
     concernMotive: (motive: number) => CONCERN_MOTIVES_EN[motive] ?? `Reason ${motive}`,
     /** A contract's clauses and bonuses: the heading, and what each kind the game has is called. */
@@ -2262,6 +2269,12 @@ export const en = {
     banned: "Banned",
     /** `count` is how many bans he has. */
     bannedTitle: (count: number) => (count === 1 ? "1 ban" : `${format(count)} bans`),
+    /** A player his teammates hold reasons to be unhappy about; `count` is how many of them do. */
+    unrest: "Unrest",
+    unrestTitle: (count: number) =>
+      count === 1
+        ? "1 teammate has a reason to be unhappy about him. Remove all, in his profile, settles it once the game moves on"
+        : `${format(count)} teammates have a reason to be unhappy about him. Remove all, in his profile, settles them once the game moves on`,
     onLoan: "On loan",
     onLoanTitle: "Out on loan to another club",
     loanee: "Loanee",

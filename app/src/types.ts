@@ -476,6 +476,11 @@ export interface Concern {
   motive: number;
   /** 1 concerned, 2 internal. */
   kind: number;
+  /**
+   * The teammate it is about, for a reason held about one: null for any other reason, and for a teammate the lists do
+   * not know.
+   */
+  about: { uid: number; name: string } | null;
 }
 
 /** One of a contract's clauses or bonuses: a release clause, an appearance fee, a yearly wage rise... */
@@ -814,6 +819,11 @@ export interface SquadPlayer extends PlayerSummary {
   tactics: number | null;
   /** Whether the game keeps a history of training for him: not for one who does not train, as when injured. */
   trains: boolean;
+  /**
+   * How many of the club's other players hold a reason to be unhappy about him that is not over: once he has none of
+   * his own, the game ends theirs.
+   */
+  concernedTeammates: number;
   /** How many current injuries he has. */
   injuries: number;
   /** How many current bans he has. */

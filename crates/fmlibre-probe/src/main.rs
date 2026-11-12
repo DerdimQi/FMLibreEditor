@@ -984,6 +984,10 @@ enum Command {
     Concerns {
         /// A player's UID.
         uid: Option<u32>,
+        /// List every reason of every player, with the teammate it is about, then the groups teammates form about
+        /// one player.
+        #[arg(long, conflicts_with = "uid")]
+        all: bool,
     },
     /// Show the memory region that holds ADDR and the start of its allocation.
     Region {
@@ -1486,7 +1490,7 @@ fn run(cli: Cli) -> Result<()> {
             let session = connect(process, ArraySource::ProfileFirst)?;
             clause_change(&session, uid, ClauseAction::Add { amount }, restore)
         }
-        Command::Concerns { uid } => concerns(&connect(process, ArraySource::ProfileFirst)?, uid),
+        Command::Concerns { uid, all } => concerns(&connect(process, ArraySource::ProfileFirst)?, uid, all),
         Command::Region { addr } => {
             let modules = list_modules(&process).context("listing modules")?;
             let addr = resolve(&addr, &modules)?;
@@ -2950,8 +2954,73 @@ fn concern_record(session: &Session, player: &fmlibre_core::PlayerSummary) -> Op
     Some((count, record + 8, list))
 }
 
-fn concerns(session: &Session, uid: Option<u32>) -> Result<()> {
+/// Every reason to be unhappy of every player: a line each, with the teammate it is about where the lists know him,
+/// then how many there are and the groups teammates form about one player.
+fn all_concerns(session: &Session, players: Vec<fmlibre_core::PlayerSummary>) -> Result<()> {
+    let day = |date: Option<fmlibre_core::FmDate>| {
+        date.map_or_else(|| "-".to_owned(), |d| format!("{}-{:02}-{:02}", d.year, d.month, d.day))
+    };
+    let players = PlayerIndex::new(players);
+    let people = session.people(&players);
+    let (mut entries, mut lasting, mut about_teammates) = (0, 0, 0);
+    // Who holds a lasting reason about whom, by UID.
+    let mut groups: BTreeMap<u32, Vec<u32>> = BTreeMap::new();
+    println!("UID\tclub\tplayer\tfrom\tto\tmotive\tkind\tcategory\tabout");
+    for player in players.iter() {
+        let mut concerns = session.concerns(player);
+        session.name_concerns(&mut concerns, &people, &players);
+        for concern in &concerns {
+            let category = concern.category.filter(|category| fmlibre_core::ABOUT_A_TEAMMATE.contains(category));
+            entries += 1;
+            if concern.ended.is_none() {
+                lasting += 1;
+                if category.is_some() {
+                    about_teammates += 1;
+                    if let Some(about) = &concern.about {
+                        groups.entry(about.uid).or_default().push(player.uid);
+                    }
+                }
+            }
+            println!(
+                "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+                player.uid,
+                player.club.as_deref().unwrap_or("-"),
+                player.name,
+                day(concern.started),
+                day(concern.ended),
+                concern.motive,
+                concern.kind,
+                concern.category.map_or_else(|| "-".to_owned(), |category| category.to_string()),
+                concern.about.as_ref().map_or("-", |about| about.name.as_str()),
+            );
+        }
+    }
+    println!("{entries} entries, {lasting} not over, {about_teammates} of them about a teammate");
+    let mut groups: Vec<(u32, usize)> = groups
+        .into_iter()
+        .map(|(about, mut holders)| {
+            holders.sort_unstable();
+            holders.dedup();
+            (about, holders.len())
+        })
+        .filter(|&(_, holders)| holders >= 2)
+        .collect();
+    groups.sort_by_key(|&(about, holders)| (std::cmp::Reverse(holders), about));
+    println!("{} groups of two or more players about one player", groups.len());
+    for (about, holders) in groups.iter().take(10) {
+        let Some(player) = players.get(*about) else {
+            continue;
+        };
+        println!("  {holders:>3} about {} ({})", player.name, player.club.as_deref().unwrap_or("-"));
+    }
+    Ok(())
+}
+
+fn concerns(session: &Session, uid: Option<u32>, all: bool) -> Result<()> {
     let players = session.players()?;
+    if all {
+        return all_concerns(session, players);
+    }
     let entry = |e: &[u8]| {
         let date = |at: usize| {
             fmlibre_core::FmDate::from_raw(
