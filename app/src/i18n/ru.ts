@@ -743,7 +743,10 @@ export const ru: Strings = {
     removeUnhappiness: "Убрать всё",
     removingUnhappiness: "Убираем…",
     removeUnhappinessTitle: "Убрать все причины недовольства из его списка, как «Remove all» в FMRTE; можно отменить в «Изменениях»",
+    removeUnhappinessFollows:
+      "Причины недовольства им у его партнёров по команде исчезнут сами после продвижения игры: нажмите «Продолжить» в игре",
     concernSince: (date) => `с ${date}`,
+    concernAbout: (name) => `партнёр: ${name}`,
     concernKind: (kind) => (kind === 1 ? "Обеспокоен" : kind === 2 ? "Внутреннее" : `Тип ${kind}`),
     concernMotive: (motive) => CONCERN_MOTIVES_RU[motive] ?? `Причина ${motive}`,
     clauses: "Бонусы и пункты",
@@ -1935,6 +1938,9 @@ export const ru: Strings = {
     injuredTitle: (count) => counted(count, "травма", "травмы", "травм"),
     banned: "Дискв.",
     bannedTitle: (count) => counted(count, "дисквалификация", "дисквалификации", "дисквалификаций"),
+    unrest: "Напряжённость",
+    unrestTitle: (count) =>
+      `Недовольны им: ${counted(count, "партнёр", "партнёра", "партнёров")} по команде. «Убрать всё» в его профиле снимет это после продвижения игры`,
     onLoan: "В аренде",
     onLoanTitle: "Отдан в аренду в другой клуб",
     loanee: "Арендован",
