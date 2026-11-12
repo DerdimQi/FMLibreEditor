@@ -50,12 +50,29 @@ pub struct Layout {
     /// A player's cohesion with each club (see `cohesion.rs`); only in the layouts it has been checked in.
     #[serde(default)]
     pub cohesion: Option<CohesionLayout>,
+    /// Who a reason to be unhappy is about (see `concerns.rs`); only in the layouts it has been checked in.
+    #[serde(default)]
+    pub concern: Option<ConcernLayout>,
     /// A competition; only in the layouts it has been checked in.
     #[serde(default)]
     pub competition: Option<CompetitionLayout>,
     /// The prize money a competition's stages pay (see `prize_money.rs`); only in the layouts it has been checked in.
     #[serde(default)]
     pub prize_money: Option<PrizeMoneyLayout>,
+}
+
+/// What an entry of a player's reasons to be unhappy says besides its dates, motive and kind (see `concerns.rs`): the
+/// category its motive belongs to and, in the reasons held about a teammate, who he is, by the id the game gives the
+/// person. The id is -1 in an entry that holds none; in the other categories the same place holds something else.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConcernLayout {
+    /// In an entry: the `i32` id of the person it is about (`player_person`).
+    pub about: u64,
+    /// In an entry: the `u8` category of its motive.
+    pub category: u64,
+    /// In a player: the `u32` id the game gives the person.
+    pub player_person: u64,
 }
 
 /// The game's one object of its class (`game_plugin::GAME_UI` in FM27), made when the game starts and kept until it

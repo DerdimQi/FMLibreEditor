@@ -792,7 +792,11 @@ export const fr: Strings = {
     removingUnhappiness: "Retrait…",
     removeUnhappinessTitle:
       "Retirer de sa liste tous les motifs de mécontentement, comme le fait FMRTE\u00a0; annulable dans Modifications",
+    removeUnhappinessFollows:
+      "Les motifs de mécontentement de ses coéquipiers à son sujet prennent fin d'eux-mêmes une fois que le jeu " +
+      "avance\u00a0: appuyez sur Continuer dans le jeu",
     concernSince: (date) => `depuis le ${date}`,
+    concernAbout: (name) => `à propos de ${name}`,
     concernKind: (kind) => (kind === 1 ? "Préoccupé" : kind === 2 ? "Interne" : `Type ${kind}`),
     concernMotive: (motive) => CONCERN_MOTIVES_FR[motive] ?? `Motif ${motive}`,
     clauses: "Primes et clauses",
@@ -2118,6 +2122,13 @@ export const fr: Strings = {
     injuredTitle: (count) => counted(count, "blessure", "blessures"),
     banned: "Suspendu",
     bannedTitle: (count) => counted(count, "suspension", "suspensions"),
+    unrest: "Tensions",
+    unrestTitle: (count) =>
+      plural(count)
+        ? `${format(count)} coéquipiers ont un motif de mécontentement à son sujet. «\u00a0Tout retirer\u00a0», dans son ` +
+          "profil, les règle une fois que le jeu avance"
+        : `${format(count)} coéquipier a un motif de mécontentement à son sujet. «\u00a0Tout retirer\u00a0», dans son ` +
+          "profil, le règle une fois que le jeu avance",
     onLoan: "Parti en prêt",
     onLoanTitle: "Prêté à un autre club",
     loanee: "Arrivé en prêt",
