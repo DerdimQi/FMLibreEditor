@@ -5769,9 +5769,11 @@ kbd {
   color: rgb(246 247 249 / 0.85);
 }
 
-/* A narrow window keeps the glass and the keys, and drops the word; its tabs stand closer, so that six of them and
-   the rest of the masthead still fit. */
-@media (max-width: 1180px) {
+/* A window narrower than the one the app opens in (1280 wide) keeps the glass and the keys, and drops the word; its
+   tabs stand closer, so that six of them and the rest of the masthead still fit. The longest languages need it all
+   with a count on the Changes tab: French, Turkish and German, and Russian most, which Archivo has no letters for, so
+   that it is set in the system's font, wider on the Mac. */
+@media (max-width: 1279px) {
   .palette-open-label {
     display: none;
   }
@@ -5789,20 +5791,40 @@ kbd {
   }
 }
 
-/* Near the narrowest window the app has, the tabs are set a little smaller too: the longest languages need the room. */
-@media (max-width: 1040px) {
+/* Near the narrowest window the app has (960 wide), everything stands closer still, and the tabs and the date are set
+   a little smaller: Russian with a count of three figures needs the room. */
+@media (max-width: 1100px) {
   .masthead {
-    gap: 10px;
-    padding: 0 10px 0 12px;
+    gap: 8px;
+    padding: 0 8px 0 10px;
   }
 
   .tab {
-    padding: 0 7px;
+    gap: 5px;
+    padding: 0 5px;
     font-size: 13.5px;
   }
 
+  .tab small {
+    padding: 0 4px;
+  }
+
   .masthead-side {
+    gap: 4px;
+  }
+
+  .masthead-side > button {
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+
+  .masthead .palette-open {
     gap: 6px;
+    padding: 4px 5px 4px 8px;
+  }
+
+  .game-date {
+    font-size: 13.5px;
   }
 }
 
