@@ -32,7 +32,7 @@ function startFormat(): ExportFormat {
   } catch {
     // No storage: the language decides.
   }
-  return locale === "en" || locale === "ko" || locale === "zh-CN" ? "csv" : "csvSemicolon";
+  return locale === "en" || locale === "ja" || locale === "ko" || locale === "zh-CN" ? "csv" : "csvSemicolon";
 }
 
 /** The command that writes each kind of list. */
