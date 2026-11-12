@@ -2654,6 +2654,37 @@ export const zhCN: Strings = {
     keys: { ctrl: "Ctrl", shift: "Shift", enter: "Enter", escape: "Esc" },
   },
 
+  /** "My club", the page the app opens on (see en.ts). */
+  home: {
+    nav: "我的俱乐部",
+    loading: "正在查找你的俱乐部…",
+    failed: (reason: string) => `无法查找你的俱乐部：${reason}`,
+    manager: (name: string) => `主教练：${name}`,
+    following: "你关注的俱乐部",
+    clubsLabel: "你的俱乐部",
+    openProfile: "俱乐部档案",
+    openProfileTitle: "在“俱乐部”标签页中打开此俱乐部：设施、财务、球场等",
+    noClubTitle: "你在此存档中没有执教俱乐部",
+    noClubText: "可以改为在这里选择一家要关注的俱乐部：查看其阵容、需要留意的球员，以及对整支球队的操作。",
+    chooseAnother: "选择其他俱乐部",
+    searchLabel: "要关注的俱乐部",
+    squad: "阵容",
+    cards: {
+      label: "需要留意的球员",
+      lowMorale: "士气低落",
+      tired: "疲劳",
+      contracts: "合同即将到期",
+      injuredHint: "有伤病的球员",
+      bannedHint: "被禁赛的球员",
+      lowMoraleHint: (below: string) => `士气低于 ${below} 的球员`,
+      tiredHint: (below: string) => `体能低于 ${below} 的球员`,
+      unrestHint: "部分队友对其不满的球员",
+      contractsHint: (months: number) => `合同将在 ${months} 个月内到期的球员`,
+      none: "无",
+      more: (count: number) => `另有 ${format(count)} 人`,
+    },
+  },
+
   errors,
 };
 

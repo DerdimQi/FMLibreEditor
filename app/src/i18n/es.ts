@@ -2388,5 +2388,37 @@ export const es: Strings = {
     keys: { ctrl: "Ctrl", shift: "Mayús", enter: "Intro", escape: "Esc" },
   },
 
+  /** "My club", the page the app opens on (see en.ts). */
+  home: {
+    nav: "Mi club",
+    loading: "Buscando tu club…",
+    failed: (reason: string) => `No se ha podido buscar tu club: ${reason}`,
+    manager: (name: string) => `Mánager: ${name}`,
+    following: "Un club que sigues",
+    clubsLabel: "Tus clubes",
+    openProfile: "Perfil del club",
+    openProfileTitle: "Abrir este club en la pestaña Clubes: instalaciones, finanzas, estadio y más",
+    noClubTitle: "No diriges ningún club en esta partida",
+    noClubText:
+      "Elige un club para seguirlo aquí: su plantilla, quién necesita atención y las acciones sobre todo el equipo.",
+    chooseAnother: "Elegir otro club",
+    searchLabel: "Club que seguir",
+    squad: "Plantilla",
+    cards: {
+      label: "Quién necesita atención",
+      lowMorale: "Moral baja",
+      tired: "Cansados",
+      contracts: "Contratos que terminan",
+      injuredHint: "Jugadores con una lesión",
+      bannedHint: "Jugadores con una sanción",
+      lowMoraleHint: (below: string) => `Jugadores con la moral por debajo de ${below}`,
+      tiredHint: (below: string) => `Jugadores con la energía por debajo de ${below}`,
+      unrestHint: "Jugadores con los que algunos compañeros están descontentos",
+      contractsHint: (months: number) => `Jugadores cuyo contrato termina en menos de ${months} meses`,
+      none: "Ninguno",
+      more: (count: number) => `y ${format(count)} más`,
+    },
+  },
+
   errors,
 };

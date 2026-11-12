@@ -2465,5 +2465,38 @@ export const de: Strings = {
     keys: { ctrl: "Strg", shift: "Umschalt", enter: "Enter", escape: "Esc" },
   },
 
+  /** "My club", the page the app opens on (see en.ts). */
+  home: {
+    nav: "Mein Verein",
+    loading: "Ihr Verein wird gesucht…",
+    failed: (reason: string) => `Ihr Verein konnte nicht gesucht werden: ${reason}`,
+    manager: (name: string) => `Trainer: ${name}`,
+    following: "Ein Verein, dem Sie folgen",
+    clubsLabel: "Ihre Vereine",
+    openProfile: "Vereinsprofil",
+    openProfileTitle: "Diesen Verein im Tab „Vereine“ öffnen: Anlagen, Finanzen, Stadion und mehr",
+    noClubTitle: "Sie trainieren in diesem Spielstand keinen Verein",
+    noClubText:
+      "Wählen Sie stattdessen einen Verein, dem Sie hier folgen: sein Kader, wer Aufmerksamkeit braucht, und die " +
+      "Aktionen für eine ganze Mannschaft.",
+    chooseAnother: "Anderen Verein wählen",
+    searchLabel: "Verein, dem Sie folgen",
+    squad: "Kader",
+    cards: {
+      label: "Wer Aufmerksamkeit braucht",
+      lowMorale: "Niedrige Moral",
+      tired: "Müde",
+      contracts: "Auslaufende Verträge",
+      injuredHint: "Spieler mit einer Verletzung",
+      bannedHint: "Spieler mit einer Sperre",
+      lowMoraleHint: (below: string) => `Spieler mit einer Moral unter ${below}`,
+      tiredHint: (below: string) => `Spieler mit einer Energie unter ${below}`,
+      unrestHint: "Spieler, mit denen einige Mitspieler unzufrieden sind",
+      contractsHint: (months: number) => `Spieler, deren Vertrag in den nächsten ${months} Monaten endet`,
+      none: "Keine",
+      more: (count: number) => `und ${format(count)} weitere`,
+    },
+  },
+
   errors,
 };

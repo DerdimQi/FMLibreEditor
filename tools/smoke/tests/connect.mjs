@@ -1,6 +1,6 @@
 // Connecting and reading: the build, the checks, the in-game date, the lists and the profiles. Writes nothing.
 import { SHOWN, VIS, sleep } from "../lib/app.mjs";
-import { topClubs } from "../lib/witness.mjs";
+import { humanClubs, topClubs } from "../lib/witness.mjs";
 
 export const name = "connect";
 export const writes = false;
@@ -13,6 +13,17 @@ export async function run({ app, report, connection: c }) {
   const failed = c.health.results.filter((result) => !result.passed).map((result) => result.check);
   report.check("every check passes", failed.length === 0, failed.length ? `failed: ${failed.join(", ")}` : "");
   report.check("has the in-game date", c.gameDate != null, JSON.stringify(c.gameDate));
+
+  // Where the app opens: on My club when the save has a club of the user's, on the players when it has none. Only a
+  // copy of the app that no test has moved yet tells.
+  if (await app.js(`!document.querySelector(".profile")`)) {
+    const own = await humanClubs(app);
+    const expected = own.length > 0 ? "My club" : "Players";
+    const tab = `document.querySelector("nav.tabs .tab.active")?.firstChild?.textContent`;
+    await app.waitFor(`${tab} === ${JSON.stringify(expected)}`, `the ${expected} tab`, 15000).catch(() => {});
+    const opened = await app.js(tab);
+    report.check(`the app opens on ${expected}`, opened === expected, `${opened}; ${own.length} club(s) of the user's`);
+  }
 
   const page = await app.must("search_players", { query: "", limit: 200 });
   const aged = page.rows.filter((player) => player.age != null).length;

@@ -2240,5 +2240,37 @@ export const id: Strings = {
     keys: { ctrl: "Ctrl", shift: "Shift", enter: "Enter", escape: "Esc" },
   },
 
+  /** "My club", the page the app opens on (see en.ts). */
+  home: {
+    nav: "Klubku",
+    loading: "Mencari klubmu…",
+    failed: (reason: string) => `Klubmu tidak bisa dicari: ${reason}`,
+    manager: (name: string) => `Manajer: ${name}`,
+    following: "Klub yang kamu ikuti",
+    clubsLabel: "Klub-klubmu",
+    openProfile: "Profil klub",
+    openProfileTitle: "Buka klub ini di tab Klub: fasilitas, keuangan, stadion, dan lainnya",
+    noClubTitle: "Kamu tidak menangani klub di save ini",
+    noClubText:
+      "Pilih klub untuk diikuti di sini: skuadnya, siapa yang perlu diperhatikan, dan aksi untuk seluruh tim.",
+    chooseAnother: "Pilih klub lain",
+    searchLabel: "Klub yang diikuti",
+    squad: "Skuad",
+    cards: {
+      label: "Siapa yang perlu diperhatikan",
+      lowMorale: "Moral rendah",
+      tired: "Lelah",
+      contracts: "Kontrak segera habis",
+      injuredHint: "Pemain yang cedera",
+      bannedHint: "Pemain yang terkena larangan bermain",
+      lowMoraleHint: (below: string) => `Pemain dengan moral di bawah ${below}`,
+      tiredHint: (below: string) => `Pemain dengan energi di bawah ${below}`,
+      unrestHint: "Pemain yang membuat sebagian rekan setimnya tidak senang",
+      contractsHint: (months: number) => `Pemain yang kontraknya habis dalam ${months} bulan`,
+      none: "Tidak ada",
+      more: (count: number) => `dan ${format(count)} lainnya`,
+    },
+  },
+
   errors,
 };

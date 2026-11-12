@@ -1,5 +1,5 @@
 // The command palette and the keyboard shortcuts: Ctrl+K opens the palette, which finds a player, a member of staff and
-// a club and opens each in its own list; Ctrl+1 to 5 show the lists, Ctrl+F goes to the list's search, Ctrl+E starts
+// a club and opens each in its own list; Ctrl+1 to 6 show the tabs, Ctrl+F goes to the list's search, Ctrl+E starts
 // and ends the editing of the open profile, Ctrl+R reads the game again without loading the page again; under a dialog
 // the shortcuts wait. Writes nothing.
 import { SHOWN, VIS, sleep } from "../lib/app.mjs";
@@ -98,14 +98,15 @@ export async function run({ app, report }) {
     (await app.js(ACTIVE_TAB)) === "Clubs" && clubHeading.includes(club.name), `${await app.js(ACTIVE_TAB)}: ${clubHeading}`);
 
   // The shortcuts of the lists, and of the list's search.
-  await app.chord("1");
-  await sleep(300);
-  const tabOne = await app.js(ACTIVE_TAB);
+  // The tabs take the digits in their order: My club is the first.
   await app.chord("2");
   await sleep(300);
+  const tabOne = await app.js(ACTIVE_TAB);
+  await app.chord("3");
+  await sleep(300);
   const tabTwo = await app.js(ACTIVE_TAB);
-  report.check("Ctrl+1 and Ctrl+2 show the players and the staff", tabOne === "Players" && tabTwo === "Staff", `${tabOne}, ${tabTwo}`);
-  await app.chord("1");
+  report.check("Ctrl+2 and Ctrl+3 show the players and the staff", tabOne === "Players" && tabTwo === "Staff", `${tabOne}, ${tabTwo}`);
+  await app.chord("2");
   await sleep(300);
   await app.js(`${PROFILE}.querySelector("button")?.focus()`);
   await app.chord("f");
@@ -128,7 +129,7 @@ export async function run({ app, report }) {
   await app.click(massEdit, "Mass edit");
   await app.waitFor(`!!document.querySelector(".modal")`, "the mass edit dialog");
   await app.chord("k");
-  await app.chord("2");
+  await app.chord("3");
   await sleep(300);
   report.check("under a dialog the palette stays shut and the tabs stay put",
     !(await app.js(`!!${PALETTE}`)) && (await app.js(ACTIVE_TAB)) === "Players");

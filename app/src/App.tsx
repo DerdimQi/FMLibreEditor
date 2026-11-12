@@ -16,6 +16,7 @@ import {
   appText,
   changesText,
   clubListText,
+  homeText,
   paletteText,
   playerListText,
   scoutingText,
@@ -27,6 +28,7 @@ import { PlayerBrowser } from "./PlayerBrowser";
 import { restored, useSnapshot } from "./restore";
 import { SaveChangedNotice, useSaveChanged } from "./SaveChangedNotice";
 import { ScoutingBrowser } from "./ScoutingBrowser";
+import { MyClub } from "./MyClub";
 import { matches, SHORTCUTS, viewShortcut, withShortcut } from "./shortcuts";
 import { StaffBrowser } from "./StaffBrowser";
 import type {
@@ -46,9 +48,10 @@ import { modalOpen, topModal } from "./useModal";
 import { askToLeave, EditorContext, profileOnTop } from "./useProfileEditing";
 import "./App.css";
 
-type View = "players" | "staff" | "clubs" | "scouting" | "changes";
+type View = "home" | "players" | "staff" | "clubs" | "scouting" | "changes";
 
 const VIEWS: { id: View; label: string }[] = [
+  { id: "home", label: homeText.nav },
   { id: "players", label: playerListText.nav },
   { id: "staff", label: staffListText.nav },
   { id: "clubs", label: clubListText.nav },
@@ -85,7 +88,7 @@ function focusListSearch(): void {
 }
 
 /** The view the window was in before the language was switched; the first one when there was no such switch. */
-const readView = (value: unknown): View => VIEWS.find(({ id }) => id === value)?.id ?? "players";
+const readView = (value: unknown): View => VIEWS.find(({ id }) => id === value)?.id ?? "home";
 
 /** The app's mark, as on its icon: FML over FM's four bands. */
 function BrandMark() {
@@ -118,6 +121,10 @@ function App() {
   const [refrozen, setRefrozen] = useState<Refrozen | null>(null);
   const [view, setView] = useState<View>(() => restored("view", readView));
   useSnapshot("view", () => view);
+  // Whether the view on show is one that was asked for: a tab, a shortcut, the palette, or the view the window was in
+  // before the language was switched. Until then the app is where it opened, on My club, and goes to the players
+  // instead when the save has no club for that page (see `MyClub`).
+  const viewChosen = useRef(restored("view", (value) => value !== undefined));
   // The players picked for a comparison: in the player list's profiles and in those opened from a club's squad.
   const comparison = useComparison();
   const { log, error: logError, reload: reloadLog, clear: clearLog } = useChangeLog();
@@ -244,9 +251,17 @@ function App() {
 
   // With edits pending in the open profile, leaving for another view asks first.
   const show = (id: View) => {
+    viewChosen.current = true;
     if (id !== view) {
       askToLeave(() => setView(id));
     }
+  };
+
+  // A club's profile, opened from My club: the Clubs tab shows it.
+  const openClub = (club: ClubSummary) => {
+    viewChosen.current = true;
+    setView("clubs");
+    setRequest({ kind: "club", ask: { row: club } });
   };
 
   // Under a dialog the palette stays shut: the dialog has the keys.
@@ -273,6 +288,7 @@ function App() {
   const openFound = (found: Found) =>
     closePalette(() =>
       askToLeave(() => {
+        viewChosen.current = true;
         setView(VIEW_OF[found.kind]);
         setRequest(profileRequest(found));
       }),
@@ -282,6 +298,7 @@ function App() {
   const showAll = (kind: FoundKind, query: string) =>
     closePalette(() =>
       askToLeave(() => {
+        viewChosen.current = true;
         setView(VIEW_OF[kind]);
         setRequest({ kind, ask: { query } });
       }),
@@ -471,6 +488,18 @@ function App() {
           <EditorContext.Provider value={editor}>
             <ComparisonContext.Provider value={comparison}>
               <div className="views">
+                {view === "home" && (
+                  <MyClub
+                    version={dataVersion}
+                    gameDate={connection.gameDate}
+                    onOpenClub={openClub}
+                    onEmpty={() => {
+                      if (!viewChosen.current) {
+                        setView("players");
+                      }
+                    }}
+                  />
+                )}
                 <PlayerBrowser
                   version={dataVersion}
                   active={view === "players"}
