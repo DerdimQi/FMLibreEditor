@@ -76,7 +76,8 @@ pub enum Check {
     Cohesion,
     /// Players' records of familiarity hold six lists naming their areas, options of 1–20 and values of at most 100,
     /// and the training manager's histories hold entries for the eight areas (see `familiarity.rs`). Guards Max
-    /// tactics.
+    /// tactics. It passes unchecked where the layout or the build's profile does not place them: Max tactics has
+    /// nothing to write there, and the app shows no familiarity.
     Tactics,
 }
 
@@ -652,13 +653,19 @@ pub(crate) fn check(session: &Session) -> Health {
     };
 
     // The records, and every history of training the training manager keeps: one that does not hold would be another
-    // list read as one.
+    // list read as one. Where the layout or the build's profile does not place them there is nothing to check, and
+    // nothing Max tactics could write: that is no failure, or every such build would show the notice of one. Nor is
+    // a save whose manager has no club, where the training manager keeps no history.
     let mut tactics = records.result(Check::Tactics, 0.99, String::new());
     let histories = layout.familiarity.as_ref().and_then(|f| crate::familiarity::histories_hold(session, f));
-    tactics.passed &= histories.is_some_and(|(count, holds)| count > 0 && holds);
+    match histories {
+        None => tactics.passed = true,
+        Some((_, holds)) => tactics.passed &= holds,
+    }
     tactics.note = match (&layout.familiarity, histories) {
-        (None, _) => "the layout does not place it".to_owned(),
-        (Some(_), None) => "no training manager found".to_owned(),
+        (None, _) => "not checked: the layout does not place it".to_owned(),
+        (Some(_), None) => "not checked: the build's profile does not place the training manager".to_owned(),
+        (Some(_), Some((0, true))) => "no history of training kept: no club is managed".to_owned(),
         (Some(_), Some((count, true))) => format!("{count} histories of training hold"),
         (Some(_), Some((count, false))) => format!("of {count} histories of training, some do not hold"),
     };
