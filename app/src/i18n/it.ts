@@ -634,6 +634,7 @@ export const it: Strings = {
     club: "Società",
     injuries: "Infortuni",
     cohesion: "Affiatamento",
+    tactics: "Familiarità tattica",
     bans: "Squalifiche",
     retirement: "Ritiro",
     clause: "Clausola del contratto",
@@ -1297,6 +1298,7 @@ export const it: Strings = {
     staff: "lo staff",
     clubs: "le società",
     cohesion: "l'affiatamento con le società",
+    tactics: "la familiarità tattica",
   },
 
   update: {
@@ -1956,6 +1958,15 @@ export const it: Strings = {
       "Porta a 100, il massimo, l'affiatamento con la società di ogni giocatore di questa squadra. Il gioco mostra l'affiatamento della squadra nella pagina Dinamiche quando va avanti: premi Continua nel gioco",
     cohesionNone:
       "L'editor non riesce a leggere l'affiatamento di questa squadra: questa versione del gioco non è stata verificata, oppure nessuno dei suoi giocatori ha affiatamento con la società",
+    maxTactics: "Tattica al massimo",
+    maxTacticsTitle:
+      "Fa conoscere al meglio a ogni giocatore di questa squadra la tattica che gioca, nelle otto aree della schermata Efficacia tattica, come farebbero settimane di allenamento. Gli attributi restano come sono. Le aree tornano a calare man mano che l'allenamento invecchia, dopo circa sei settimane, e un'altra tattica chiede un altro clic. Il gioco le mostra quando va avanti: premi Continua nel gioco",
+    tacticsNone:
+      "L'editor non riesce a leggere quanto questa squadra conosce la sua tattica: questa versione del gioco non è stata verificata, oppure la squadra non gioca una tattica scelta da te",
+    tacticsUntrained: (count: number) =>
+      count === 1
+        ? "1 giocatore non si allena (per esempio perché infortunato): il suo storico di allenamento resta com'è"
+        : `${format(count)} giocatori non si allenano (per esempio perché infortunati): il loro storico di allenamento resta com'è`,
     refreshAll: "Rigenera tutti",
     refreshAllTitle:
       "Porta al 100% energia e forma partita di ogni giocatore di questa squadra e lo fa riposare del tutto " +
@@ -2030,6 +2041,7 @@ export const it: Strings = {
       jadedness: "Stanch.",
       morale: "Morale",
       cohesion: "Affiat.",
+      tactics: "Tattica",
       actions: "Fascia di capitano",
     },
     sortBy: (by) => `Ordina per ${by}`,
@@ -2044,6 +2056,7 @@ export const it: Strings = {
       jadedness: "stanchezza",
       morale: "morale",
       cohesion: "affiatamento",
+      tactics: "familiarità tattica",
     },
 
     // Le etichette dopo un nome, con il loro significato come testo al passaggio del mouse

@@ -20,6 +20,13 @@ retirement_manager = 0x57442A8
 # first.
 game_ui = 0x5740B60
 
+# The static pointers to the tactics the human managers keep for their teams and to the training manager, 0x9C000 on
+# from 27.0.0's as the other variables: the code that reads them is 27.0.0's, at new places (the lookup of a team's
+# tactics, at game_plugin+0x2047734, reads 0x5744310), and the training manager's has the same 257 readers. Found in
+# the binary and read on a running save.
+tactics_manager = 0x5744310
+training_manager = 0x5741740
+
 # game_plugin as mapped in memory: its LC_UUID identifies the build and the architecture.
 [plugin]
 uuid = "2A2D0ED6-324E-3D0D-A27D-10AEDBD0E270"

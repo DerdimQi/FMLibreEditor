@@ -16,6 +16,7 @@ mod details;
 mod diagnostics;
 mod edit;
 mod export;
+mod familiarity;
 mod filter;
 mod game;
 mod graphics;
@@ -43,8 +44,10 @@ mod squad_report;
 mod stadium_name;
 mod staff;
 mod staff_move;
+mod tactical_areas;
 mod text;
 mod transfer;
+mod tree;
 
 pub use calibrate::{ArrayRef, EntityArrays, calibrate};
 pub use clauses::{
@@ -65,6 +68,7 @@ pub use details::{
 pub use diagnostics::{date_line, diagnostics_report, retirement_line, saves_loaded_line};
 pub use edit::{Change, EditError, Entity, Field, Kind, LOAN_EXPIRES, LOAN_OPTION_FEE, Scale, Target, fields};
 pub use export::{ExportFormat, ExportHeader, Exported};
+pub use familiarity::{Familiarity, TacticsPlan, TacticsSet, TrainingHistory};
 pub use filter::{
     AttributeBound, ClubFilter, PlayerFilter, PlayerOrder, PlayerSort, StaffFilter, StaffOrder, StaffSort,
     sort_players, sort_staff,
@@ -87,7 +91,8 @@ pub use prize_money::{
 };
 pub use profile::{
     ArrayRvas, BuildProfile, ContractLayout, GameLayout, Layout, PlayerLayout, PluginFingerprint, ProfileNotes,
-    SelectionLayout, StaffLayout, TacticLayout, built_in_profiles, layout_for, profile_for, profile_text,
+    SelectionLayout, StaffLayout, TacticLayout, TacticsLayout, built_in_profiles, layout_for, profile_for,
+    profile_text,
 };
 pub use relations::{HOMEGROWN_RULES, Relation, RelationPlan, RelationSet, Tie, TieTarget};
 pub use retirement::{PlannedRetirement, RetirementPlan, RetirementSet};
@@ -109,5 +114,7 @@ pub use staff::{
 pub use staff_move::{
     DIRECTOR_OF_FOOTBALL, Department, MANAGER, NewStaffContract, Post, STAFF_JOBS, StaffChange, StaffPlan, post_of,
 };
+pub use tactical_areas::area_options;
 pub use text::{fold, is_name_like, read_fm_string, read_name_entry};
 pub use transfer::{Amounts, ClubMoney, ClubMove, FeePlan, MAX_FEE, MoveError, MovePlan, MoveTerms, Paid, RoomMaker};
+pub use tree::Tree;

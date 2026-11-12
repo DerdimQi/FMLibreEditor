@@ -586,6 +586,7 @@ export const zhCN: Strings = {
     jadedness: "疲劳度",
     morale: "士气",
     cohesion: "凝聚力",
+    tactics: "战术熟悉度",
     "contract.wage": "周薪",
     "contract.loyalty_bonus": "每周忠诚奖金",
     "contract.happiness": "满意度",
@@ -1366,6 +1367,7 @@ export const zhCN: Strings = {
     staff: "职员",
     clubs: "俱乐部",
     cohesion: "与俱乐部的凝聚力",
+    tactics: "战术熟悉度",
   } satisfies Record<CheckKey, string>,
 
   /** New versions: the notice under the masthead, and the version and Check for updates at the foot of the window. */
@@ -2195,6 +2197,11 @@ export const zhCN: Strings = {
       "将这支球队每位球员与俱乐部的凝聚力设为最高值 100。在游戏中点击“继续”推进后，球队动态页面会显示更新后的凝聚力。",
     cohesionNone: "无法读取这支球队的凝聚力：此游戏版本尚未验证该功能，或球员都没有与俱乐部的凝聚力记录。",
     cohesionWithout: (count: number) => `${format(count)} 名球员尚无与俱乐部的凝聚力记录`,
+    maxTactics: "战术拉满",
+    maxTacticsTitle:
+      "让这支球队每位球员在“战术效率”页面的八个方面都把球队所用的战术掌握到最高，相当于数周的训练。属性不会改变。随着训练变旧，约六周后各方面会再次下降；换用其他战术需要再点一次。在游戏中点击“继续”推进后，页面才会显示更新后的数值。",
+    tacticsNone: "无法读取这支球队对其战术的熟悉程度：此游戏版本尚未验证该功能，或这支球队使用的不是你选择的战术。",
+    tacticsUntrained: (count: number) => `${format(count)} 名球员没有训练（例如受伤），其训练记录保持不变`,
     refreshAll: "恢复全队状态",
     refreshAllTitle: "将全队体能和比赛状态恢复至 100%，并彻底消除疲劳（疲劳度 -500）",
     maxAll: "属性拉满",
@@ -2274,6 +2281,7 @@ export const zhCN: Strings = {
       jadedness: "疲劳度",
       morale: "士气",
       cohesion: "凝聚力",
+      tactics: "战术",
       /** The last column has no heading but this one, for assistive technology: it holds the captaincy menus. */
       actions: "队长设置",
     } satisfies Record<SquadSort | "actions", string>,
@@ -2290,6 +2298,7 @@ export const zhCN: Strings = {
       jadedness: "疲劳度",
       morale: "士气",
       cohesion: "凝聚力",
+      tactics: "战术熟悉度",
     } satisfies Record<SquadSort, string>,
 
     // The tags after a name, with what each means as hover text

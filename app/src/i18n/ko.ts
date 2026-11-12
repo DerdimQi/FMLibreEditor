@@ -620,6 +620,7 @@ export const ko: Strings = {
     club: "구단",
     injuries: "부상",
     cohesion: "결속력",
+    tactics: "전술 숙련도",
     bans: "출장 정지",
     retirement: "은퇴",
     clause: "계약 조항",
@@ -1251,6 +1252,7 @@ export const ko: Strings = {
     staff: "스태프",
     clubs: "구단",
     cohesion: "구단과의 결속력",
+    tactics: "전술 숙련도",
   },
 
   update: {
@@ -1879,6 +1881,15 @@ export const ko: Strings = {
       "이 팀의 결속력을 읽을 수 없습니다. 이 게임 버전에서 아직 확인되지 않았거나, 구단에 대한 결속력 항목이 있는 " +
       "선수가 없습니다",
     cohesionWithout: (count) => `${playerCount(count)}은 아직 구단과의 결속력이 없습니다`,
+    maxTactics: "전술 최대",
+    maxTacticsTitle:
+      "이 팀의 모든 선수가 팀이 쓰는 전술을 '전술 효율성' 화면의 여덟 영역 모두에서 최고 수준으로 익히게 합니다. " +
+      "몇 주 동안 그 전술로 훈련한 것과 같습니다. 능력치는 바뀌지 않습니다. 훈련이 오래되면 약 6주 뒤부터 다시 " +
+      "떨어지며, 다른 전술로 바꾸면 다시 눌러야 합니다. 게임이 진행된 뒤 화면에 반영됩니다. 게임에서 '진행하기'를 누르세요",
+    tacticsNone:
+      "이 팀이 전술을 얼마나 익혔는지 읽을 수 없습니다. 이 게임 버전에서 아직 확인되지 않았거나, 팀이 직접 고른 " +
+      "전술을 쓰지 않습니다",
+    tacticsUntrained: (count) => `${playerCount(count)}은 훈련하지 않아(부상 등) 훈련 기록이 그대로 남습니다`,
     refreshAll: "모두 회복",
     refreshAllTitle: "이 팀 모든 선수의 컨디션과 경기력을 100%로 설정하고 완전히 쉬게 합니다(피로도 -500)",
     maxAll: "능력치 최대",
@@ -1947,6 +1958,7 @@ export const ko: Strings = {
       jadedness: "피로도",
       morale: "사기",
       cohesion: "결속력",
+      tactics: "전술",
       actions: "주장직",
     },
     sortBy: (by) => `${by} 기준으로 정렬`,
@@ -1961,6 +1973,7 @@ export const ko: Strings = {
       jadedness: "피로도",
       morale: "사기",
       cohesion: "결속력",
+      tactics: "전술 숙련도",
     },
 
     // The tags after a name

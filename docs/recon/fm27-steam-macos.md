@@ -515,13 +515,13 @@ The `cohesion` check (`fmlibre-probe health`) asks that nearly all the lists it 
 values of 1 to 100, and that at least half the players have an entry for their club. On this save 1,663 of 1,663
 lists held, and 1,259 had one.
 
-**Tactical familiarity is not found.** What FM27 Editor edits as a player's tactical familiarity, player `+0x190` on
+**Tactical familiarity was not found then.** What FM27 Editor edits as a player's tactical familiarity, player `+0x190` on
 Windows (`+0x188` here), is his versatility: Saliba's 35 and Saka's 90 there are `attribute.versatility`. FM27's
 Tactical Effectiveness screen has four parts, and its familiarity is the first, the team's tactical knowledge. That
 covers eight tactical areas: the shape in and out of possession, passing style, build-up, chance creation, line of
 engagement, pressing intensity and pressing trap. FM27 Editor reads six of them in a team block at an address found
-by hand: `dword`s every `0x10` from `+0xC0` to `+0x110`, the value × 100 in their low 14 bits. Where a team keeps
-that block is not known.
+by hand: `dword`s every `0x10` from `+0xC0` to `+0x110`, the value × 100 in their low 14 bits. No team keeps such a
+block: the game works the areas out for each player (see [Tactical familiarity](#tactical-familiarity)).
 
 ## Who a reason to be unhappy is about
 
@@ -559,3 +559,52 @@ The entries ended on the day the game moved on, and those teammates' morale and 
 ones, those that ended did so a whole group at a time, as when a player's own reason ends. So the app writes
 nothing more than Remove all does: it names the teammate a reason is about, and marks in the squad tab the players
 their teammates hold reasons about.
+
+## Tactical familiarity
+
+The Tactical Effectiveness screen shows a player's eight tactical areas from two places. Read on the Benevento save,
+on 27.0.0 (Steam build 26340721) and 27.0.1 (26385295), August to September 2026 in the game:
+
+- **His record**, which `player +0xF8` points at (`[familiarity]`; the game makes one at game_plugin+0xd47b38 on
+  26340721 when it is missing). Six lists `(begin, end, capacity)` `0x20` apart, each naming its area by the byte at
+  `+0x18`, of 4-byte entries: an option's code in six bits from bit 14 and the value × 100 in bits 0–13. Giacomo
+  Ricci's area 0 read `0x65C0`, option 1 at 96.64. Then, at `+0xC0`, a list of 16-byte entries for his shapes, keyed by
+  the formation's places, with the value × 100 in the `u16` at `+0xE`. For the option a tactic plays, the screen takes
+  the best of his entries less 10 a step between codes, and 10 at least (game_plugin+0x47fe108). On the save 27,081
+  players had a record; 201 of them had six empty lists, with no buffer.
+- **His history of training**, which the training manager keeps for each human manager's players
+  (`TRAINING_MANAGER`, the profile's `training_manager`): a map from a person's id to 12-byte entries, each the day of
+  the year from 0, the tag `0x0C8C` (or the code of his place in the formation, for a shape), the area, the kind, the
+  option and three factors. game_plugin+0x486d408 adds them up for the screen: a weight for the entry's age (12 up to 6
+  days, then 9, 7, 6, 4 and 2, and none after 251), times 1 less 0.1 for each step from the tactic's option, times the
+  factors; an area holds at most 100. The map held the 56 players of the senior team, the B team and the under-19s,
+  with 72 to 170 entries; one injured since February had none.
+- **The options** are the tactic in use's, worked out from its team instructions (`tactical_areas.rs`): 5, 17, 10, 4,
+  20 and 10 for Benevento's Tiki-Taka, 19 in area 0 with a high press.
+
+The circles look like the mean of the two. With the line of engagement moved to a high press, the record at 100 for
+option 19 and the history at 0 for it, the line's circle read half full for everyone; with the history rewritten on
+the new option, it was full again.
+
+**Max tactics**, tried with the probe's `familiarity --set --add` and `training-history --max --grow` on copies of the
+save:
+
+- With the record's entries for the tactic at 100 and the history rewritten as today's training on its options, the
+  eight circles of every senior player were full, in the player's view and the team's. A save made then loaded with
+  both as they were written, and five days with a match passed without an error.
+- A player new to the club had only his old club's options in his record (Ricci: 1, 3, 1, 12, 1, 15) and 7 entries
+  of history. With his history at 100 his circles read about 70%: an entry for each of the tactic's options had to be
+  added to his record, as for 7 players of the 27.
+- **How many entries.** Dated today, 9 entries for each area fill it, but fall below 100 after a week, when each adds
+  9; 10 for each area read 70 after 19 days. 18 for each area, as players long at the club have, keep it full for six
+  weeks.
+
+**Growing the lists.** Both kinds come from the game's first allocator (`game_plugin+0x575d630` on 27.0.1, see
+[The game's allocator](#the-games-allocator)): history buffers sit their class apart (1024 bytes for 80 entries, 3584
+for 276) with nothing before them, and the record lists of players new to the club are full, one entry in an 8-byte
+block. Grown into the editor's memory as relations are: Ricci's history (14 entries to 72, in a 1024-byte block with
+room for 3 more) and 33 record lists of 7 players. Within a week the game filled the history's room and moved it into
+a buffer of its own (80 entries, room for 150), letting the editor's block go; a save, a load and another week
+passed without an error, with the entries added to the records still there.
+
+The Windows layout does not place the record or the training manager yet, so Max tactics stays off there.

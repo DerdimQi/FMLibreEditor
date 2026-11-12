@@ -5,6 +5,7 @@ use fmlibre_mem::{Module, Process};
 use serde::{Deserialize, Deserializer};
 
 use crate::game::Storefront;
+use crate::tree::Tree;
 
 /// Field offsets inside FM's objects for one edition. They are shared by every
 /// storefront build of the same game version, unlike the RVAs in [`BuildProfile`].
@@ -37,6 +38,13 @@ pub struct Layout {
     /// The tactic a selection plays; only in the layouts it has been checked in.
     #[serde(default)]
     pub tactic: Option<TacticLayout>,
+    /// The tactics each human manager keeps for each of his teams; only in the layouts they have been checked in.
+    #[serde(default)]
+    pub tactics: Option<TacticsLayout>,
+    /// How well players know a tactic, and the history of training the game keeps for it; only in the layouts it has
+    /// been checked in.
+    #[serde(default)]
+    pub familiarity: Option<FamiliarityLayout>,
     /// Where a player on loan keeps his loan contract; only in the layouts it has been checked in.
     #[serde(default)]
     pub loan: Option<LoanLayout>,
@@ -194,6 +202,59 @@ pub struct TacticLayout {
     pub role: u64,
     /// `u32` code of the style the tactic was made from, as text backwards (`CONT`, `TIKI`, `DIRE`).
     pub style: u64,
+}
+
+/// The tactics each human manager keeps for each of his teams, as the game reads them to tell how well the players
+/// know the tactic in use (see `crate::tactical_areas`). The build's static pointer ([`BuildProfile::tactics_manager`])
+/// leads to an object with a list `(begin, end)` at `managers`, one object per human manager; each has a map
+/// at `teams`, from a team's id to the team's tactics: nodes laid out as the C++ library's (`tree`, see
+/// [`crate::Tree`]), the id at `key` and the team's tactics at `value`. There, `tactics` holds the list `(begin, end)` of pointers to the
+/// tactics and `current` the index of the one in use. A tactic keeps its team instructions at `instructions`.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TacticsLayout {
+    pub managers: u64,
+    pub teams: u64,
+    /// Whose layout the map's nodes have; the Mac's where the layout does not say.
+    #[serde(default)]
+    pub tree: Tree,
+    /// In a node: the `u32` id of the team.
+    pub key: u64,
+    pub value: u64,
+    /// In a team: its `u32` id.
+    pub team_id: u64,
+    pub tactics: u64,
+    /// The `i8` index of the tactic in use.
+    pub current: u64,
+    /// In a tactic: the two `u64` words of its team instructions, from which the game works out the option it plays
+    /// in each tactical area (see `crate::area_options`).
+    pub instructions: u64,
+}
+
+/// How well a player knows a tactic, area by area (see `crate::familiarity`): his `record` pointer leads to six lists
+/// `(begin, end, capacity)` of 4-byte entries, `area_step` apart, each naming its area by the byte at `area_index`, and
+/// then a list of 16-byte entries for his shapes at `shapes`. The build's static pointer to the training manager
+/// ([`BuildProfile::training_manager`]) leads to an object with a list `(begin, end)` at `managers`, one object per
+/// human manager; each names his club at `club` and has a map at `players`, from a person's id (the
+/// player's `player_person`) to his history of training: nodes laid out as the C++ library's (`tree`, see
+/// [`crate::Tree`]), the id at `person` and the list `(begin, end, capacity)` of 12-byte entries at `history`.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FamiliarityLayout {
+    pub record: u64,
+    pub area_step: u64,
+    pub area_index: u64,
+    pub shapes: u64,
+    pub managers: u64,
+    pub club: u64,
+    pub players: u64,
+    /// Whose layout the map's nodes have; the Mac's where the layout does not say.
+    #[serde(default)]
+    pub tree: Tree,
+    pub person: u64,
+    pub history: u64,
+    /// In a player: the `u32` id the game gives the person, in his identity block.
+    pub player_person: u64,
 }
 
 /// Where a player on loan keeps his loan contract: his `record` pointer (shifted like the person block) leads to a
@@ -851,6 +912,12 @@ pub struct BuildProfile {
     /// RVA in the game plugin of a static pointer to the game's own object ([`GameLayout`]), whose count of the saves
     /// loaded tells a load from a save: 0x3C80 before the players pair on Game Pass 0.9.2409.0 and Steam build 26340721.
     pub game_ui: Option<u64>,
+    /// RVA in the game plugin of the static pointer to the tactics the human managers keep for their teams
+    /// ([`TacticsLayout`]).
+    pub tactics_manager: Option<u64>,
+    /// RVA in the game plugin of the static pointer to the training manager (`TRAINING_MANAGER`), which keeps the
+    /// history of training of the human managers' players.
+    pub training_manager: Option<u64>,
 }
 
 /// Identifies a build of the game plugin from its headers as mapped in memory.
@@ -1000,6 +1067,12 @@ pub fn profile_text(profile: &BuildProfile, notes: &ProfileNotes) -> String {
     }
     if let Some(rva) = profile.game_ui {
         text += &format!("\n{}game_ui = {rva:#X}\n", comments(&notes.game_ui));
+    }
+    if let Some(rva) = profile.tactics_manager {
+        text += &format!("\ntactics_manager = {rva:#X}\n");
+    }
+    if let Some(rva) = profile.training_manager {
+        text += &format!("\ntraining_manager = {rva:#X}\n");
     }
     text += "\n# game_plugin as mapped in memory; these values identify the build.\n[plugin]\n";
     match profile.plugin {
@@ -1199,6 +1272,19 @@ mod tests {
         );
         assert_eq!(profile.current_date, Some(0x535_97C8));
         assert_eq!(profile.retirement_manager, Some(profile.arrays.players - 0xED70));
+        // The managers of tactics and of training, for Max tactics: the first 0xD0 after the retirement manager's on
+        // both storefronts, the second not as far from it on each.
+        assert_eq!((profile.tactics_manager, profile.training_manager), (Some(0x53A_9140), Some(0x53A_5700)));
+        let fingerprint = PluginFingerprint::Pe { size_of_image: 0x17CB_9000, link_timestamp: 0x6AE8_B5A4 };
+        let steam = profile_for(fingerprint).expect("Steam build 26385295 profile");
+        assert_eq!((steam.tactics_manager, steam.training_manager), (Some(0x581_2E20), Some(0x580_F3F0)));
+        assert_eq!(steam.tactics_manager, steam.retirement_manager.map(|rva| rva + 0xD0));
+        let fingerprint = PluginFingerprint::Pe { size_of_image: 0x185F_A000, link_timestamp: 0x6AF3_8E5C };
+        let update = profile_for(fingerprint).expect("Steam build 26577676 profile");
+        assert_eq!((update.tactics_manager, update.training_manager), (steam.tactics_manager, steam.training_manager));
+        // The Windows layout walks MSVC's maps; the Mac's does not say, and walks libc++'s.
+        let familiarity = layout.familiarity.as_ref().expect("the Windows layout places familiarity");
+        assert_eq!((familiarity.tree, layout.tactics.as_ref().map(|t| t.tree)), (Tree::Msvc, Some(Tree::Msvc)));
 
         // The same version on Steam, packaged differently: another fingerprint and other RVAs, the manager's static
         // 0xDAC0 before the players pair.
@@ -1262,6 +1348,8 @@ mod tests {
         let profile = profile_for(PluginFingerprint::MachO { uuid }).expect("27.0.0's arm64 half");
         assert_eq!(profile.arrays.players, 0x56D_2E18);
         assert_eq!(profile.current_date, Some(0x56B_1DB8));
+        assert_eq!(profile.tactics_manager, Some(0x56A_8310));
+        assert_eq!(profile.training_manager, Some(0x56A_5740));
         let uuid = [0x09, 0x81, 0xAB, 0x31, 0xAC, 0x3B, 0x3D, 0x93, 0x94, 0x4F, 0x47, 0xFE, 0x4B, 0x59, 0xCD, 0x9E];
         let profile = profile_for(PluginFingerprint::MachO { uuid }).expect("27.0.0's Intel half");
         assert_eq!(profile.arrays.players, 0x5C8_91C8);
@@ -1277,6 +1365,7 @@ mod tests {
         assert_eq!(profile.current_date, Some(0x574_DDB8));
         assert_eq!(profile.retirement_manager, Some(0x574_42A8));
         assert_eq!(profile.game_ui, Some(0x574_0B60));
+        assert_eq!((profile.tactics_manager, profile.training_manager), (Some(0x574_4310), Some(0x574_1740)));
         let uuid = [0x94, 0xCD, 0xDC, 0x80, 0x84, 0x74, 0x32, 0x7A, 0x85, 0xE0, 0xE4, 0xFF, 0x95, 0xDC, 0x68, 0x93];
         let profile = profile_for(PluginFingerprint::MachO { uuid }).expect("27.0.1's Intel half");
         assert_eq!(

@@ -597,6 +597,20 @@ function cohesionOf(uid: number): number | null {
   return uid % 7 === 0 ? null : 1 + ((uid * 37) % 99);
 }
 
+/**
+ * How well a player knows the team's tactic as Max tactics left it, by UID. The rest have the made-up one `tacticsOf`
+ * gives; one player in nine does not train, as when injured, and Max tactics fills only his record: half his circles.
+ */
+const tacticsSet = new Map<number, number>();
+
+function tacticsOf(uid: number): number {
+  return tacticsSet.get(uid) ?? 30 + ((uid * 53) % 66);
+}
+
+function trainsOf(uid: number): boolean {
+  return uid % 9 !== 4;
+}
+
 /** The current bans of a fixture player: every eleventh one is banned, for one to three matches, until lifted. */
 function bansOf(uid: number): Ban[] {
   if (uid % 11 !== 5 || liftedPlayers.has(uid)) {
@@ -1521,6 +1535,11 @@ function undoChange(id: number): LoggedChange {
     entry.undoneAt = Date.now();
     return { ...entry };
   }
+  if (entry.field === "tactics") {
+    tacticsSet.set(entry.uid, entry.old);
+    entry.undoneAt = Date.now();
+    return { ...entry };
+  }
   if (entry.field === "retirement") {
     keptPlayers.delete(entry.uid);
     entry.undoneAt = Date.now();
@@ -2113,6 +2132,9 @@ function clubSquads(clubUid: number): ClubTeam[] {
         jadedness: d.jadedness,
         morale: d.morale,
         cohesion: cohesionOf(uid),
+        // The B team and the under-19s play a tactic of their own that the human manager picks too.
+        tactics: tacticsOf(uid),
+        trains: trainsOf(uid),
         concernedTeammates: concerned.get(uid) ?? 0,
         injuries: d.injuries.length,
         bans: d.bans.length,
@@ -2250,6 +2272,31 @@ function teamAction(clubUid: number, index: number, action: TeamAction): MassRep
         field: "cohesion",
         old,
         new: 100,
+        undoneAt: null,
+        batch,
+      });
+      report.applied++;
+    }
+    return report;
+  }
+  if (action === "maxTactics") {
+    // Every player who plays here and does not know it at its best; one who does not train gets his record only.
+    for (const player of team.players.filter((p) => p.playsHere)) {
+      const old = tacticsOf(player.uid);
+      const best = trainsOf(player.uid) ? 100 : Math.max(old, 50);
+      if (old === best) {
+        continue;
+      }
+      tacticsSet.set(player.uid, best);
+      changes.push({
+        id: changes.length + 1,
+        at: Date.now(),
+        name: player.name,
+        entity: "player",
+        uid: player.uid,
+        field: "tactics",
+        old,
+        new: best,
         undoneAt: null,
         batch,
       });

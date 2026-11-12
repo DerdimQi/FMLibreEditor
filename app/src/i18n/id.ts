@@ -564,6 +564,7 @@ export const id: Strings = {
     club: "Klub",
     injuries: "Cedera",
     cohesion: "Kekompakan",
+    tactics: "Pemahaman taktik",
     bans: "Larangan bermain",
     retirement: "Pensiun",
     clause: "Klausul kontrak",
@@ -1192,6 +1193,7 @@ export const id: Strings = {
     staff: "staf",
     clubs: "klub",
     cohesion: "kekompakan dengan klub",
+    tactics: "pemahaman taktik",
   },
 
   update: {
@@ -1810,6 +1812,13 @@ export const id: Strings = {
     cohesionNone:
       "Editor tidak dapat membaca kekompakan tim ini: versi game ini belum diperiksa untuk itu, atau tidak ada pemainnya yang memiliki kekompakan dengan klub",
     cohesionWithout: (count: number) => `${format(count)} pemain belum memiliki kekompakan dengan klub`,
+    maxTactics: "Maksimalkan taktik",
+    maxTacticsTitle:
+      "Buat setiap pemain di tim ini memahami taktik yang dimainkan tim sebaik mungkin, di delapan area layar Efektivitas Taktik, seperti hasil latihan berminggu-minggu. Atribut tidak berubah. Area akan turun lagi seiring latihan menua, setelah sekitar enam minggu, dan taktik lain perlu ditekan sekali lagi. Game menampilkannya setelah waktu berjalan: tekan Lanjutkan di game",
+    tacticsNone:
+      "Editor tidak dapat membaca seberapa baik tim ini memahami taktiknya: versi game ini belum diperiksa untuk itu, atau tim tidak memainkan taktik yang Anda pilih",
+    tacticsUntrained: (count: number) =>
+      `${format(count)} pemain tidak berlatih (misalnya karena cedera): riwayat latihannya tetap seperti semula`,
     refreshAll: "Segarkan semua",
     refreshAllTitle:
       "Atur energi dan ketajaman bertanding setiap pemain di tim ini ke 100%, dan istirahatkan sepenuhnya (keletihan -500)",
@@ -1876,6 +1885,7 @@ export const id: Strings = {
       jadedness: "Letih",
       morale: "Moral",
       cohesion: "Kekompakan",
+      tactics: "Taktik",
       actions: "Kapten",
     },
     sortBy: (by: string) => `Urutkan berdasarkan ${by}`,
@@ -1890,6 +1900,7 @@ export const id: Strings = {
       jadedness: "keletihan",
       morale: "moral",
       cohesion: "kekompakan",
+      tactics: "pemahaman taktik",
     },
 
     injured: "Cedera",

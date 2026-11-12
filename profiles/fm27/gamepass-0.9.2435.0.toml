@@ -22,6 +22,12 @@ retirement_manager = 0x53A9070
 # save of 9 January 2028). Another static, at 0x53A4EC8, points at it too.
 game_ui = 0x53B4160
 
+# The static pointers to the tactics the human managers keep for their teams (TACTICS_MANAGER, 0xD0 after the
+# retirement manager's) and to the training manager (TRAINING_MANAGER), which keeps the history of training of their
+# players: each the one pointer in the plugin to the one object of its class.
+tactics_manager = 0x53A9140
+training_manager = 0x53A5700
+
 # game_plugin as mapped in memory; these values identify the build.
 [plugin]
 size_of_image = 0x17969000
