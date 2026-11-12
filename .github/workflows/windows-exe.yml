@@ -38,10 +38,6 @@ jobs:
         working-directory: app
         run: npm ci
 
-      - name: Build interface
-        working-directory: app
-        run: npm run build
-
       # Build the standalone app, not an installer. This avoids the updater signing
       # secrets required by the release workflow and produces target/release/FMLibreEditor.exe.
       - name: Build standalone executable
