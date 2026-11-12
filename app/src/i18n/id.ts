@@ -674,7 +674,10 @@ export const id: Strings = {
     removingUnhappiness: "Menghapus…",
     removeUnhappinessTitle:
       "Hapus setiap alasan tidak senang dari daftarnya, seperti Remove all di FMRTE; Perubahan bisa mengurungkannya",
+    removeUnhappinessFollows:
+      "Alasan tidak senang rekan setimnya terhadapnya berakhir dengan sendirinya setelah waktu berjalan: tekan Lanjutkan di game",
     concernSince: (date: string) => `sejak ${date}`,
+    concernAbout: (name: string) => `tentang ${name}`,
     concernKind: (kind: number) => (kind === 1 ? "Khawatir" : kind === 2 ? "Internal" : `Jenis ${kind}`),
     concernMotive: (motive: number) => CONCERN_MOTIVES_ID[motive] ?? `Alasan ${motive}`,
     clauses: "Bonus dan klausul",
@@ -1892,6 +1895,9 @@ export const id: Strings = {
     injuredTitle: (count: number) => `${format(count)} cedera`,
     banned: "Dilarang",
     bannedTitle: (count: number) => `${format(count)} larangan bermain`,
+    unrest: "Keresahan",
+    unrestTitle: (count: number) =>
+      `${format(count)} rekan setim memiliki alasan tidak senang terhadapnya. Hapus semua di profilnya menyelesaikannya setelah waktu berjalan`,
     onLoan: "Dipinjamkan",
     onLoanTitle: "Sedang dipinjamkan ke klub lain",
     loanee: "Pemain pinjaman",

@@ -6,7 +6,7 @@ use serde::Serialize;
 use crate::date::FmDate;
 use crate::medical::{Ban, Injury};
 use crate::players::PlayerSummary;
-use crate::profile::Layout;
+use crate::profile::{ConcernLayout, Layout};
 use crate::relations::Relation;
 
 /// Position ratings in the order FM stores them.
@@ -200,14 +200,36 @@ pub struct Concern {
     pub motive: u16,
     /// 1 concerned, 2 internal; other codes as they are.
     pub kind: u8,
+    /// The player it is about, for a reason held about a teammate whom the lists know:
+    /// [`crate::Session::name_concerns`] fills it in. None for any other reason, and for an id the lists do not know:
+    /// no number is shown.
+    pub about: Option<ConcernSubject>,
+    /// The id its `about` place holds and the category its motive belongs to, where the layout places them (see
+    /// [`ConcernLayout`]); no id for an entry that holds none. The id is the game's id of a person in the reasons
+    /// held about a teammate ([`crate::ABOUT_A_TEAMMATE`]), and something else in others.
+    #[serde(skip)]
+    pub about_id: Option<u32>,
+    #[serde(skip)]
+    pub category: Option<u8>,
 }
+
+/// The player a reason to be unhappy is about: his UID, for his profile, and his name.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConcernSubject {
+    pub uid: u32,
+    pub name: String,
+}
+
+/// The bytes of an entry of the record of reasons to be unhappy.
+pub(crate) const CONCERN_SIZE: usize = 28;
 
 /// The most entries a record of reasons to be unhappy is believed to hold; the test save's longest held 6.
 pub(crate) const MOST_CONCERNS: u64 = 64;
 
 /// The reasons to be unhappy listed in the record `record` points at; none when there is no record or it does not
 /// look like one.
-fn read_concerns(process: &Process, record: u64) -> Vec<Concern> {
+pub(crate) fn read_concerns(process: &Process, layout: &Layout, record: u64) -> Vec<Concern> {
     if !is_user_pointer(record) {
         return Vec::new();
     }
@@ -219,14 +241,30 @@ fn read_concerns(process: &Process, record: u64) -> Vec<Concern> {
     }
     (0..count)
         .filter_map(|i| process.read_u64(record + 8 + 8 * i).ok())
-        .filter_map(|entry| process.read_bytes(entry, 28).ok())
-        .map(|e| {
-            let date = |at: usize| {
-                FmDate::from_raw(u16::from_le_bytes([e[at], e[at + 1]]), u16::from_le_bytes([e[at + 2], e[at + 3]]))
-            };
-            Concern { started: date(0), ended: date(4), motive: u16::from_le_bytes([e[0x16], e[0x17]]), kind: e[0x18] }
-        })
+        .filter_map(|entry| process.read_bytes(entry, CONCERN_SIZE).ok())
+        .map(|entry| concern(&entry, layout.concern.as_ref()))
         .collect()
+}
+
+/// One entry of the record, of [`CONCERN_SIZE`] bytes: its dates, motive and kind, and where `layout` places them the
+/// id it is about and its category. An id of -1 is none.
+fn concern(e: &[u8], layout: Option<&ConcernLayout>) -> Concern {
+    let date = |at: usize| {
+        FmDate::from_raw(u16::from_le_bytes([e[at], e[at + 1]]), u16::from_le_bytes([e[at + 2], e[at + 3]]))
+    };
+    let id = |at: u64| {
+        let at = at as usize;
+        Some(i32::from_le_bytes(e[at..at + 4].try_into().expect("4 bytes"))).filter(|&id| id >= 0)
+    };
+    Concern {
+        started: date(0),
+        ended: date(4),
+        motive: u16::from_le_bytes([e[0x16], e[0x17]]),
+        kind: e[0x18],
+        about: None,
+        about_id: layout.and_then(|c| id(c.about)).map(|id| id as u32),
+        category: layout.map(|c| e[c.category as usize]),
+    }
 }
 
 /// One of a contract's clauses or bonuses: a release clause, an appearance fee, a yearly wage rise...
@@ -369,6 +407,7 @@ fn read_contract(process: &Process, layout: &Layout, address: u64) -> Option<Con
         clauses: read_clauses(process, layout, address),
         concerns: read_concerns(
             process,
+            layout,
             u64::from_le_bytes(buf[c.unhappiness as usize..c.unhappiness as usize + 8].try_into().expect("8 bytes")),
         ),
     })
@@ -377,6 +416,34 @@ fn read_contract(process: &Process, layout: &Layout, address: u64) -> Option<Con
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Sandro's entry about a teammate at Las Palmas, as read on the macOS Steam save: from 12 August 2026, not over,
+    /// about person 43086, motive 801, internal, of category 19.
+    #[test]
+    fn a_concern_says_who_it_is_about() {
+        let entry: [u8; CONCERN_SIZE] = [
+            0xE0, 0x20, 0xEA, 0x07, 0x01, 0x00, 0x6C, 0x07, 0x4E, 0xA8, 0x00, 0x00, 0x83, 0x03, 0x00, 0x00, 0, 0, 0, 0,
+            0, 0, 0x21, 0x03, 0x02, 0x13, 0x00, 0x04,
+        ];
+        let layout = ConcernLayout { about: 0x08, category: 0x19, player_person: 0x390 };
+        let read = concern(&entry, Some(&layout));
+        assert_eq!((read.motive, read.kind), (801, 2));
+        assert_eq!(read.started.map(|day| (day.year, day.month, day.day)), Some((2026, 8, 12)));
+        assert!(read.ended.is_none());
+        assert_eq!((read.about_id, read.category), (Some(43086), Some(19)));
+        // The name comes from the lists, later.
+        assert_eq!(read.about, None);
+
+        // An entry about nobody holds -1 there.
+        let mut nobody = entry;
+        nobody[8..12].fill(0xFF);
+        let read = concern(&nobody, Some(&layout));
+        assert_eq!((read.about_id, read.category), (None, Some(19)));
+
+        // A layout that does not place them reads the dates, the motive and the kind alone.
+        let read = concern(&entry, None);
+        assert_eq!((read.motive, read.about_id, read.category), (801, None, None));
+    }
 
     #[test]
     fn attribute_scale() {
