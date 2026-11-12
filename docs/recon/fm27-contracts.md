@@ -78,7 +78,8 @@ condition (`0xFFFF` for none) and a `u16` kind.
   The app lists them as "Not shown in the game".
 - **Bonuses for winning a competition** ("Winning the First Division", "Winning the UEFA Champions League") are not
   in this list. They are the contract's list at `+0x80` (32-byte entries: the competition's UID at `+0x14`, the amount
-  at `+0x18`), which the app does not show yet. "Remaining Loyalty Bonus" is not in it either.
+  at `+0x18`), which the app does not show yet. "Remaining Loyalty Bonus" is not in it either (see Loyalty
+  bonus below).
 
 ## Squad statuses (`+0x54`)
 
@@ -136,6 +137,29 @@ Contracts that are not in force yet hold two more codes, seen on the Game Pass b
 running contract: 9 on three contracts with MLS clubs (Houston Dynamo, LA Galaxy, San Jose Earthquakes), for players
 coming from abroad, and 13 on six starting at the end of June 2028, the one looked up with Newcastle Jets and for
 someone the probe knows as a member of staff. Neither has a name yet (see `fm27-transfer-offers.md`).
+
+## Loyalty bonus (`+0x38`, `+0xA8`)
+
+The contract holds the loyalty bonus twice: `+0x38` (`[contract] loyalty_bonus`) is the share a week, which the editor
+shows and changes, and `+0xA8` is the whole bonus agreed, a `u32` in pounds (RootTourist, #111, Windows Steam
+26340721). The whole amount does not change while the contract runs, and the screen's "Remaining Loyalty Bonus" goes
+down with the days: Deniz Undav's 9,019,833, on a contract from 18.9.2027 to 30.6.2032, showed as £7.25M on 27.8.2028
+and £6.5M on 2.1.2029; Matteo Palma's 21,203,780 as £21M and £19.5M. A contract with no bonus holds 0.
+
+On the Game Pass build 0.9.2435.0 (a save of 12 January 2028), of the 10,558 players' contracts with dates:
+
+- 3,025 hold both. In 2,850 the share a week is the whole bonus over the contract's whole weeks, from the day it was
+  signed to its end, rounded down: Leandro Trossard's 3,408,834 over 156 weeks is 21,851. In the other 175 the whole
+  bonus is the share times about a year fewer weeks than the contract has. 2,650 of the 3,025 were signed before the
+  save began.
+- 4,450 hold the whole bonus and no share a week, all but one signed during the save: Victor Osimhen 12,549,838,
+  Jude Bellingham 10,968,271, Kylian Mbappé 10,581,825 (signed on 15.6.2027, to 30.6.2031). The editor shows no
+  loyalty bonus for these. Whether the game's screen shows one for them was not looked at; RootTourist's players
+  above signed during his save too.
+- 3,083 hold neither.
+
+Next to it, `+0xAC` is another `u32` amount, set on 3,637 of the 4,450 and on 328 of the 3,025. What it is, is not
+known. The `u16` at `+0x24` is 11 on 2,656 of the contracts with a share a week, and 0 on 6,686 of the 7,533 without.
 
 ## On the Mac
 
