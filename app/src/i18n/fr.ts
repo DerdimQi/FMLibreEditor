@@ -2462,5 +2462,28 @@ export const fr: Strings = {
     },
   },
 
+  /** The command palette and the names of the keys in the keyboard shortcuts (see en.ts). */
+  palette: {
+    button: "Rechercher",
+    title: "Rechercher ou lancer une commande",
+    placeholder: "Rechercher des joueurs, du staff, des clubs ou des commandes",
+    placeholderCommands: "Rechercher une commande",
+    commands: "Commandes",
+    goTo: (list: string) => `Aller à ${list}`,
+    searchList: "Rechercher dans cette liste",
+    editProfile: "Modifier ce profil",
+    doneEditing: "Terminer la modification de ce profil",
+    applyChanges: "Appliquer les modifications de ce profil",
+    showAll: (count: number, list: string) => `Afficher les ${format(count)} résultats dans ${list}`,
+    searching: "Recherche…",
+    empty: (query: string) => `Aucun résultat pour «\u00a0${query}\u00a0».`,
+    notConnected: "Connectez-vous au jeu pour rechercher ses joueurs, son staff et ses clubs.",
+    failed: (reason: string) => `La recherche a échoué\u00a0: ${reason}`,
+    hintMove: "Naviguer",
+    hintOpen: "Ouvrir",
+    hintClose: "Fermer",
+    keys: { ctrl: "Ctrl", shift: "Maj", enter: "Entrée", escape: "Échap" },
+  },
+
   errors,
 };

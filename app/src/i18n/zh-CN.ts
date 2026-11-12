@@ -2631,6 +2631,29 @@ export const zhCN: Strings = {
     } as Record<string, (value: string) => string>,
   },
 
+  /** The command palette and the names of the keys in the keyboard shortcuts (see en.ts). */
+  palette: {
+    button: "搜索",
+    title: "搜索或执行命令",
+    placeholder: "搜索球员、职员、俱乐部和命令",
+    placeholderCommands: "搜索命令",
+    commands: "命令",
+    goTo: (list: string) => `前往${list}`,
+    searchList: "在此列表中搜索",
+    editProfile: "编辑此档案",
+    doneEditing: "结束编辑此档案",
+    applyChanges: "应用此档案的改动",
+    showAll: (count: number, list: string) => `在${list}中显示全部 ${format(count)} 项`,
+    searching: "正在搜索…",
+    empty: (query: string) => `没有与“${query}”匹配的结果。`,
+    notConnected: "连接游戏后即可搜索球员、职员和俱乐部。",
+    failed: (reason: string) => `搜索失败：${reason}`,
+    hintMove: "移动",
+    hintOpen: "打开",
+    hintClose: "关闭",
+    keys: { ctrl: "Ctrl", shift: "Shift", enter: "Enter", escape: "Esc" },
+  },
+
   errors,
 };
 

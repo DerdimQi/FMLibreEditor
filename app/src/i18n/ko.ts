@@ -2287,5 +2287,28 @@ export const ko: Strings = {
     },
   },
 
+  /** The command palette and the names of the keys in the keyboard shortcuts (see en.ts). */
+  palette: {
+    button: "검색",
+    title: "검색 또는 명령 실행",
+    placeholder: "선수, 스태프, 구단, 명령 검색",
+    placeholderCommands: "명령 검색",
+    commands: "명령",
+    goTo: (list: string) => `${list} 탭으로 이동`,
+    searchList: "이 목록에서 검색",
+    editProfile: "이 프로필 편집",
+    doneEditing: "이 프로필 편집 끝내기",
+    applyChanges: "이 프로필의 변경 사항 적용",
+    showAll: (count: number, list: string) => `${list}에서 ${format(count)}개 모두 보기`,
+    searching: "검색하는 중…",
+    empty: (query: string) => `“${query}”와(과) 일치하는 항목이 없습니다.`,
+    notConnected: "선수, 스태프, 구단을 검색하려면 게임에 연결하세요.",
+    failed: (reason: string) => `검색하지 못했습니다: ${reason}`,
+    hintMove: "이동",
+    hintOpen: "열기",
+    hintClose: "닫기",
+    keys: { ctrl: "Ctrl", shift: "Shift", enter: "Enter", escape: "Esc" },
+  },
+
   errors,
 };
