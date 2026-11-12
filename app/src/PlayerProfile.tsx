@@ -404,8 +404,9 @@ function LoanFacts({ uid, name, loan, contract }: { uid: number; name: string; l
 }
 
 /**
- * The reasons to be unhappy that last, by name, with the button that removes them all (FMRTE's "Remove all"): the
- * count of the player's list goes to none, and an undo in Changes lists them again.
+ * The reasons to be unhappy that last, by name, each with the teammate it is about when it is held about one, and the
+ * button that removes them all (FMRTE's "Remove all"): the count of the player's list goes to none, and an undo in
+ * Changes lists them again. The reasons his teammates hold about him the game then ends itself, as the button says.
  */
 function ConcernList({ uid, concerns }: { uid: number; concerns: Concern[] }) {
   const { editable, onEdited } = useContext(EditorContext);
@@ -449,7 +450,7 @@ function ConcernList({ uid, concerns }: { uid: number; concerns: Concern[] }) {
             className="heal-toggle"
             disabled={!editable}
             aria-disabled={removing || undefined}
-            title={profileText.removeUnhappinessTitle}
+            title={`${profileText.removeUnhappinessTitle}\n${profileText.removeUnhappinessFollows}`}
             onClick={() => void remove()}
           >
             {removing ? profileText.removingUnhappiness : profileText.removeUnhappiness}
@@ -462,7 +463,11 @@ function ConcernList({ uid, concerns }: { uid: number; concerns: Concern[] }) {
         <dl className="stats">
           {lasting.map((concern, i) => (
             <Fact key={i} label={profileText.concernMotive(concern.motive)}>
-              {[profileText.concernKind(concern.kind), concern.started && profileText.concernSince(formatDate(concern.started))]
+              {[
+                profileText.concernKind(concern.kind),
+                concern.started && profileText.concernSince(formatDate(concern.started)),
+                concern.about && profileText.concernAbout(concern.about.name),
+              ]
                 .filter(Boolean)
                 .join(" · ")}
             </Fact>

@@ -348,6 +348,7 @@ fmlibre-probe ties 2000138835                        # secondary nationalities a
 fmlibre-probe tie-set 2000138835 0 --nation 765 --restore   # point tie 0 at England and back: this writes too
 fmlibre-probe teams 680                              # a club's teams: kinds, captains, players' fitness and morale
 fmlibre-probe cohesion 680 --raw                     # each senior player's cohesion with the club, and his other entries
+fmlibre-probe concerns --all                         # every reason to be unhappy, whom it is about, and the groups
 fmlibre-probe captain 680 43425040 --restore         # make a player captain (--vice: vice-captain) and back
 fmlibre-probe prizes                                 # the prize money competitions pay, by final position and per match
 fmlibre-probe prizes 130286 --win 1234567 --restore  # change what a Süper Lig win pays and back: this writes too
