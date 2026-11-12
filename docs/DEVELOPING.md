@@ -265,7 +265,7 @@ macOS); `FMLIBRE_EXPORTS` names another folder. The columns and the JSON keys ar
 3. **The `Release` workflow** (`.github/workflows/release.yml`) runs the checks and builds,
    on GitHub's Windows and macOS machines:
    - `FMLibreEditor-Setup.exe`, a per-user NSIS installer in English, Turkish, Spanish, German,
-     French, Italian and Korean;
+     French, Italian, Japanese, Korean and Russian;
    - `FMLibreEditor-portable.zip`;
    - `FMLibreEditor-macOS.zip`, the universal app with the bridge and its launcher;
    - `FMLibreEditor-macOS.app.tar.gz`, the same app, which installed macOS apps update from.
