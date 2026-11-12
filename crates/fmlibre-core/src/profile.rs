@@ -1003,6 +1003,7 @@ const BUILDS: &[&str] = &[
     include_str!("../../../profiles/fm27/steam-26227640.toml"),
     include_str!("../../../profiles/fm27/steam-26340721.toml"),
     include_str!("../../../profiles/fm27/steam-26385295.toml"),
+    include_str!("../../../profiles/fm27/steam-26577676.toml"),
     include_str!("../../../profiles/fm27/steam-26227640-macos-x86_64.toml"),
     include_str!("../../../profiles/fm27/steam-26227640-macos-arm64.toml"),
     include_str!("../../../profiles/fm27/steam-26340721-macos-x86_64.toml"),
@@ -1314,6 +1315,16 @@ mod tests {
         assert_eq!(profile.current_date, Some(0x56A_F378 + 0x11_B040));
         assert_eq!(profile.retirement_manager, Some(profile.arrays.players - 0xDAC0));
 
+        // The update of 12 November 2026 (build 26577676): another image, every static where 26385295 keeps it.
+        let fingerprint = PluginFingerprint::Pe { size_of_image: 0x185F_A000, link_timestamp: 0x6AF3_8E5C };
+        let update = profile_for(fingerprint).expect("Steam build 26577676 profile");
+        assert_eq!(update.storefront, Storefront::Steam);
+        assert_eq!(update.arrays, profile.arrays);
+        assert_eq!(
+            (update.current_date, update.retirement_manager, update.game_ui),
+            (profile.current_date, profile.retirement_manager, profile.game_ui)
+        );
+
         // On macOS, the Intel half of the same build: told apart by its LC_UUID.
         let uuid = [0x22, 0xCF, 0xE5, 0xC3, 0xB5, 0xCF, 0x3C, 0x00, 0x80, 0x43, 0x1E, 0xA1, 0x90, 0xA6, 0x9B, 0x89];
         let profile = profile_for(PluginFingerprint::MachO { uuid }).expect("Steam build 26227640 on macOS profile");
@@ -1377,6 +1388,7 @@ mod tests {
                 "FM27 0.9.2435.0 (Game Pass)",
                 "FM27 Steam build 26340721 (27.0.0)",
                 "FM27 Steam build 26385295 (27.0.1)",
+                "FM27 Steam build 26577676",
                 "FM27 Steam build 26385295 (27.0.1, macOS, Intel)",
                 "FM27 Steam build 26385295 (27.0.1, macOS, Apple silicon)",
             ]
