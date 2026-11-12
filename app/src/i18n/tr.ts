@@ -60,6 +60,7 @@ const CONTRACT_TYPES: Partial<Record<number, string>> = {
   2: "Amatör sözleşme",
   3: "Genç oyuncu sözleşmesi",
   4: "Sözleşmesiz",
+  8: "A takım sözleşmesi",
   10: "Asgari ücretli A takım sözleşmesi",
   11: "A takım sözleşmesi",
 };

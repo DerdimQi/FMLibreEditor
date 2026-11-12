@@ -92,6 +92,7 @@ const CONTRACT_TYPES: Partial<Record<number, string>> = {
   2: "아마추어 계약",
   3: "유소년 계약",
   4: "무계약",
+  8: "성인 계약",
   10: "성인 최소 급료 계약",
   11: "성인 계약",
 };

@@ -98,6 +98,7 @@ const CONTRACT_TYPES: Partial<Record<number, string>> = {
   2: "Contrat amateur",
   3: "Contrat jeune",
   4: "Sans contrat",
+  8: "Contrat senior",
   10: "Contrat salaire minimum senior",
   11: "Contrat senior",
 };

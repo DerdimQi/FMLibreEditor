@@ -78,13 +78,15 @@ const SQUAD_STATUSES: Partial<Record<number, string>> = {
   22: "Surplus to requirements",
 };
 
-/** The kinds of contract, by the codes contracts hold them as; 10 and 11 are the MLS's. */
+/** The kinds of contract, by the codes contracts hold them as; 8, 10 and 11 are the MLS's, and the game
+ * shows 8 and 11 under one name. */
 const CONTRACT_TYPES: Partial<Record<number, string>> = {
   0: "Part-time contract",
   1: "Full-time contract",
   2: "Amateur contract",
   3: "Youth contract",
   4: "Non-contract",
+  8: "Senior contract",
   10: "Senior minimum salary contract",
   11: "Senior contract",
 };
