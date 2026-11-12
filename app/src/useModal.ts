@@ -6,7 +6,13 @@ import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
  * The dialogs that are up, the one opened last at the end. A dialog can open another (a player's profile over a club's
  * squad, then his Transfer dialog over it): only the last one hears the keys and holds focus.
  */
-const openDialogs: object[] = [];
+const openDialogs: { box: RefObject<HTMLElement | null> }[] = [];
+
+/** Whether a dialog is up: the app's keyboard shortcuts then wait (see `App`). */
+export const modalOpen = (): boolean => openDialogs.length > 0;
+
+/** The box of the dialog that is up, the last one opened; null when none is. */
+export const topModal = (): HTMLElement | null => openDialogs[openDialogs.length - 1]?.box.current ?? null;
 
 /** The elements of `box` that Tab stops at, in order. */
 function tabbable(box: HTMLElement): HTMLElement[] {
@@ -63,7 +69,7 @@ export function useModal(
     if (!active) {
       return;
     }
-    const self = {};
+    const self = { box };
     openDialogs.push(self);
     const onTop = () => openDialogs[openDialogs.length - 1] === self;
     const onKeyDown = (event: KeyboardEvent) => {

@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { call, inTauri } from "./api";
 import { BridgeSetup } from "./BridgeSetup";
 import { ChangesView, useChangeLog } from "./ChangesView";
 import { ClubBrowser } from "./ClubBrowser";
+import { CommandPalette, Keys, SearchIcon, type Command, type Found, type FoundKind } from "./CommandPalette";
 import { CompatibilityNotice } from "./CompatibilityNotice";
 import { CopyDiagnostics } from "./CopyDiagnostics";
 import { forgetFieldTables } from "./fieldTables";
@@ -10,22 +12,46 @@ import { describeError, describeGame, formatDate } from "./format";
 import { FrozenNotice } from "./FrozenNotice";
 import { GraphicsStatus } from "./GraphicsStatus";
 import { SettingsMenu } from "./SettingsMenu";
-import { appText, changesText, clubListText, playerListText, scoutingText, staffListText } from "./labels";
+import {
+  appText,
+  changesText,
+  clubListText,
+  homeText,
+  paletteText,
+  playerListText,
+  scoutingText,
+  staffListText,
+  updateText,
+} from "./labels";
+import type { ListRequest } from "./ListBrowser";
 import { PlayerBrowser } from "./PlayerBrowser";
 import { restored, useSnapshot } from "./restore";
 import { SaveChangedNotice, useSaveChanged } from "./SaveChangedNotice";
 import { ScoutingBrowser } from "./ScoutingBrowser";
+import { MyClub } from "./MyClub";
+import { matches, SHORTCUTS, viewShortcut, withShortcut } from "./shortcuts";
 import { StaffBrowser } from "./StaffBrowser";
-import type { BridgeInfo, ConnectionInfo, Detection, Refrozen, ReloadInfo } from "./types";
+import type {
+  BridgeInfo,
+  ClubSummary,
+  ConnectionInfo,
+  Detection,
+  PlayerSummary,
+  Refrozen,
+  ReloadInfo,
+  StaffSummary,
+} from "./types";
 import { useUpdateCheck } from "./update";
 import { UpdateCheck, UpdateNotice } from "./UpdateNotice";
 import { ComparisonContext, useComparison } from "./useComparison";
-import { askToLeave, EditorContext } from "./useProfileEditing";
+import { modalOpen, topModal } from "./useModal";
+import { askToLeave, EditorContext, profileOnTop } from "./useProfileEditing";
 import "./App.css";
 
-type View = "players" | "staff" | "clubs" | "scouting" | "changes";
+type View = "home" | "players" | "staff" | "clubs" | "scouting" | "changes";
 
 const VIEWS: { id: View; label: string }[] = [
+  { id: "home", label: homeText.nav },
   { id: "players", label: playerListText.nav },
   { id: "staff", label: staffListText.nav },
   { id: "clubs", label: clubListText.nav },
@@ -33,8 +59,36 @@ const VIEWS: { id: View; label: string }[] = [
   { id: "changes", label: changesText.nav },
 ];
 
+/** The list each kind of thing the command palette finds is in. */
+const VIEW_OF: Record<FoundKind, View> = { player: "players", staff: "staff", club: "clubs" };
+
+/** What the command palette asks of one of the lists: someone's profile, or a search (see `ListRequest`). */
+type Request =
+  | { kind: "player"; ask: ListRequest<PlayerSummary> }
+  | { kind: "staff"; ask: ListRequest<StaffSummary> }
+  | { kind: "club"; ask: ListRequest<ClubSummary> };
+
+/** The request that opens the profile of what the palette found. */
+function profileRequest(found: Found): Request {
+  switch (found.kind) {
+    case "player":
+      return { kind: "player", ask: { row: found.row } };
+    case "staff":
+      return { kind: "staff", ask: { row: found.row } };
+    case "club":
+      return { kind: "club", ask: { row: found.row } };
+  }
+}
+
+/** Puts the caret in the search box of the list on show, with its text selected. */
+function focusListSearch(): void {
+  const box = document.querySelector<HTMLInputElement>(".views > .workspace:not(.inactive) .toolbar .search input");
+  box?.focus();
+  box?.select();
+}
+
 /** The view the window was in before the language was switched; the first one when there was no such switch. */
-const readView = (value: unknown): View => VIEWS.find(({ id }) => id === value)?.id ?? "players";
+const readView = (value: unknown): View => VIEWS.find(({ id }) => id === value)?.id ?? "home";
 
 /** The app's mark, as on its icon: FML over FM's four bands. */
 function BrandMark() {
@@ -67,6 +121,10 @@ function App() {
   const [refrozen, setRefrozen] = useState<Refrozen | null>(null);
   const [view, setView] = useState<View>(() => restored("view", readView));
   useSnapshot("view", () => view);
+  // Whether the view on show is one that was asked for: a tab, a shortcut, the palette, or the view the window was in
+  // before the language was switched. Until then the app is where it opened, on My club, and goes to the players
+  // instead when the save has no club for that page (see `MyClub`).
+  const viewChosen = useRef(restored("view", (value) => value !== undefined));
   // The players picked for a comparison: in the player list's profiles and in those opened from a club's squad.
   const comparison = useComparison();
   const { log, error: logError, reload: reloadLog, clear: clearLog } = useChangeLog();
@@ -75,6 +133,10 @@ function App() {
   const [askedUpdate, setAskedUpdate] = useState(false);
   // Whether the game has loaded a save, or gone back to its main menu, since the data was read.
   const saveChanged = useSaveChanged(connection !== null, dataVersion);
+  // The command palette: whether it is up, what had focus before it, and what it last asked of a list.
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const focusBefore = useRef<Element | null>(null);
+  const [request, setRequest] = useState<Request | null>(null);
 
   const run = useCallback(async (label: string, task: () => Promise<void>) => {
     setBusy(label);
@@ -170,6 +232,11 @@ function App() {
     }
   };
 
+  const checkUpdates = () => {
+    setAskedUpdate(true);
+    update.check();
+  };
+
   const editable = connection?.editable ?? false;
   // The note on applying edits, the colophon's first: whole in its hover too, should a window ever be too narrow for it.
   // While nothing can be edited, it is also the hover of what that turns off.
@@ -184,22 +251,176 @@ function App() {
 
   // With edits pending in the open profile, leaving for another view asks first.
   const show = (id: View) => {
+    viewChosen.current = true;
     if (id !== view) {
       askToLeave(() => setView(id));
     }
   };
+
+  // A club's profile, opened from My club: the Clubs tab shows it.
+  const openClub = (club: ClubSummary) => {
+    viewChosen.current = true;
+    setView("clubs");
+    setRequest({ kind: "club", ask: { row: club } });
+  };
+
+  // Under a dialog the palette stays shut: the dialog has the keys.
+  const openPalette = () => {
+    if (!paletteOpen && !modalOpen()) {
+      focusBefore.current = document.activeElement;
+      setPaletteOpen(true);
+    }
+  };
+
+  // Closes the palette at once, gives focus back to what had it, and only then runs `then`: what that does (another
+  // view, a search box) may take focus from there.
+  const closePalette = (then?: () => void) => {
+    flushSync(() => setPaletteOpen(false));
+    const before = focusBefore.current;
+    focusBefore.current = null;
+    if (before instanceof HTMLElement && before.isConnected) {
+      before.focus();
+    }
+    then?.();
+  };
+
+  // The palette found someone: the list they are in shows their profile. Edits pending in the open profile ask first.
+  const openFound = (found: Found) =>
+    closePalette(() =>
+      askToLeave(() => {
+        viewChosen.current = true;
+        setView(VIEW_OF[found.kind]);
+        setRequest(profileRequest(found));
+      }),
+    );
+
+  // The palette's line that shows all of a list's matches: the list searches for what was typed in the palette.
+  const showAll = (kind: FoundKind, query: string) =>
+    closePalette(() =>
+      askToLeave(() => {
+        viewChosen.current = true;
+        setView(VIEW_OF[kind]);
+        setRequest({ kind, ask: { query } });
+      }),
+    );
+
+  const game = detection?.games[0];
+  const idle = busy === null;
+  const searchable = connection !== null && (view === "players" || view === "staff" || view === "clubs");
+
+  // What the palette lists, read when it opens: the commands of the profile on show, then the lists, then the rest.
+  const commands: Command[] = [];
+  if (paletteOpen) {
+    const profile = profileOnTop();
+    if (profile?.canApply) {
+      commands.push({ id: "apply", label: paletteText.applyChanges, shortcut: SHORTCUTS.apply, run: profile.apply });
+    }
+    if (profile?.canEdit()) {
+      commands.push({
+        id: "edit",
+        label: profile.editing ? paletteText.doneEditing : paletteText.editProfile,
+        shortcut: SHORTCUTS.edit,
+        run: profile.toggleEdit,
+      });
+    }
+    VIEWS.forEach(({ id, label }, index) =>
+      commands.push({
+        id: `view-${id}`,
+        label: paletteText.goTo(label),
+        shortcut: viewShortcut(index),
+        run: () => show(id),
+      }),
+    );
+    if (searchable) {
+      commands.push({ id: "find", label: paletteText.searchList, shortcut: SHORTCUTS.find, run: focusListSearch });
+    }
+    if (idle && connection) {
+      commands.push({ id: "reload", label: appText.reload, shortcut: SHORTCUTS.reload, run: () => void reload() });
+    } else if (idle) {
+      if (game?.info && game.pluginLoaded) {
+        commands.push({ id: "connect", label: appText.connect.button, run: () => void connect() });
+      }
+      commands.push({ id: "refresh", label: appText.refresh, shortcut: SHORTCUTS.reload, run: () => void detect() });
+    }
+    if (update.current) {
+      commands.push({ id: "updates", label: updateText.check, run: checkUpdates });
+    }
+  }
+
+  // The keyboard shortcuts. A dialog that is up has the keys to itself, but for a profile opened as one: Edit and
+  // Apply are its own. A shortcut that does something here keeps the key from the web view, which would search the
+  // page, load it again or save it.
+  const onShortcut = (event: KeyboardEvent) => {
+    if (event.defaultPrevented || event.isComposing) {
+      return;
+    }
+    if (matches(event, SHORTCUTS.palette)) {
+      event.preventDefault();
+      if (paletteOpen) {
+        closePalette();
+      } else {
+        openPalette();
+      }
+      return;
+    }
+    if (matches(event, SHORTCUTS.apply) || matches(event, SHORTCUTS.reload)) {
+      // Never the web view's own, whatever is up: saving the page, or loading it again.
+      event.preventDefault();
+    }
+    if (paletteOpen) {
+      return;
+    }
+    const profile = profileOnTop();
+    if (profile && (!modalOpen() || topModal() === profile.box())) {
+      if (matches(event, SHORTCUTS.edit) && profile.canEdit()) {
+        event.preventDefault();
+        profile.toggleEdit();
+        return;
+      }
+      if (matches(event, SHORTCUTS.apply) && profile.canApply) {
+        profile.apply();
+        return;
+      }
+    }
+    if (modalOpen()) {
+      return;
+    }
+    const tab = VIEWS.findIndex((_, index) => matches(event, viewShortcut(index)));
+    if (tab >= 0) {
+      event.preventDefault();
+      show(VIEWS[tab].id);
+    } else if (matches(event, SHORTCUTS.reload)) {
+      if (idle) {
+        void (connection ? reload() : detect());
+      }
+    } else if (matches(event, SHORTCUTS.find) && searchable) {
+      event.preventDefault();
+      focusListSearch();
+    }
+  };
+  // The listener is put up once, and calls the handler of the last render.
+  const latestShortcut = useRef(onShortcut);
+  useLayoutEffect(() => {
+    latestShortcut.current = onShortcut;
+  });
+  useEffect(() => {
+    const listener = (event: KeyboardEvent) => latestShortcut.current(event);
+    window.addEventListener("keydown", listener);
+    return () => window.removeEventListener("keydown", listener);
+  }, []);
 
   return (
     <div className="app">
       <header className="masthead">
         <BrandMark />
         <nav className="tabs">
-          {VIEWS.map(({ id, label }) => (
+          {VIEWS.map(({ id, label }, index) => (
             <button
               key={id}
               type="button"
               className={id === view ? "tab active" : "tab"}
               aria-current={id === view ? "page" : undefined}
+              title={withShortcut(label, viewShortcut(index))}
               onClick={() => show(id)}
             >
               {label}
@@ -209,6 +430,17 @@ function App() {
         </nav>
         <div className="masthead-side">
           {busy && <span className="busy">{busy}</span>}
+          <button
+            type="button"
+            className="palette-open"
+            aria-haspopup="dialog"
+            title={withShortcut(paletteText.title, SHORTCUTS.palette)}
+            onClick={openPalette}
+          >
+            <SearchIcon />
+            <span className="palette-open-label">{paletteText.button}</span>
+            <Keys shortcut={SHORTCUTS.palette} />
+          </button>
           {connection &&
             (connection.gameDate ? (
               <span className="game-date">{formatDate(connection.gameDate)}</span>
@@ -218,11 +450,11 @@ function App() {
               </span>
             ))}
           {connection ? (
-            <button onClick={reload} disabled={busy !== null}>
+            <button onClick={reload} disabled={!idle} title={withShortcut(appText.reload, SHORTCUTS.reload)}>
               {appText.reload}
             </button>
           ) : (
-            <button onClick={detect} disabled={busy !== null}>
+            <button onClick={detect} disabled={!idle} title={withShortcut(appText.refresh, SHORTCUTS.reload)}>
               {appText.refresh}
             </button>
           )}
@@ -244,10 +476,7 @@ function App() {
             connection={connection}
             busy={busy !== null}
             onAllow={allowEditing}
-            onCheckUpdates={() => {
-              setAskedUpdate(true);
-              update.check();
-            }}
+            onCheckUpdates={checkUpdates}
           />
         )}
         {connection && saveChanged && <SaveChangedNotice busy={busy !== null} onReload={reload} />}
@@ -259,14 +488,36 @@ function App() {
           <EditorContext.Provider value={editor}>
             <ComparisonContext.Provider value={comparison}>
               <div className="views">
+                {view === "home" && (
+                  <MyClub
+                    version={dataVersion}
+                    gameDate={connection.gameDate}
+                    onOpenClub={openClub}
+                    onEmpty={() => {
+                      if (!viewChosen.current) {
+                        setView("players");
+                      }
+                    }}
+                  />
+                )}
                 <PlayerBrowser
                   version={dataVersion}
                   active={view === "players"}
                   genderKnown={connection.genderKnown}
                   comparison={comparison}
+                  request={request?.kind === "player" ? request.ask : null}
                 />
-                <StaffBrowser version={dataVersion} active={view === "staff"} genderKnown={connection.genderKnown} />
-                <ClubBrowser version={dataVersion} active={view === "clubs"} />
+                <StaffBrowser
+                  version={dataVersion}
+                  active={view === "staff"}
+                  genderKnown={connection.genderKnown}
+                  request={request?.kind === "staff" ? request.ask : null}
+                />
+                <ClubBrowser
+                  version={dataVersion}
+                  active={view === "clubs"}
+                  request={request?.kind === "club" ? request.ask : null}
+                />
                 <ScoutingBrowser version={dataVersion} active={view === "scouting"} />
                 {view === "changes" && <ChangesView log={log} error={logError} reload={reloadLog} onUndone={edited} />}
               </div>
@@ -289,16 +540,7 @@ function App() {
           <span className="colophon-name">
             FMLibreEditor{update.current && ` ${update.current}`} · {appText.stage}
           </span>
-          {update.current && (
-            <UpdateCheck
-              state={update.state}
-              asked={askedUpdate}
-              onCheck={() => {
-                setAskedUpdate(true);
-                update.check();
-              }}
-            />
-          )}
+          {update.current && <UpdateCheck state={update.state} asked={askedUpdate} onCheck={checkUpdates} />}
           {connection && <CopyDiagnostics className="update-link" />}
           <span className={`status ${connection ? "on" : ""}`}>
             <span className="dot" />
@@ -322,6 +564,17 @@ function App() {
           <GraphicsStatus />
         </div>
       </footer>
+
+      {paletteOpen && (
+        <CommandPalette
+          commands={commands}
+          connected={connection !== null}
+          onRun={(command) => closePalette(command.run)}
+          onOpen={openFound}
+          onShowAll={showAll}
+          onClose={closePalette}
+        />
+      )}
     </div>
   );
 }

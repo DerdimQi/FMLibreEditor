@@ -33,6 +33,16 @@ export interface ListState {
   shown: number;
 }
 
+/**
+ * What something outside a list asks of it (the command palette, see `App`): to show the profile of `row`, which
+ * need not be among the rows on show, or to search for `query`. Each request is an object of its own, so the same
+ * one can be asked twice.
+ */
+export interface ListRequest<Row> {
+  row?: Row;
+  query?: string;
+}
+
 interface ListBrowserProps<Row extends { uid: number }> {
   /**
    * What the list is called in the snapshot of the window that is kept when the language is switched (see
@@ -49,6 +59,8 @@ interface ListBrowserProps<Row extends { uid: number }> {
    * value, so the list is asked again when they change however often the object is built anew.
    */
   requestArgs?: Record<string, unknown>;
+  /** What the command palette asks of the list; null when it asks nothing. */
+  request?: ListRequest<Row> | null;
   /** Changes when the game data is read again, so the list and the open profile are too. */
   version: number;
   /**
@@ -80,7 +92,7 @@ interface ListBrowserProps<Row extends { uid: number }> {
 /** A searchable table with the profile of the selected row beside it. */
 export function ListBrowser<Row extends { uid: number }>(props: ListBrowserProps<Row>) {
   const { command, requestArgs, version, active, placeholder, summary, empty, filterBar, toolbarActions } = props;
-  const { name, footer, tableClass, header, cells, profile } = props;
+  const { name, request, footer, tableClass, header, cells, profile } = props;
   // What the list held before the language was switched, if it was: the search text, and the UID of the row to select
   // as soon as the rows are there again.
   const [start] = useState(() => restored(name, readList));
@@ -162,6 +174,22 @@ export function ListBrowser<Row extends { uid: number }>(props: ListBrowserProps
       searchInput.current?.focus();
     }
   }, [active]);
+
+  // The command palette picked someone, or asked for a search: the profile opens whatever the rows on show are, as
+  // the palette searches everyone and the list may be filtered. Whoever asks has let the open profile's edits go.
+  useEffect(() => {
+    if (!request) {
+      return;
+    }
+    if (request.query !== undefined) {
+      setQuery(request.query);
+      searchInput.current?.focus();
+    }
+    if (request.row !== undefined) {
+      wanted.current = null;
+      setSelected(request.row);
+    }
+  }, [request]);
 
   const settled = page !== null && shownFor !== null && shownFor.query === query && shownFor.argsKey === argsKey;
 

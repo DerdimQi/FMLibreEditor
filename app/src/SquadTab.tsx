@@ -4,7 +4,7 @@
 // once from the line under the buttons. A player's name opens his profile over the squad, which stays as it was behind
 // it.
 
-import { useContext, useEffect, useMemo, useRef, useState, type Ref } from "react";
+import { useContext, useEffect, useMemo, useRef, useState, type ReactNode, type Ref } from "react";
 import { Ability } from "./Ability";
 import { CaptainMenu } from "./CaptainMenu";
 import { changeLog, clubSquads, freezeTeam, setCaptain, teamAction, undoBatch, undoChange } from "./editing";
@@ -181,11 +181,18 @@ interface SquadTabProps {
   clubUid: number;
   /** Changes when the game data is read again, so the squad is too. */
   version: number;
-  panel: PanelIds;
+  /** The tab it is the panel of, in a club's profile. Without one it is a part of a page, named by `label`. */
+  panel?: PanelIds;
+  label?: string;
+  /**
+   * Shown between the team's summary and its actions: what stands out in the shown team (see `MyClub`). `open` opens a
+   * player's profile over the squad, as his name in the table does; `from` takes focus back once it is closed.
+   */
+  overview?: (team: ClubTeam, open: (player: SquadPlayer, from: HTMLElement) => void) => ReactNode;
 }
 
 /** The squad of the club `clubUid`: a switch between its teams, the team's summary and actions, and its table. */
-export function SquadTab({ clubUid, version, panel }: SquadTabProps) {
+export function SquadTab({ clubUid, version, panel, label, overview }: SquadTabProps) {
   const { editable, onEdited } = useContext(EditorContext);
   const loaded = useSquads(clubUid, version);
   // The team that is shown, by its place in the club's list.
@@ -362,9 +369,10 @@ export function SquadTab({ clubUid, version, panel }: SquadTabProps) {
   return (
     <div
       className="squad-tab"
-      role="tabpanel"
-      id={panel.id}
-      aria-labelledby={panel.labelledBy}
+      role={panel ? "tabpanel" : "region"}
+      id={panel?.id}
+      aria-labelledby={panel?.labelledBy}
+      aria-label={panel ? undefined : label}
       aria-busy={loaded === null || undefined}
     >
       {loaded === null && (
@@ -382,6 +390,11 @@ export function SquadTab({ clubUid, version, panel }: SquadTabProps) {
       {teams && team && (
         <>
           <TeamSummary teams={teams} team={team} onTeam={setTeamIndex} />
+
+          {overview?.(team, (player, from) => {
+            opener.current = from;
+            setShown(player);
+          })}
 
           <div className="squad-actions">
             <TeamActions team={team} editable={editable} busy={busy} onAction={(action) => void act(team, action)} />

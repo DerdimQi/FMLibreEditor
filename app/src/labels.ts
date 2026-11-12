@@ -250,3 +250,9 @@ export function fieldLabel(entity: Entity, key: string): string {
 }
 
 export const scoutingText = strings.scouting;
+
+/** "My club", the page the app opens on (see `MyClub`). */
+export const homeText = strings.home;
+
+/** The command palette and the keyboard shortcuts (see `CommandPalette` and `shortcuts.ts`). */
+export const paletteText = strings.palette;

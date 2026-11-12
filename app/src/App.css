@@ -5709,3 +5709,563 @@ button.danger:hover:not(:disabled) {
   flex: 1;
   min-width: 0;
 }
+
+/* Keyboard shortcuts and the command palette */
+
+/* A key of a shortcut, as a key cap: in the palette's lines, at its foot, and on the masthead's Search button. */
+kbd {
+  display: inline-block;
+  min-width: 20px;
+  padding: 0 5px;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  background: var(--field);
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  font-stretch: 94%;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.keys {
+  display: inline-flex;
+  flex: none;
+  gap: 3px;
+}
+
+/* The masthead's Search button: a quiet search field on the strip, with the keys that open the palette at its end. */
+.masthead .palette-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 10px;
+  font-weight: 550;
+}
+
+.palette-open svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.8;
+  opacity: 0.8;
+}
+
+.palette-open-label {
+  min-width: 72px;
+  text-align: left;
+  opacity: 0.8;
+}
+
+.masthead kbd {
+  border-color: rgb(246 247 249 / 0.32);
+  background: rgb(246 247 249 / 0.08);
+  color: rgb(246 247 249 / 0.85);
+}
+
+/* A narrow window keeps the glass and the keys, and drops the word; its tabs stand closer, so that six of them and
+   the rest of the masthead still fit. */
+@media (max-width: 1180px) {
+  .palette-open-label {
+    display: none;
+  }
+
+  .masthead {
+    gap: 12px;
+  }
+
+  .tab {
+    padding: 0 10px;
+  }
+
+  .masthead-side {
+    gap: 8px;
+  }
+}
+
+/* Near the narrowest window the app has, the tabs are set a little smaller too: the longest languages need the room. */
+@media (max-width: 1040px) {
+  .masthead {
+    gap: 10px;
+    padding: 0 10px 0 12px;
+  }
+
+  .tab {
+    padding: 0 7px;
+    font-size: 13.5px;
+  }
+
+  .masthead-side {
+    gap: 6px;
+  }
+}
+
+/* The palette: a search box over the window, near its top, and as tall whatever it found, so that it does not jump as
+   lines come and go. */
+.palette-backdrop {
+  align-items: flex-start;
+  padding-top: min(14vh, 120px);
+}
+
+.palette {
+  display: flex;
+  flex-direction: column;
+  width: min(640px, 100%);
+  height: min(520px, 100%);
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-top: 3px solid var(--text);
+  background: var(--panel);
+  box-shadow: 0 24px 64px rgb(0 0 0 / 0.35);
+  animation: palette-open 120ms ease-out;
+}
+
+@keyframes palette-open {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .palette {
+    animation: none;
+  }
+}
+
+.palette-search {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.palette-search svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--muted);
+  stroke-linecap: round;
+  stroke-width: 1.8;
+}
+
+.palette-search input {
+  flex: 1;
+  min-width: 0;
+  padding: 15px 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 17px;
+  font-stretch: 94%;
+  text-overflow: ellipsis;
+}
+
+/* What it found scrolls under the box; the list is dimmed while the search has not answered for what is typed. */
+.palette-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 6px;
+  overflow-y: auto;
+}
+
+.palette-list[aria-busy="true"] {
+  opacity: 0.55;
+}
+
+.palette-heading {
+  padding: 8px 10px 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-stretch: 90%;
+  font-weight: 750;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.palette-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+/* The line Enter picks. Focus itself stays in the search box, so the line carries the mark: a wash and a bar of ink
+   at its start, and an outline where colours are forced. */
+.palette-option.active {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--text);
+}
+
+@media (forced-colors: active) {
+  .palette-option.active {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}
+
+/* A command's arrow, in the box a face or a logo takes in the other lines. */
+.palette-mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--muted);
+}
+
+.palette-mark svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.palette-lines {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.palette-name {
+  overflow: hidden;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-name .tag {
+  margin-left: 8px;
+  vertical-align: 1px;
+}
+
+.palette-sub {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The club at the end of a person's line: it gives way to the name. */
+.palette-note {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  max-width: 42%;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.palette-note-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* What the palette says under its lines: a live region that is always there, and out of the layout while empty. */
+.palette-status {
+  margin: 0;
+  padding: 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.palette-status:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.palette-status.error {
+  color: var(--danger);
+}
+
+/* The foot: what the keys do. */
+.palette-foot {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.palette-foot span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* My club: the page the app opens on. The whole page scrolls, the squad's table with it: its head stays in view. */
+.home {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px 18px 18px;
+  overflow-y: auto;
+}
+
+/* The head: the logo, the club and who manages it, then its reputation and money, and the buttons at the end. */
+.home-head {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+  padding-bottom: 14px;
+  border-bottom: 3px solid var(--text);
+}
+
+.home-id {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.home-id h2 {
+  margin: 0;
+  font-size: 30px;
+  font-stretch: 76%;
+  font-weight: 850;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.home-id h2 .tag {
+  margin-left: 10px;
+  vertical-align: 5px;
+}
+
+.home-id p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.home-id .squad-teams {
+  margin-top: 8px;
+}
+
+/* The club's figures, each under its label, set apart by hairlines. */
+.home-facts {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 8px 0;
+  margin: 0;
+}
+
+.home-facts > div {
+  padding: 0 18px;
+  border-left: 1px solid var(--border);
+}
+
+.home-facts dt {
+  color: var(--muted);
+  font-size: 11px;
+  font-stretch: 90%;
+  font-weight: 750;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.home-facts dd {
+  margin: 2px 0 0;
+  font-size: 17px;
+  font-stretch: 88%;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.home-facts dd.negative {
+  color: var(--danger);
+}
+
+/* "per week", after a weekly amount: small print. */
+.home-unit {
+  margin-left: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.home-buttons {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.home-error {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* The squad under the head is not boxed in, as it is in a club's profile: it is as tall as its table. */
+.home > .squad-tab {
+  flex: none;
+  min-height: 0;
+}
+
+.home .squad-table-wrap {
+  flex: none;
+  min-height: 0;
+  overflow: visible;
+}
+
+/* The cards: who in the shown team needs a look. One row of them, each as wide as the others; three to a row where
+   the window is narrow. */
+.home-cards {
+  display: grid;
+  flex: none;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .home-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-flow: row;
+  }
+}
+
+.home-card {
+  --tone: var(--border-strong);
+
+  min-width: 0;
+  padding: 9px 12px 10px;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--tone);
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--raised);
+}
+
+.home-card.alert {
+  --tone: var(--tier-1);
+}
+
+.home-card.mild {
+  --tone: var(--tier-2);
+}
+
+.home-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.home-card h3 {
+  margin: 0;
+  font-size: 12px;
+  font-stretch: 90%;
+  font-weight: 750;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: help;
+}
+
+.home-card-count {
+  color: var(--tone);
+  font-size: 26px;
+  font-stretch: 80%;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.home-card.calm .home-card-count {
+  color: var(--muted);
+}
+
+.home-card ul {
+  margin: 6px 0 0;
+  padding: 0;
+  font-size: 13px;
+  list-style: none;
+}
+
+.home-card li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+/* A player's name reads as text until the pointer or the keyboard is on it, then as a link, as in the squad's table. */
+.home-card button.name-link {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-weight: 650;
+  line-height: inherit;
+  text-align: left;
+  text-decoration: underline transparent;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-card button.name-link:is(:hover, :focus-visible) {
+  background: none;
+  color: var(--accent-text);
+  text-decoration-color: currentColor;
+}
+
+.home-card-value {
+  flex: none;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.home-card-none,
+.home-card-more {
+  color: var(--muted);
+}
+
+.home-card-none {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+
+/* With no club of the user's: the note and the search for a club to follow, in a card as the connect panel is. */
+.home-pick {
+  align-self: center;
+  width: min(520px, 100%);
+  margin-top: 24px;
+}

@@ -2609,6 +2609,86 @@ export const en = {
     } as Record<string, (value: string) => string>,
   },
 
+  /** "My club" (`MyClub`): the page the app opens on, about the club the user manages in the save. */
+  home: {
+    /** The tab's name. */
+    nav: "My club",
+    loading: "Looking for your club…",
+    failed: (reason: string) => `Could not look for your club: ${reason}`,
+    /** Under the club's name: who manages it, or that it is a club picked to follow. */
+    manager: (name: string) => `Manager: ${name}`,
+    following: "A club you follow",
+    /** The name of the switch between the clubs, in a save with several managers of the user's. */
+    clubsLabel: "Your clubs",
+    /** The button that opens the club in the Clubs tab, and its hover text. */
+    openProfile: "Club profile",
+    openProfileTitle: "Open this club in the Clubs tab: facilities, finances, stadium and more",
+    /** When the user's manager has no club: a club can be picked to follow instead. */
+    noClubTitle: "You manage no club in this save",
+    noClubText: "Pick a club to follow here instead: its squad, who needs a look, and the actions on a whole team.",
+    chooseAnother: "Choose another club",
+    /** The name of the search that picks the club to follow. */
+    searchLabel: "Club to follow",
+    /** The name of the page's squad part. */
+    squad: "Squad",
+    /** The cards over the squad: who in the shown team needs a look. Injured, Banned and Unrest take the squad's tags. */
+    cards: {
+      label: "Who needs a look",
+      lowMorale: "Low morale",
+      tired: "Tired",
+      contracts: "Contracts ending",
+      /** The hover texts of the cards' titles: what each one counts. `below` is a morale or a percentage as shown. */
+      injuredHint: "Players with an injury",
+      bannedHint: "Players with a ban",
+      lowMoraleHint: (below: string) => `Players whose morale is below ${below}`,
+      tiredHint: (below: string) => `Players whose energy is below ${below}`,
+      unrestHint: "Players some of their teammates are unhappy about",
+      contractsHint: (months: number) => `Players whose contracts end within ${months} months`,
+      /** In a card that counts nobody. */
+      none: "None",
+      /** After the first few names. */
+      more: (count: number) => `and ${format(count)} more`,
+    },
+  },
+
+  /**
+   * The command palette (`CommandPalette`): one box that finds players, staff, clubs and the app's commands. The
+   * keyboard shortcuts (`shortcuts.ts`) take their key names from here.
+   */
+  palette: {
+    /** The button in the masthead that opens it. */
+    button: "Search",
+    /** The button's hover text, and the name of the box. */
+    title: "Search or run a command",
+    /** In the box while connected, and while not: then it finds commands only. */
+    placeholder: "Search players, staff, clubs and commands",
+    placeholderCommands: "Search commands",
+    /** The heading over the commands; the names of the lists head the people and the clubs found. */
+    commands: "Commands",
+    /** The command that shows one of the app's lists; `list` is the name of its tab. */
+    goTo: (list: string) => `Go to ${list}`,
+    /** The command that puts the caret in the search box of the list on show. */
+    searchList: "Search this list",
+    /** The commands for the profile on show: they press its Edit button (to start, and to end) and its Apply button. */
+    editProfile: "Edit this profile",
+    doneEditing: "Finish editing this profile",
+    applyChanges: "Apply the changes to this profile",
+    /** Under the people or the clubs found, when the list has more: opens that list with the same search. */
+    showAll: (count: number, list: string) => `Show all ${format(count)} in ${list}`,
+    searching: "Searching…",
+    /** When nothing matches what is typed. */
+    empty: (query: string) => `Nothing matches “${query}”.`,
+    /** Under the commands while not connected. */
+    notConnected: "Connect to the game to search its players, staff and clubs.",
+    failed: (reason: string) => `The search failed: ${reason}`,
+    /** The foot of the box: what the arrow keys, Enter and Escape do. */
+    hintMove: "Move",
+    hintOpen: "Open",
+    hintClose: "Close",
+    /** The names of the keys as Windows keyboards have them ("Ctrl+K"); macOS shows the keys' signs instead. */
+    keys: { ctrl: "Ctrl", shift: "Shift", enter: "Enter", escape: "Esc" },
+  },
+
   errors,
 };
 
