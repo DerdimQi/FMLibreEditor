@@ -86,13 +86,15 @@ const SQUAD_STATUSES: Partial<Record<number, string>> = {
   22: "Не нужен клубу",
 };
 
-/** The kinds of contract, by the codes contracts hold them as; 10 and 11 are the MLS's. */
+/** The kinds of contract, by the codes contracts hold them as; 8, 10 and 11 are the MLS's, and the game
+ * shows 8 and 11 under one name. */
 const CONTRACT_TYPES: Partial<Record<number, string>> = {
   0: "Контракт с частичной занятостью",
   1: "Профессиональный контракт",
   2: "Любительский контракт",
   3: "Молодёжный контракт",
   4: "Без контракта",
+  8: "Основной контракт",
   10: "Контракт с минимальной зарплатой",
   11: "Основной контракт",
 };

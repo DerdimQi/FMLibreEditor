@@ -24,6 +24,13 @@ know the player fully: the range starts at the stored value.
 300,000,000 marks a player who is not for sale (Messi; Saka and Mbappé read it too). Colpani's and Mota's single
 values sit below the conversion (0.80 of it): how the game rounds a fully known value is not worked out.
 
+`-1` is a player the game has never valued (#117): in two of RootTourist's saves only players with no club and no
+contract hold it, all of 15 to 18 (453 of 32,794 players, and 38 of 125,533), and the game shows such a player's value
+as £0 (Lora Ngoma, 15, a free agent). Other free agents mostly hold 0. heval99's save has 4,257 of them among 169,023
+players, 16.2 years old on average; the Game Pass save of 12 January 2028 has 429 among 10,798, 16.4 on average, the
+three looked up without a club. The editor takes a negative value as not known. When a transfer is agreed the game
+sets the value to what the buyer pays (see `fm27-transfer-offers.md`).
+
 **On the Mac** (Steam build 26340721, Apple silicon) the value sits 8 bytes earlier, at **`player +0x22C`**, like the
 player's other own fields, right before the asking price (`+0x230`). On the Arsenal save of 4 July 2027, 1,017 players
 read 300,000,000 (Lamine Yamal, Alexia Putellas), Phil Foden 144,244,816, Cole Palmer 154,739,659 and Florian Wirtz

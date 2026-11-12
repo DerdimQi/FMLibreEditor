@@ -811,8 +811,8 @@ fn contract_type_name(code: u8) -> Option<&'static str> {
         2 => "Amateur contract",
         3 => "Youth contract",
         4 => "Non-contract",
+        8 | 11 => "Senior contract",
         10 => "Senior minimum salary contract",
-        11 => "Senior contract",
         _ => return None,
     })
 }
@@ -1147,9 +1147,10 @@ mod tests {
             assert!(squad_status_name(code).is_some(), "{code}");
         }
         assert_eq!(squad_status_name(4), Some("Squad player"));
-        for code in [0, 1, 2, 3, 4, 10, 11] {
+        for code in [0, 1, 2, 3, 4, 8, 10, 11] {
             assert!(contract_type_name(code).is_some(), "{code}");
         }
+        assert_eq!(contract_type_name(8), contract_type_name(11));
     }
 
     #[test]

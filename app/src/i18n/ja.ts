@@ -66,6 +66,7 @@ const CONTRACT_TYPES: Partial<Record<number, string>> = {
   2: "アマチュア契約",
   3: "ユース契約",
   4: "非契約",
+  8: "シニア契約",
   10: "シニア最低年俸契約",
   11: "シニア契約",
 };
