@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ClubProfile, readTab, type ClubTab } from "./ClubProfile";
 import { ExportButton } from "./ExportDialog";
 import { clubListText, profileText } from "./labels";
-import { ListBrowser } from "./ListBrowser";
+import { ListBrowser, type ListRequest } from "./ListBrowser";
 import { MassEditButton } from "./MassEditDialog";
 import { ClubLogo, PICTURE_SIZE, WithPicture } from "./Picture";
 import { ReputationMeter } from "./ProfileParts";
@@ -18,8 +18,15 @@ type ClubKind = "all" | "men" | "women";
 /** The kind of clubs saved before the language was switched; all of them when there is none. */
 const readKind = (value: unknown): ClubKind => (value === "men" || value === "women" ? value : "all");
 
+interface ClubBrowserProps {
+  version: number;
+  active: boolean;
+  /** What the command palette asks of the list (see `ListRequest`). */
+  request: ListRequest<ClubSummary> | null;
+}
+
 /** The clubs table with the profile of the selected club beside it. */
-export function ClubBrowser({ version, active }: { version: number; active: boolean }) {
+export function ClubBrowser({ version, active, request }: ClubBrowserProps) {
   // It starts as it was before the language was switched, if it was (see `restore.ts`).
   const [kind, setKind] = useState<ClubKind>(() => restored("clubKind", readKind));
   useSnapshot("clubKind", () => kind);
@@ -33,6 +40,7 @@ export function ClubBrowser({ version, active }: { version: number; active: bool
       name="clubs"
       command="search_clubs"
       requestArgs={{ filter }}
+      request={request}
       version={version}
       active={active}
       placeholder={clubListText.search}

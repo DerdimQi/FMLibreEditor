@@ -44,6 +44,7 @@ By default nothing that changes the game. With `--writes`, the tests change the 
 |---|---|---|
 | `connect` | no | The build is known, every check passes, the in-game date and ages, no notice that the game's save has changed (its count of saves loaded is where the app read it), the players', staff and clubs' lists, a player's and a club's profile, an empty change log |
 | `dialog` | no | A player opened from a club's squad as a dialog: focus kept in it, Escape (on an (i) button it hides only the note, the next one closes the dialog), the Transfer dialog over it, the question before unapplied edits are thrown away |
+| `palette` | no | The command palette and the keyboard shortcuts: Ctrl+K opens and closes the palette, its commands with their shortcuts, Escape giving the caret back to the list's search, the arrows (round from the first line to the last); the best player, a member of staff and a club found and opened, each in its own tab; Ctrl+1 and Ctrl+2 for the tabs, Ctrl+F for the list's search, Ctrl+E starting and ending the editing of the open profile; under a dialog the shortcuts wait; Ctrl+R reads the data again without the web view loading the page again |
 | `edit` | yes | Edits through the app's commands, read back by the probe and undone; one attribute through Edit mode, undone from the Changes tab |
 | `mass` | yes | A mass edit over a club's players, applied, read back and undone as one batch |
 | `move` | yes | A transfer the app agrees to, and the undo that moves the player back |

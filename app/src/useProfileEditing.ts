@@ -6,6 +6,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -116,6 +117,27 @@ export function askToLeave(proceed: () => void): void {
     leaveGuard(proceed);
   }
 }
+
+/** What the keyboard shortcuts and the command palette reach of a profile on show (see `App`). */
+export interface ProfileKeys {
+  /** The profile's panel; null while it has no Edit button. */
+  box: () => Element | null;
+  /** Whether its Edit button can be pressed now: the profile can be edited, and has been read. */
+  canEdit: () => boolean;
+  /** Whether it is being edited. */
+  editing: boolean;
+  /** Whether Apply has something to write. */
+  canApply: boolean;
+  /** Presses Edit: starts the editing, or ends it as Done does. */
+  toggleEdit: () => void;
+  apply: () => void;
+}
+
+/** The profiles on show, the one opened last at the end: a profile opened from a club's squad is over the club's. */
+const openProfiles: RefObject<ProfileKeys | null>[] = [];
+
+/** The profile the keyboard shortcuts are for: the one opened last. Null when none is on show. */
+export const profileOnTop = (): ProfileKeys | null => openProfiles[openProfiles.length - 1]?.current ?? null;
 
 /** The editing of the player, member of staff or club `uid`, as `entity` says. Mount it with `key={uid}`. */
 export function useProfileEditing(entity: Entity, uid: number): ProfileEditing {
@@ -338,6 +360,25 @@ export function useProfileEditing(entity: Entity, uid: number): ProfileEditing {
       close();
     }
   };
+
+  // What the keyboard shortcuts reach of this profile, kept up to date as soon as a render is on screen.
+  const keys = useRef<ProfileKeys | null>(null);
+  useLayoutEffect(() => {
+    keys.current = {
+      box: () => editButton.current?.closest(".profile") ?? null,
+      canEdit: () => editButton.current !== null && !editButton.current.disabled,
+      editing,
+      canApply: editing && !applying && changes.length > 0 && invalid.length === 0,
+      toggleEdit: () => editButton.current?.click(),
+      apply,
+    };
+  });
+  useEffect(() => {
+    openProfiles.push(keys);
+    return () => {
+      openProfiles.splice(openProfiles.indexOf(keys), 1);
+    };
+  }, []);
 
   return {
     editable,

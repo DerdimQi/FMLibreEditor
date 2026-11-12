@@ -2243,5 +2243,28 @@ export const ja: Strings = {
     } as Record<string, (value: string) => string>,
   },
 
+  /** The command palette and the names of the keys in the keyboard shortcuts (see en.ts). */
+  palette: {
+    button: "検索",
+    title: "検索またはコマンドを実行",
+    placeholder: "選手、スタッフ、クラブ、コマンドを検索",
+    placeholderCommands: "コマンドを検索",
+    commands: "コマンド",
+    goTo: (list: string) => `${list}へ移動`,
+    searchList: "このリストを検索",
+    editProfile: "このプロフィールを編集",
+    doneEditing: "このプロフィールの編集を終了",
+    applyChanges: "このプロフィールの変更を適用",
+    showAll: (count: number, list: string) => `${list}で${format(count)}件すべてを表示`,
+    searching: "検索中…",
+    empty: (query: string) => `「${query}」に一致するものはありません。`,
+    notConnected: "選手、スタッフ、クラブを検索するには、ゲームに接続してください。",
+    failed: (reason: string) => `検索に失敗しました：${reason}`,
+    hintMove: "移動",
+    hintOpen: "開く",
+    hintClose: "閉じる",
+    keys: { ctrl: "Ctrl", shift: "Shift", enter: "Enter", escape: "Esc" },
+  },
+
   errors,
 };

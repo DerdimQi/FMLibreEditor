@@ -2278,5 +2278,28 @@ export const tr: Strings = {
     },
   },
 
+  /** The command palette and the names of the keys in the keyboard shortcuts (see en.ts). */
+  palette: {
+    button: "Ara",
+    title: "Ara veya komut çalıştır",
+    placeholder: "Oyuncu, personel, kulüp veya komut ara",
+    placeholderCommands: "Komut ara",
+    commands: "Komutlar",
+    goTo: (list: string) => `${list} sekmesine git`,
+    searchList: "Bu listede ara",
+    editProfile: "Bu profili düzenle",
+    doneEditing: "Bu profili düzenlemeyi bitir",
+    applyChanges: "Bu profildeki değişiklikleri uygula",
+    showAll: (count: number, list: string) => `${list}: ${format(count)} sonucun hepsini göster`,
+    searching: "Aranıyor…",
+    empty: (query: string) => `“${query}” ile eşleşen bir şey yok.`,
+    notConnected: "Oyuncu, personel ve kulüp aramak için oyuna bağlanın.",
+    failed: (reason: string) => `Arama yapılamadı: ${reason}`,
+    hintMove: "Gezin",
+    hintOpen: "Aç",
+    hintClose: "Kapat",
+    keys: { ctrl: "Ctrl", shift: "Shift", enter: "Enter", escape: "Esc" },
+  },
+
   errors,
 };

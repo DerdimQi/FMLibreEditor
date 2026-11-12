@@ -250,3 +250,6 @@ export function fieldLabel(entity: Entity, key: string): string {
 }
 
 export const scoutingText = strings.scouting;
+
+/** The command palette and the keyboard shortcuts (see `CommandPalette` and `shortcuts.ts`). */
+export const paletteText = strings.palette;

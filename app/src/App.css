@@ -5709,3 +5709,287 @@ button.danger:hover:not(:disabled) {
   flex: 1;
   min-width: 0;
 }
+
+/* Keyboard shortcuts and the command palette */
+
+/* A key of a shortcut, as a key cap: in the palette's lines, at its foot, and on the masthead's Search button. */
+kbd {
+  display: inline-block;
+  min-width: 20px;
+  padding: 0 5px;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  background: var(--field);
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  font-stretch: 94%;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.keys {
+  display: inline-flex;
+  flex: none;
+  gap: 3px;
+}
+
+/* The masthead's Search button: a quiet search field on the strip, with the keys that open the palette at its end. */
+.masthead .palette-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 10px;
+  font-weight: 550;
+}
+
+.palette-open svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.8;
+  opacity: 0.8;
+}
+
+.palette-open-label {
+  min-width: 72px;
+  text-align: left;
+  opacity: 0.8;
+}
+
+.masthead kbd {
+  border-color: rgb(246 247 249 / 0.32);
+  background: rgb(246 247 249 / 0.08);
+  color: rgb(246 247 249 / 0.85);
+}
+
+/* A narrow window keeps the glass and the keys, and drops the word. */
+@media (max-width: 1100px) {
+  .palette-open-label {
+    display: none;
+  }
+}
+
+/* The palette: a search box over the window, near its top, and as tall whatever it found, so that it does not jump as
+   lines come and go. */
+.palette-backdrop {
+  align-items: flex-start;
+  padding-top: min(14vh, 120px);
+}
+
+.palette {
+  display: flex;
+  flex-direction: column;
+  width: min(640px, 100%);
+  height: min(520px, 100%);
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-top: 3px solid var(--text);
+  background: var(--panel);
+  box-shadow: 0 24px 64px rgb(0 0 0 / 0.35);
+  animation: palette-open 120ms ease-out;
+}
+
+@keyframes palette-open {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .palette {
+    animation: none;
+  }
+}
+
+.palette-search {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.palette-search svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--muted);
+  stroke-linecap: round;
+  stroke-width: 1.8;
+}
+
+.palette-search input {
+  flex: 1;
+  min-width: 0;
+  padding: 15px 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 17px;
+  font-stretch: 94%;
+  text-overflow: ellipsis;
+}
+
+/* What it found scrolls under the box; the list is dimmed while the search has not answered for what is typed. */
+.palette-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 6px;
+  overflow-y: auto;
+}
+
+.palette-list[aria-busy="true"] {
+  opacity: 0.55;
+}
+
+.palette-heading {
+  padding: 8px 10px 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-stretch: 90%;
+  font-weight: 750;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.palette-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+/* The line Enter picks. Focus itself stays in the search box, so the line carries the mark: a wash and a bar of ink
+   at its start, and an outline where colours are forced. */
+.palette-option.active {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--text);
+}
+
+@media (forced-colors: active) {
+  .palette-option.active {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}
+
+/* A command's arrow, in the box a face or a logo takes in the other lines. */
+.palette-mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--muted);
+}
+
+.palette-mark svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.palette-lines {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.palette-name {
+  overflow: hidden;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-name .tag {
+  margin-left: 8px;
+  vertical-align: 1px;
+}
+
+.palette-sub {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The club at the end of a person's line: it gives way to the name. */
+.palette-note {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  max-width: 42%;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.palette-note-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* What the palette says under its lines: a live region that is always there, and out of the layout while empty. */
+.palette-status {
+  margin: 0;
+  padding: 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.palette-status:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.palette-status.error {
+  color: var(--danger);
+}
+
+/* The foot: what the keys do. */
+.palette-foot {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.palette-foot span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}

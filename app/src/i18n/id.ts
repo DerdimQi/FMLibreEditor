@@ -2217,5 +2217,28 @@ export const id: Strings = {
     } as Record<string, (value: string) => string>,
   },
 
+  /** The command palette and the names of the keys in the keyboard shortcuts (see en.ts). */
+  palette: {
+    button: "Cari",
+    title: "Cari atau jalankan perintah",
+    placeholder: "Cari pemain, staf, klub, dan perintah",
+    placeholderCommands: "Cari perintah",
+    commands: "Perintah",
+    goTo: (list: string) => `Buka ${list}`,
+    searchList: "Cari di daftar ini",
+    editProfile: "Edit profil ini",
+    doneEditing: "Selesai mengedit profil ini",
+    applyChanges: "Terapkan perubahan pada profil ini",
+    showAll: (count: number, list: string) => `Tampilkan semua ${format(count)} hasil di ${list}`,
+    searching: "Mencari…",
+    empty: (query: string) => `Tidak ada yang cocok dengan “${query}”.`,
+    notConnected: "Hubungkan ke game untuk mencari pemain, staf, dan klubnya.",
+    failed: (reason: string) => `Pencarian gagal: ${reason}`,
+    hintMove: "Pindah",
+    hintOpen: "Buka",
+    hintClose: "Tutup",
+    keys: { ctrl: "Ctrl", shift: "Shift", enter: "Enter", escape: "Esc" },
+  },
+
   errors,
 };

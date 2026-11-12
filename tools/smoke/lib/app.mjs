@@ -39,7 +39,7 @@ const STARTED = `(!!document.querySelector(".connect, .views") && !document.quer
  */
 const CALLS_OUT = `(window.__TAURI_INTERNALS__.callbacks?.size ?? 0)`;
 
-const KEYS = { Escape: 27, Tab: 9, Enter: 13 };
+const KEYS = { Escape: 27, Tab: 9, Enter: 13, ArrowUp: 38, ArrowDown: 40 };
 
 /** The CDP address of the app's page, once its WebView2 is up. */
 async function pageUrl(port, child) {
@@ -217,6 +217,22 @@ export class App {
   async press(key, shift = false) {
     const code = KEYS[key];
     const base = { key, code: key, windowsVirtualKeyCode: code, nativeVirtualKeyCode: code, modifiers: shift ? 8 : 0 };
+    await this.send("Input.dispatchKeyEvent", { type: "rawKeyDown", ...base });
+    await this.send("Input.dispatchKeyEvent", { type: "keyUp", ...base });
+    await sleep(150);
+  }
+
+  /** Presses a letter or a digit with Ctrl held, as the app's keyboard shortcuts are pressed on Windows. */
+  async chord(key) {
+    const upper = key.toUpperCase();
+    const code = upper.charCodeAt(0);
+    const base = {
+      key,
+      code: /[0-9]/.test(key) ? `Digit${key}` : `Key${upper}`,
+      windowsVirtualKeyCode: code,
+      nativeVirtualKeyCode: code,
+      modifiers: 2,
+    };
     await this.send("Input.dispatchKeyEvent", { type: "rawKeyDown", ...base });
     await this.send("Input.dispatchKeyEvent", { type: "keyUp", ...base });
     await sleep(150);

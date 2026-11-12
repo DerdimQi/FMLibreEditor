@@ -2259,5 +2259,28 @@ export const ru: Strings = {
     },
   },
 
+  /** The command palette and the names of the keys in the keyboard shortcuts (see en.ts). */
+  palette: {
+    button: "Поиск",
+    title: "Поиск или выполнение действия",
+    placeholder: "Поиск игроков, персонала, клубов и действий",
+    placeholderCommands: "Поиск действий",
+    commands: "Действия",
+    goTo: (list: string) => `Перейти: ${list}`,
+    searchList: "Искать в этом списке",
+    editProfile: "Редактировать этот профиль",
+    doneEditing: "Закончить редактирование этого профиля",
+    applyChanges: "Применить изменения в этом профиле",
+    showAll: (count: number, list: string) => `${list}: показать все результаты (${format(count)})`,
+    searching: "Поиск…",
+    empty: (query: string) => `По запросу «${query}» ничего не найдено.`,
+    notConnected: "Подключитесь к игре, чтобы искать игроков, персонал и клубы.",
+    failed: (reason: string) => `Не удалось выполнить поиск: ${reason}`,
+    hintMove: "Перемещение",
+    hintOpen: "Открыть",
+    hintClose: "Закрыть",
+    keys: { ctrl: "Ctrl", shift: "Shift", enter: "Enter", escape: "Esc" },
+  },
+
   errors,
 };
