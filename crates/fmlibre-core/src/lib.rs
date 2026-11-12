@@ -15,6 +15,7 @@ mod details;
 mod diagnostics;
 mod edit;
 mod export;
+mod familiarity;
 mod filter;
 mod game;
 mod graphics;
@@ -64,6 +65,7 @@ pub use details::{
 pub use diagnostics::{date_line, diagnostics_report, retirement_line, saves_loaded_line};
 pub use edit::{Change, EditError, Entity, Field, Kind, LOAN_EXPIRES, LOAN_OPTION_FEE, Scale, Target, fields};
 pub use export::{ExportFormat, ExportHeader, Exported};
+pub use familiarity::{Familiarity, TacticsPlan, TacticsSet};
 pub use filter::{
     AttributeBound, ClubFilter, PlayerFilter, PlayerOrder, PlayerSort, StaffFilter, StaffOrder, StaffSort,
     sort_players, sort_staff,

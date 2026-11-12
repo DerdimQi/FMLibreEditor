@@ -40,6 +40,10 @@ pub struct Layout {
     /// The tactics each human manager keeps for each of his teams; only in the layouts they have been checked in.
     #[serde(default)]
     pub tactics: Option<TacticsLayout>,
+    /// How well players know a tactic, and the history of training the game keeps for it; only in the layouts it has
+    /// been checked in.
+    #[serde(default)]
+    pub familiarity: Option<FamiliarityLayout>,
     /// Where a player on loan keeps his loan contract; only in the layouts it has been checked in.
     #[serde(default)]
     pub loan: Option<LoanLayout>,
@@ -204,6 +208,29 @@ pub struct TacticsLayout {
     /// In a tactic: the two `u64` words of its team instructions, from which the game works out the option it plays
     /// in each tactical area (see `crate::area_options`).
     pub instructions: u64,
+}
+
+/// How well a player knows a tactic, area by area (see `crate::familiarity`): his `record` pointer leads to six lists
+/// `(begin, end, capacity)` of 4-byte entries, `area_step` apart, each naming its area by the byte at `area_index`, and
+/// then a list of 16-byte entries for his shapes at `shapes`. The build's static pointer to the training manager
+/// ([`BuildProfile::training_manager`]) leads to an object with a list `(begin, end)` at `managers`, one object per
+/// human manager; each names his club at `club` and has a map, its root at `players`, from a person's id (the
+/// player's `player_person`) to his history of training: nodes laid out as the C++ library's (left child, then right),
+/// the id at `person` and the list `(begin, end, capacity)` of 12-byte entries at `history`.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FamiliarityLayout {
+    pub record: u64,
+    pub area_step: u64,
+    pub area_index: u64,
+    pub shapes: u64,
+    pub managers: u64,
+    pub club: u64,
+    pub players: u64,
+    pub person: u64,
+    pub history: u64,
+    /// In a player: the `u32` id the game gives the person, in his identity block.
+    pub player_person: u64,
 }
 
 /// Where a player on loan keeps his loan contract: his `record` pointer (shifted like the person block) leads to a

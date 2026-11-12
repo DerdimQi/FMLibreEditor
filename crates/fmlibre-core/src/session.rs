@@ -317,6 +317,16 @@ impl Session {
         (!self.health().passed(Check::Cohesion)).then_some(Lock::Failed(Check::Cohesion))
     }
 
+    /// Why Max tactics may not be written now, if it may not: an unknown build not allowed, or the players' records of
+    /// familiarity and histories of training did not check out ([`Check::Tactics`]). Writing it also needs what
+    /// [`Session::structure_lock`] asks.
+    pub fn tactics_lock(&self) -> Option<Lock> {
+        if !self.writes_allowed() {
+            return Some(Lock::UnknownBuild);
+        }
+        (!self.health().passed(Check::Tactics)).then_some(Lock::Failed(Check::Tactics))
+    }
+
     /// Why a change to the game's lists and records (a move, a heal, a captaincy, ...) may not be written now, if it
     /// may not.
     pub fn structure_lock(&self) -> Option<Lock> {

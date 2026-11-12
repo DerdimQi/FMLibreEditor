@@ -327,6 +327,29 @@ tactics = 0x1000          # in the team's tactics: (begin, end) of pointers to t
 current = 0x1018          # in the team's tactics: i8, the index of the one in use
 instructions = 0xE0       # in a tactic: two u64 words
 
+# How well the players know a tactic, in the two places the Tactical Effectiveness screen takes it from (see
+# familiarity.rs). A player's record (created at game_plugin+0xd47b38, Steam build 26340721): six lists of 4-byte
+# entries, the option's code in six bits from bit 14 and the value × 100 in bits 0–13 (Ricci's 0x65C0, option 1 at
+# 96.64), then the shapes' list, 16-byte entries keyed by the formation's places with the value in the u16 at +0xE. The
+# training manager (TRAINING_MANAGER, the build profile's training_manager) keeps, for each human manager, a map from a
+# person's id to his history of training: 12-byte entries (day of the year from 0, tag 0x0C8C or the code of his place,
+# area, kind, option, then the factors), which game_plugin+0x486d408 adds up for the screen. On the Benevento save
+# (Steam 27.0.1, November 2026) the map held the 56 players of the senior team, the B team and the under-19s; one
+# injured since February had no history. Both kinds of list come from the game's first allocator: history buffers sit
+# their class apart (1024 bytes for 80 entries, 3584 for 276) and new players' record lists are full, one entry in an
+# 8-byte block. Grown into the editor's memory, both held through the game moving them, a save, a load and a week.
+[familiarity]
+record = 0xF8             # in a player: pointer to his record
+area_step = 0x20          # in the record: the six lists of options, (begin, end, capacity) each
+area_index = 0x18         # in a list's header: u8, its area
+shapes = 0xC0             # in the record: the list of shapes, (begin, end, capacity)
+managers = 0x38           # in the training manager: (begin, end) of pointers, one per human manager
+club = 0x98               # in one: pointer to his club
+players = 0x80            # in one: the root of the map of players (the map at +0x78)
+person = 0x20             # in a node: u32, the person's id
+history = 0x28            # in a node: (begin, end, capacity) of 12-byte entries
+player_person = 0x390     # in a player: u32, the person's id, as [retirement] and [selection] read it
+
 # As on Windows, right after the contract pointer (+0x2F0 here, +0x330 there): a record of the player's other
 # contracts, whose first slot points at his loan contract (db::LOAN_CONTRACT), laid out as a contract up to the squad
 # number. On the Arsenal save (5 July 2027), 92 players had one, all passing the class and owner checks (Maxim De

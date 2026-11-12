@@ -74,6 +74,10 @@ pub enum Check {
     /// Players' lists of cohesion entries hold only clubs and nations, with values of 1–100, and most players have
     /// an entry for their club (see `cohesion.rs`). Guards Max cohesion.
     Cohesion,
+    /// Players' records of familiarity hold six lists naming their areas, options of 1–20 and values of at most 100,
+    /// and the training manager's histories hold entries for the eight areas (see `familiarity.rs`). Guards Max
+    /// tactics.
+    Tactics,
 }
 
 /// The checks a change to the game's lists and records needs (moves, swaps, healing, captains, ties, clauses,
@@ -81,7 +85,7 @@ pub enum Check {
 pub const STRUCTURE: [Check; 4] = [Check::Contracts, Check::Teams, Check::Staff, Check::Clubs];
 
 impl Check {
-    pub const ALL: [Check; 11] = [
+    pub const ALL: [Check; 12] = [
         Check::GameDate,
         Check::Players,
         Check::Positions,
@@ -93,6 +97,7 @@ impl Check {
         Check::Staff,
         Check::Clubs,
         Check::Cohesion,
+        Check::Tactics,
     ];
 
     /// The name of the check in error codes' parameters and in the app: `gameDate`, `liveValues`, ...
@@ -109,6 +114,7 @@ impl Check {
             Check::Staff => "staff",
             Check::Clubs => "clubs",
             Check::Cohesion => "cohesion",
+            Check::Tactics => "tactics",
         }
     }
 
@@ -144,6 +150,7 @@ impl fmt::Display for Check {
             Check::Staff => "the staff",
             Check::Clubs => "the clubs",
             Check::Cohesion => "the cohesion with clubs",
+            Check::Tactics => "the tactical familiarity",
         })
     }
 }
@@ -520,6 +527,8 @@ pub(crate) fn check(session: &Session) -> Health {
     let mut teams = Tally::default();
     // Lists of cohesion entries that hold, and those with an entry for the player's club.
     let (mut cohesion_lists, mut cohesion_own) = (Tally::default(), Tally::default());
+    // Records of familiarity that hold, of the players who have one.
+    let mut records = Tally::default();
     // Goalkeeping by goalkeepers and by the rest; finishing and tackling by strikers and by centre-backs.
     let (mut keepers, mut outfield) = (Mean::default(), Mean::default());
     let (mut striker_finishing, mut defender_finishing) = (Mean::default(), Mean::default());
@@ -616,6 +625,14 @@ pub(crate) fn check(session: &Session) -> Health {
                 cohesion_own.add(own);
             }
         }
+
+        // His record of familiarity, for one who has one: six lists naming their areas, and his shapes.
+        if let Some(f) = &layout.familiarity
+            && let Ok(record) = process.read_u64(player.object + p.at(f.record, player.shift))
+            && is_user_pointer(record)
+        {
+            records.add(crate::familiarity::record_holds(process, f, record));
+        }
     }
 
     let gap = |high: Mean, low: Mean| high.value().zip(low.value()).map(|(high, low)| high - low);
@@ -632,6 +649,18 @@ pub(crate) fn check(session: &Session) -> Health {
     cohesion.note = match layout.cohesion {
         Some(_) => format!("{} of {} have an entry for their club", cohesion_own.fit, cohesion_own.sampled),
         None => "the layout does not place it".to_owned(),
+    };
+
+    // The records, and every history of training the training manager keeps: one that does not hold would be another
+    // list read as one.
+    let mut tactics = records.result(Check::Tactics, 0.99, String::new());
+    let histories = layout.familiarity.as_ref().and_then(|f| crate::familiarity::histories_hold(session, f));
+    tactics.passed &= histories.is_some_and(|(count, holds)| count > 0 && holds);
+    tactics.note = match (&layout.familiarity, histories) {
+        (None, _) => "the layout does not place it".to_owned(),
+        (Some(_), None) => "no training manager found".to_owned(),
+        (Some(_), Some((count, true))) => format!("{count} histories of training hold"),
+        (Some(_), Some((count, false))) => format!("of {count} histories of training, some do not hold"),
     };
 
     let mut attributes = attributes.result(Check::Attributes, 0.99, String::new());
@@ -665,6 +694,7 @@ pub(crate) fn check(session: &Session) -> Health {
             staff,
             clubs,
             cohesion,
+            tactics,
         ],
         date,
         evidence,
