@@ -706,7 +706,10 @@ export const ja: Strings = {
     removeUnhappiness: "すべて解消",
     removingUnhappiness: "解消中…",
     removeUnhappinessTitle: "FMRTE の「Remove all」と同じく、不満の理由をすべてリストから消します。変更履歴から元に戻せます",
+    removeUnhappinessFollows:
+      "チームメイトがこの選手に対して抱いている不満の理由は、ゲームが進行すると自然に消えます：ゲームで「続ける」を押してください",
     concernSince: (date: string) => `${date}から`,
+    concernAbout: (name: string) => `${name}について`,
     concernKind: (kind: number) => (kind === 1 ? "懸念" : kind === 2 ? "内部" : `種類 ${kind}`),
     concernMotive: (motive: number) => CONCERN_MOTIVES_JA[motive] ?? `理由 ${motive}`,
     clauses: "ボーナスと条項",
@@ -1922,6 +1925,9 @@ export const ja: Strings = {
     injuredTitle: (count: number) => `負傷${format(count)}件`,
     banned: "出場停止",
     bannedTitle: (count: number) => `出場停止${format(count)}件`,
+    unrest: "不和",
+    unrestTitle: (count: number) =>
+      `チームメイト${format(count)}人がこの選手に対して不満の理由を抱いています。この選手のプロフィールで「すべて解消」を押すと、ゲームが進行した後に解消されます`,
     onLoan: "ローン中",
     onLoanTitle: "他のクラブへローン移籍中",
     loanee: "ローン加入",
