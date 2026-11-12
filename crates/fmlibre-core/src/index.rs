@@ -66,7 +66,7 @@ impl<T: Listed> SearchIndex<T> {
         let folded_query = fold(query);
         let words: Vec<&str> = folded_query.split_whitespace().collect();
         let mut hits: Vec<usize> = (0..self.items.len())
-            .filter(|&i| uid == Some(self.items[i].uid()) || words.iter().all(|w| self.folded[i].contains(w)))
+            .filter(|&i| uid == Some(self.items[i].uid()) || words.iter().all(|w| self.folded[i].contains(*w)))
             .collect();
         // The original index is the final tie-breaker, preserving the old stable-sort order without
         // the temporary allocation used by stable sorting.
