@@ -591,6 +591,7 @@ export const ja: Strings = {
     club: "クラブ",
     injuries: "負傷",
     cohesion: "連携",
+    tactics: "戦術理解度",
     bans: "出場停止",
     retirement: "引退",
     clause: "契約条項",
@@ -1218,6 +1219,7 @@ export const ja: Strings = {
     staff: "スタッフ",
     clubs: "クラブ",
     cohesion: "クラブとの連携",
+    tactics: "戦術理解度",
   },
 
   update: {
@@ -1839,6 +1841,13 @@ export const ja: Strings = {
     cohesionNone:
       "エディターはこのチームの連携を読み取れません：このバージョンのゲームで未確認か、どの選手にもクラブとの連携の記録がありません",
     cohesionWithout: (count: number) => `${format(count)}人はまだクラブとの連携の記録がありません`,
+    maxTactics: "戦術を最大化",
+    maxTacticsTitle:
+      "このチームの全選手が、チームの使う戦術を「戦術の有効性」画面の8つの分野すべてで最高まで理解するようにします。数週間その戦術でトレーニングしたのと同じです。能力値は変わりません。トレーニングが古くなるにつれ、約6週間後から再び下がります。別の戦術に変えたら、もう一度押してください。ゲームが進むと画面に反映されます：ゲームで「続行」を押してください",
+    tacticsNone:
+      "このチームが戦術をどれだけ理解しているか読み取れません：このバージョンのゲームではまだ確認されていないか、チームがあなたの選んだ戦術を使っていません",
+    tacticsUntrained: (count: number) =>
+      `${format(count)}人はトレーニングしていない（負傷など）ため、トレーニング履歴はそのままです`,
     refreshAll: "全員を回復",
     refreshAllTitle: "このチームの全選手のコンディションと試合勘を100%にし、完全に休養させます（疲労蓄積 -500）",
     maxAll: "能力値を最大化",
@@ -1905,6 +1914,7 @@ export const ja: Strings = {
       jadedness: "疲労",
       morale: "士気",
       cohesion: "連携",
+      tactics: "戦術",
       actions: "キャプテン",
     },
     sortBy: (by: string) => `${by}で並べ替え`,
@@ -1919,6 +1929,7 @@ export const ja: Strings = {
       jadedness: "疲労蓄積",
       morale: "士気",
       cohesion: "連携",
+      tactics: "戦術理解度",
     },
 
     // The tags after a name, with what each means as hover text
