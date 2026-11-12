@@ -102,8 +102,9 @@ condition (`0xFFFF` for none) and a `u16` kind.
 | 21 | Emergency Backup (goalkeepers) | Bürki |
 | 22 | Surplus to Requirements | Josh Sargent |
 
-6, 8, 12, 18 and 19 were not seen on either save; the game's manual also names a "Continental Cup Goalkeeper", which
-may be one of them. 15, 16, 17, 20 and 21 are only goalkeepers'. A free agent has no contract. For a player on loan
+6, 8, 12, 18 and 19 were not seen on either save, nor on heval99's of 169,023 players (#117); the game's manual also
+names a "Continental Cup Goalkeeper", which may be one of them. 15, 16, 17, 20 and 21 are only goalkeepers'. A free
+agent has no contract. For a player on loan
 the contract screen shows the clubs instead of the status. The app names every code above; its edit menu still offers
 1 to 5 only.
 
@@ -116,6 +117,7 @@ the contract screen shows the clubs instead of the status. The app names every c
 | 2 | Amateur Contract | |
 | 3 | Youth Contract | |
 | 4 | Non-Contract | Yussuf Poulsen, Shayon Harrison |
+| 8 | Senior Contract (MLS), the name the screen gives 11 too | Gabriel Pirani, Tyrell Malacia, Kristijan Kahlina |
 | 10 | Senior Minimum Salary Contract (MLS) | Heorhiy Berezovskyi |
 | 11 | Senior Contract (MLS) | Mark McKenzie |
 
@@ -123,6 +125,17 @@ On a save of 31 May 2028 with 33,670 players: 23,506 full-time, 4,472 youth, 1,8
 932 non-contract, 6 of 10 and 1 of 11. A non-contract player's wage and expiry show as n/a, and his value at
 `player +0x234` reads 0. The MLS's "Designated Player Contract" is not this byte: Messi, Bürki, Sargent and Latte Lath
 read 1, as a full-time contract.
+
+8 is from #117 (heval99, Windows Steam 26340721, a save of 13 February 2027 with 169,023 players): 14 players hold it,
+the three looked up at MLS clubs (San Diego FC, FC Cincinnati, Charlotte FC), against 5 with 11 and 12 with 10. Gabriel
+Pirani's contract screen says "Senior Contract", as Mark McKenzie's does for 11, so the app gives both that name.
+What separates 8 from 11 is not known: perhaps a place on the MLS roster that the contract screen does not name. No
+other save read so far has an 8.
+
+Contracts that are not in force yet hold two more codes, seen on the Game Pass build 0.9.2435.0 and on no player's
+running contract: 9 on three contracts with MLS clubs (Houston Dynamo, LA Galaxy, San Jose Earthquakes), for players
+coming from abroad, and 13 on six starting at the end of June 2028, the one looked up with Newcastle Jets and for
+someone the probe knows as a member of staff. Neither has a name yet (see `fm27-transfer-offers.md`).
 
 ## On the Mac
 
