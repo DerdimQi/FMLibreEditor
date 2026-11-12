@@ -590,6 +590,7 @@ export const es: Strings = {
     club: "Club",
     injuries: "Lesiones",
     cohesion: "Cohesión",
+    tactics: "Familiaridad táctica",
     bans: "Sanciones",
     retirement: "Retirada",
     clause: "Cláusula del contrato",
@@ -1255,6 +1256,7 @@ export const es: Strings = {
     staff: "el personal",
     clubs: "los clubes",
     cohesion: "la cohesión con los clubes",
+    tactics: "la familiaridad táctica",
   },
 
   update: {
@@ -1933,6 +1935,15 @@ export const es: Strings = {
       count === 1
         ? "1 jugador aún no tiene cohesión con el club"
         : `${format(count)} jugadores aún no tienen cohesión con el club`,
+    maxTactics: "Táctica al máximo",
+    maxTacticsTitle:
+      "Hacer que cada jugador de este equipo conozca al máximo la táctica que juega, en las ocho áreas de la pantalla de Eficacia táctica, como lo harían semanas de entrenamiento. Los atributos no cambian. Las áreas vuelven a bajar a medida que el entrenamiento envejece, al cabo de unas seis semanas, y otra táctica necesita otra pulsación. El juego las muestra cuando avanza: pulsa Continuar en el juego",
+    tacticsNone:
+      "El editor no puede leer cuánto conoce este equipo su táctica: esta versión del juego no se ha comprobado, o el equipo no juega una táctica que elijas tú",
+    tacticsUntrained: (count: number) =>
+      count === 1
+        ? "1 jugador no entrena (por ejemplo, por lesión): su historial de entrenamiento se queda como está"
+        : `${format(count)} jugadores no entrenan (por ejemplo, por lesión): su historial de entrenamiento se queda como está`,
     refreshAll: "Recuperar a todos",
     refreshAllTitle:
       "Poner la energía y el ritmo de competición de todos los jugadores de este equipo al 100 % y dejarlos " +
@@ -2017,6 +2028,7 @@ export const es: Strings = {
       jadedness: "Fatiga",
       morale: "Moral",
       cohesion: "Cohesión",
+      tactics: "Táctica",
       actions: "Capitanía",
     },
     sortBy: (by) => `Ordenar por ${by}`,
@@ -2031,6 +2043,7 @@ export const es: Strings = {
       jadedness: "fatiga",
       morale: "moral",
       cohesion: "cohesión",
+      tactics: "familiaridad táctica",
     },
 
     // Las etiquetas tras un nombre

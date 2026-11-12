@@ -673,6 +673,7 @@ export const fr: Strings = {
     club: "Club",
     injuries: "Blessures",
     cohesion: "Cohésion",
+    tactics: "Familiarité tactique",
     bans: "Suspensions",
     retirement: "Départ à la retraite",
     clause: "Clause du contrat",
@@ -1350,6 +1351,7 @@ export const fr: Strings = {
     staff: "le staff",
     clubs: "les clubs",
     cohesion: "la cohésion avec les clubs",
+    tactics: "la familiarité tactique",
   },
 
   update: {
@@ -2022,6 +2024,19 @@ export const fr: Strings = {
       plural(count)
         ? `${format(count)} joueurs n'ont pas encore de cohésion avec le club`
         : `${format(count)} joueur n'a pas encore de cohésion avec le club`,
+    maxTactics: "Tactique au maximum",
+    maxTacticsTitle:
+      "Faire connaître au mieux à chaque joueur de cette équipe la tactique qu'elle joue, dans les huit domaines de " +
+      "l'écran Efficacité tactique, comme le feraient des semaines d'entraînement. Les attributs ne changent pas. Les " +
+      "domaines baissent de nouveau à mesure que l'entraînement vieillit, au bout de six semaines environ, et une autre " +
+      "tactique demande un autre clic. Le jeu les affiche une fois qu'il avance\u00a0: appuyez sur Continuer dans le jeu",
+    tacticsNone:
+      "L'éditeur ne peut pas lire à quel point cette équipe connaît sa tactique : cette version du jeu n'a pas été " +
+      "vérifiée pour cela, ou l'équipe ne joue pas une tactique que vous choisissez",
+    tacticsUntrained: (count: number) =>
+      plural(count)
+        ? `${format(count)} joueurs ne s'entraînent pas (blessés, par exemple) : leur historique d'entraînement reste tel quel`
+        : `${format(count)} joueur ne s'entraîne pas (blessé, par exemple) : son historique d'entraînement reste tel quel`,
     refreshAll: "Tout régénérer",
     refreshAllTitle:
       "Porter l'énergie et la forme physique de chaque joueur de cette équipe à 100\u00a0%, et le reposer complètement " +
@@ -2097,6 +2112,7 @@ export const fr: Strings = {
       jadedness: "Fatigue",
       morale: "Moral",
       cohesion: "Cohésion",
+      tactics: "Tactique",
       actions: "Capitanat",
     },
     sortBy: (by) => `Trier par ${by}`,
@@ -2111,6 +2127,7 @@ export const fr: Strings = {
       jadedness: "fatigue",
       morale: "moral",
       cohesion: "cohésion",
+      tactics: "familiarité tactique",
     },
 
     // Les étiquettes après un nom, avec leur sens au survol

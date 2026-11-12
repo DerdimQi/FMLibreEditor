@@ -505,6 +505,7 @@ export const en = {
     injuries: "Injuries",
     // Setting a player's cohesion with his club, which the change log keeps as a change of it.
     cohesion: "Cohesion",
+    tactics: "Tactical familiarity",
     // Lifting a player's bans, which the change log keeps as a change of his bans.
     bans: "Bans",
     // Keeping a player from retiring, which the change log keeps as a change of the date he was to retire on.
@@ -1281,6 +1282,7 @@ export const en = {
     staff: "staff",
     clubs: "clubs",
     cohesion: "cohesion with clubs",
+    tactics: "tactical familiarity",
   } satisfies Record<CheckKey, string>,
 
   /** New versions: the notice under the masthead, and the version and Check for updates at the foot of the window. */
@@ -2139,6 +2141,17 @@ export const en = {
       count === 1
         ? "1 player has no cohesion with the club yet"
         : `${format(count)} players have no cohesion with the club yet`,
+    maxTactics: "Max tactics",
+    maxTacticsTitle:
+      "Have every player in this team know the tactic it plays at its best, in the eight areas of the Tactical Effectiveness screen, as weeks of training on it would. Attributes stay as they are. The areas fall again as the training ages, after some six weeks, and another tactic needs another press. The game shows them once it moves on: press Continue in the game",
+    /** Hover text of Max tactics while no player's familiarity with the team's tactic can be read. */
+    tacticsNone:
+      "The editor cannot read how well this team knows its tactic: this version of the game has not been checked for it, or the team does not play a tactic you pick",
+    /** After Max tactics: how many players of the team do not train, whose history of training was left as it is. */
+    tacticsUntrained: (count: number) =>
+      count === 1
+        ? "1 player does not train (as when injured): his history of training stays as it is"
+        : `${format(count)} players do not train (as when injured): their history of training stays as it is`,
     refreshAll: "Refresh all",
     refreshAllTitle: "Set the energy and match sharpness of every player in this team to 100%, and rest them fully (jadedness -500)",
     maxAll: "Max attributes",
@@ -2222,6 +2235,7 @@ export const en = {
       jadedness: "Jaded.",
       morale: "Morale",
       cohesion: "Cohesion",
+      tactics: "Tactics",
       /** The last column has no heading but this one, for assistive technology: it holds the captaincy menus. */
       actions: "Captaincy",
     } satisfies Record<SquadSort | "actions", string>,
@@ -2238,6 +2252,7 @@ export const en = {
       jadedness: "jadedness",
       morale: "morale",
       cohesion: "cohesion",
+      tactics: "tactical familiarity",
     } satisfies Record<SquadSort, string>,
 
     // The tags after a name, with what each means as hover text

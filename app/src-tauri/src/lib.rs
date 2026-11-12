@@ -13,7 +13,7 @@ use fmlibre_core::{
     NewContract, NewStaffContract, Operation, Paid, Picture, Planned, PlayerDetails, PlayerFilter, PlayerIndex,
     PlayerOrder, PlayerSummary, ROLES, RelationSet, RetirementSet, Role, SCOUT_POSITIONS, ScoutError, ScoutPosition,
     ScoutRequest, Scouted, SearchIndex, Session, SessionError, Skipped, SquadReport, StadiumName, StadiumRename,
-    StaffChange, StaffDetails, StaffFilter, StaffIndex, StaffOrder, StaffPlan, Target, Tie, TieTarget,
+    StaffChange, StaffDetails, StaffFilter, StaffIndex, StaffOrder, StaffPlan, TacticsSet, Target, Tie, TieTarget,
     diagnostics_report, find_game, nations, sort_players, sort_staff,
 };
 use fmlibre_mem::{Process, find_processes, is_current_process_elevated, list_modules};
@@ -927,6 +927,35 @@ impl Connection {
         logged
     }
 
+    /// Logs Max tactics just written, as a change of how well the player knows the tactic (`tactics`, 0..100) from what
+    /// it was to what it is.
+    fn log_tactics(&mut self, done: TacticsSet, batch: Option<u32>) -> LoggedChange {
+        let change = Change {
+            entity: Entity::Player,
+            uid: done.player,
+            field: "tactics".to_owned(),
+            old: i64::from(done.before.overall),
+            new: i64::from(done.after.overall),
+        };
+        let logged = LoggedChange {
+            id: self.log.len() + 1,
+            at: now_ms(),
+            name: self.player_name(done.player),
+            change,
+            undone_at: None,
+            batch,
+            moved: None,
+            captaincy: None,
+            tie: None,
+            clause: None,
+            recall: None,
+            stadium: None,
+            undo: Some(Undo::Tactics(done)),
+        };
+        self.log.push(logged.clone());
+        logged
+    }
+
     /// Logs lifting just written, as a change of the player's `bans` from how many he had to none.
     fn log_lift(&mut self, done: Lifted, batch: Option<u32>) -> LoggedChange {
         let change = Change {
@@ -1392,6 +1421,7 @@ impl Connection {
             Some(Undo::Heal(healed)) => self.session.undo_heal(&healed)?,
             Some(Undo::Lift(lifted)) => self.session.undo_lift_bans(&lifted)?,
             Some(Undo::Cohesion(cohesion)) => self.session.undo_cohesion(&cohesion)?,
+            Some(Undo::Tactics(tactics)) => self.session.undo_tactics(&tactics)?,
             Some(Undo::Retirement(retirement)) => self.session.undo_retirement(&retirement)?,
             Some(Undo::Tie(tie)) => self.session.undo_relation(&tie)?,
             Some(Undo::Clause(clause)) => self.session.undo_clause(&clause)?,
@@ -1626,6 +1656,7 @@ enum Undo {
     Heal(Healed),
     Lift(Lifted),
     Cohesion(CohesionSet),
+    Tactics(TacticsSet),
     Retirement(RetirementSet),
     Tie(RelationSet),
     Clause(ClauseSet),
@@ -1710,6 +1741,11 @@ struct SquadRow {
     morale: u8,
     /// His cohesion with the club, 1..100; none where the layout has not placed it, or he has no entry for it yet.
     cohesion: Option<i8>,
+    /// How well he knows the tactic the team plays, 0..100 (see `familiarity.rs`); none where the layout has not
+    /// placed it, no human manager picks the team's tactic, or he has no record of familiarity.
+    tactics: Option<u8>,
+    /// Whether the game keeps a history of training for him: not for one who does not train, as when injured.
+    trains: bool,
     injuries: usize,
     bans: usize,
     /// Whether his attributes are frozen, his energy and match sharpness, or his positions (see `freeze_team`).
@@ -1744,6 +1780,8 @@ enum TeamAction {
     MaxAttributes,
     /// Cohesion with the club to the top, for those who have an entry for it.
     MaxCohesion,
+    /// The tactic the human manager plays with the team known at its best (see `familiarity.rs`).
+    MaxTactics,
 }
 
 #[derive(Clone, Serialize)]
@@ -3419,40 +3457,51 @@ fn club_squads(state: State<'_, AppState>, uid: u32) -> Result<Vec<TeamView>, Fa
     let connection = guard.as_ref().ok_or_else(not_connected)?;
     let club = connection.clubs.get(uid).ok_or_else(|| not_found(Entity::Club, uid))?;
     let teams = connection.session.club_teams(club, &connection.players)?;
-    // Cohesion is shown only where the lists checked out: a build that moved them would read other bytes.
+    // Cohesion is shown only where the lists checked out: a build that moved them would read other bytes. So is how
+    // well the players know the tactic.
     let cohesion_read = connection.session.health().passed(fmlibre_core::Check::Cohesion);
+    let tactics_read = connection.session.health().passed(fmlibre_core::Check::Tactics);
     Ok(teams
         .into_iter()
-        .map(|team| TeamView {
-            index: team.index,
-            kind: team.kind,
-            age_limit: team.age_limit,
-            captain: team.captain,
-            vice_captain: team.vice_captain,
-            players: team
-                .players
-                .into_iter()
-                .filter_map(|member| {
-                    let player = connection.players.get(member.uid)?.clone();
-                    let cohesion =
-                        cohesion_read.then(|| connection.session.cohesion(&player, club).ok().flatten()).flatten();
-                    Some(SquadRow {
-                        player,
-                        plays_here: member.plays_here,
-                        loan: member.loan,
-                        condition: member.condition,
-                        match_sharpness: member.match_sharpness,
-                        jadedness: member.jadedness,
-                        morale: member.morale,
-                        cohesion,
-                        injuries: member.injuries,
-                        bans: member.bans,
-                        attributes_frozen: connection.frozen.attributes.contains_key(&member.uid),
-                        fitness_frozen: connection.frozen.fitness.contains_key(&member.uid),
-                        positions_frozen: connection.frozen.positions.contains_key(&member.uid),
+        .map(|team| {
+            let known = tactics_read
+                .then(|| connection.session.team_familiarity(club, team.index, &connection.players).ok().flatten())
+                .flatten()
+                .unwrap_or_default();
+            TeamView {
+                index: team.index,
+                kind: team.kind,
+                age_limit: team.age_limit,
+                captain: team.captain,
+                vice_captain: team.vice_captain,
+                players: team
+                    .players
+                    .into_iter()
+                    .filter_map(|member| {
+                        let player = connection.players.get(member.uid)?.clone();
+                        let cohesion =
+                            cohesion_read.then(|| connection.session.cohesion(&player, club).ok().flatten()).flatten();
+                        let familiarity = known.get(&member.uid);
+                        Some(SquadRow {
+                            player,
+                            plays_here: member.plays_here,
+                            loan: member.loan,
+                            condition: member.condition,
+                            match_sharpness: member.match_sharpness,
+                            jadedness: member.jadedness,
+                            morale: member.morale,
+                            cohesion,
+                            tactics: familiarity.map(|f| f.overall),
+                            trains: familiarity.is_some_and(|f| f.trains),
+                            injuries: member.injuries,
+                            bans: member.bans,
+                            attributes_frozen: connection.frozen.attributes.contains_key(&member.uid),
+                            fitness_frozen: connection.frozen.fitness.contains_key(&member.uid),
+                            positions_frozen: connection.frozen.positions.contains_key(&member.uid),
+                        })
                     })
-                })
-                .collect(),
+                    .collect(),
+            }
         })
         .collect())
 }
@@ -3578,6 +3627,31 @@ fn team_action(state: State<'_, AppState>, club: u32, team: usize, action: TeamA
                         uid: member.uid,
                         name,
                         field: "cohesion".to_owned(),
+                        error: err.into(),
+                    }),
+                }
+            }
+            return Ok(report);
+        }
+        // The tactic the human manager plays with the team known at its best: each player's record and history of
+        // training (see `familiarity.rs`). One the game keeps no history for has his record written; the app counts them.
+        TeamAction::MaxTactics => {
+            if let Some(lock) = connection.session.tactics_lock().or_else(|| connection.session.structure_lock()) {
+                return Err(MoveError::Locked(lock).into());
+            }
+            let mut report = MassReport { batch, applied: 0, failed: Vec::new() };
+            let plans = connection.session.plan_max_tactics(&summary, team, &connection.players)?.unwrap_or_default();
+            for plan in plans.iter().filter(|plan| plan.writes()) {
+                let name = connection.player_name(plan.player);
+                match connection.session.apply_tactics(plan) {
+                    Ok(done) => {
+                        connection.log_tactics(done, Some(batch));
+                        report.applied += 1;
+                    }
+                    Err(err) => report.failed.push(MassFailure {
+                        uid: plan.player,
+                        name,
+                        field: "tactics".to_owned(),
                         error: err.into(),
                     }),
                 }

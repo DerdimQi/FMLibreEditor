@@ -171,7 +171,8 @@ export type CheckKey =
   | "teams"
   | "staff"
   | "clubs"
-  | "cohesion";
+  | "cohesion"
+  | "tactics";
 
 /** What one check found: how many of the players, staff or clubs it looked at fit. */
 export interface CheckResult {
@@ -805,6 +806,14 @@ export interface SquadPlayer extends PlayerSummary {
    * entry for the club: the game gives one when it signs a player, and some moved by an editor have none.
    */
   cohesion: number | null;
+  /**
+   * How well he knows the tactic the team plays, 0–100: the mean over its areas of what his record and his history of
+   * training say, as the Tactical Effectiveness screen's circles look. Null where this version of the game has not been
+   * checked for it, no human manager picks the team's tactic, or he has no record yet.
+   */
+  tactics: number | null;
+  /** Whether the game keeps a history of training for him: not for one who does not train, as when injured. */
+  trains: boolean;
   /** How many current injuries he has. */
   injuries: number;
   /** How many current bans he has. */
@@ -821,9 +830,10 @@ export type CaptainRole = "captain" | "viceCaptain";
 /**
  * What a team-wide action does to every player of the team, those out on loan too: "heal" heals every injury,
  * "liftBans" lifts every ban, "inspire" sets morale to 20, "refresh" sets energy and match sharpness to 100%,
- * "maxCohesion" sets cohesion with the club to 100 for those who have one.
+ * "maxCohesion" sets cohesion with the club to 100 for those who have one, "maxTactics" has the players know the
+ * tactic the team plays at its best.
  */
-export type TeamAction = "heal" | "liftBans" | "inspire" | "refresh" | "maxAttributes" | "maxCohesion";
+export type TeamAction = "heal" | "liftBans" | "inspire" | "refresh" | "maxAttributes" | "maxCohesion" | "maxTactics";
 
 /** The columns that sort a squad table. */
 export type SquadSort =
@@ -836,7 +846,8 @@ export type SquadSort =
   | "matchSharpness"
   | "jadedness"
   | "morale"
-  | "cohesion";
+  | "cohesion"
+  | "tactics";
 
 /** The contract a move to another club gives the player, as stored; what is left out stays as it is. */
 export interface MoveTerms {

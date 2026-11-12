@@ -182,9 +182,14 @@ before trusting them.
 - [ ] Cohesion for players without an entry for their club, such as some moved by an
   editor: adding one means growing the list, as ties do, since every list read was full.
   First, whether the game gives them one later.
-- [ ] Tactical familiarity (FMLE's "Max Tactics"): the game's tactical areas, a team's
-  block that FM27 Editor reads at an address found by hand. What FM27 Editor edits as a
-  player's tactical familiarity is his versatility.
+- [x] Tactical familiarity (FMLE's "Max Tactics"): Max tactics in the squad tab, and each
+  player's familiarity with the team's tactic in its table, guarded by the `tactics`
+  check. The Tactical Effectiveness screen takes each of the eight areas from two places:
+  the player's record of familiarity and the history of training the training manager
+  keeps, for the options the game works out from the tactic in use (see `familiarity.rs`,
+  `tactical_areas.rs` and the Steam macOS notes). Max tactics writes both, growing the
+  lists of players new to the club into the editor's memory. macOS only for now: the
+  Windows layout does not place them yet.
 
 ## Phase 7: what FMRTE, FM Live Editor and FM27€0 users reach for (in progress)
 
@@ -366,5 +371,5 @@ changes many at once, and undo.
     has room: 384 of 53,356 contracts on the Game Pass save. Checked there with Kane, Mbappé and Bisseck, restored.
     The competition bonuses (`+0x80`) are not named or edited yet.
   - [x] Keep a player from retiring (see Wave 2 above).
-  - [x] Team cohesion (see Phase 6); tactical familiarity still to do.
+  - [x] Team cohesion and tactical familiarity (see Phase 6); tactical familiarity on the Mac only for now.
   - [ ] Epic.
