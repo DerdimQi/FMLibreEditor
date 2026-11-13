@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { call } from "./api";
 import { ATTRIBUTE_LABELS, PERSONALITY_LABELS, positionLabel, POSITION_LABELS, teamLabel } from "./labels";
 import type { ClubTeam, PlayerDetails, SquadPlayer } from "./types";
@@ -147,6 +147,23 @@ const DEFAULT_EXPORT_COLUMNS = EXPORT_GROUPS.flatMap((group) => group.columns)
   .map((column) => column.key)
   .filter((key) => key !== "base-8" && key !== "base-9");
 
+const EXPORT_COLUMNS_STORAGE_KEY = "fmlibreeditor.squadExcelColumns.v1";
+const ALL_EXPORT_COLUMN_KEYS = EXPORT_GROUPS.flatMap((group) => group.columns.map((column) => column.key));
+
+function savedExportColumns(): string[] {
+  try {
+    const saved = window.localStorage.getItem(EXPORT_COLUMNS_STORAGE_KEY);
+    if (!saved) return [...DEFAULT_EXPORT_COLUMNS];
+    const parsed: unknown = JSON.parse(saved);
+    if (!Array.isArray(parsed)) return [...DEFAULT_EXPORT_COLUMNS];
+    const valid = parsed.filter((key): key is string =>
+      typeof key === "string" && ALL_EXPORT_COLUMN_KEYS.includes(key));
+    return valid.length > 0 ? valid : [...DEFAULT_EXPORT_COLUMNS];
+  } catch {
+    return [...DEFAULT_EXPORT_COLUMNS];
+  }
+}
+
 function safeSheetName(name: string, used: Set<string>) {
   const base = name.replace(/[\\/?*:[\]]/g, " ").slice(0, 31) || "Takım";
   let candidate = base, n = 2;
@@ -197,7 +214,14 @@ function buildWorkbook(clubName: string, teams: readonly ClubTeam[], details: (P
 export function SquadExcelExport({ teams, clubName }: { teams: readonly ClubTeam[]; clubName: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedColumns, setSelectedColumns] = useState<string[]>([...DEFAULT_EXPORT_COLUMNS]);
+  const [selectedColumns, setSelectedColumns] = useState<string[]>(savedExportColumns);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(EXPORT_COLUMNS_STORAGE_KEY, JSON.stringify(selectedColumns));
+    } catch {
+      // The export still works when the environment does not allow local storage.
+    }
+  }, [selectedColumns]);
   const totalColumns = EXPORT_GROUPS.reduce((count, group) => count + group.columns.length, 0);
   const selectedSet = new Set(selectedColumns);
   const setGroup = (groupId: string, checked: boolean) => {
