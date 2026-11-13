@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import { PLAYER_ATTRIBUTES } from "./AttributeFilters";
-import { readPersonFields, textOr } from "./FilterBar";
+import { readPersonFields } from "./FilterBar";
 import { intlLocale } from "./i18n";
 import { NO_PLAYER_FILTERS, POSITION_ORDER, type PlayerFilterFields } from "./PlayerFilters";
 import { isRecord } from "./restore";
