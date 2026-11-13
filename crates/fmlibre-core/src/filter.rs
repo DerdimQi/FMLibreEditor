@@ -62,6 +62,8 @@ impl AttributeBound {
 pub struct PlayerFilter {
     /// A [`POSITIONS`] key; matches players rated [`PLAYABLE_RATING`] or more there.
     pub position: Option<String>,
+    /// Any of these positions rated playable; an empty list leaves position unrestricted.
+    pub positions: Vec<String>,
     pub min_age: Option<u16>,
     pub max_age: Option<u16>,
     pub min_current_ability: Option<u16>,
@@ -95,7 +97,12 @@ impl PlayerFilter {
             }
             None => true,
         };
+        let any_position = self.positions.is_empty()
+            || self.positions.iter().any(|key| {
+                POSITIONS.iter().position(|&position| position == key).is_some_and(|i| p.position_ratings[i] >= PLAYABLE_RATING)
+            });
         position
+            && any_position
             && self.min_age.is_none_or(|min| p.age.is_some_and(|age| age >= min))
             && self.max_age.is_none_or(|max| p.age.is_some_and(|age| age <= max))
             && self.min_current_ability.is_none_or(|min| p.current_ability >= min)
