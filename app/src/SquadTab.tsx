@@ -24,7 +24,7 @@ import {
 import { undoFailureLines } from "./massDraft";
 import { percentText } from "./MedicalGroup";
 import { PlayerDialog } from "./PlayerProfile";
-import { SquadHtmlExport } from "./SquadHtmlExport";
+import { SquadExcelExport } from "./SquadExcelExport";
 import type { Loaded, PanelIds } from "./ProfileParts";
 import { SortHeader } from "./SortHeader";
 import type {
@@ -393,7 +393,7 @@ export function SquadTab({ clubUid, clubName = "Kulüp", version, panel, label, 
       {teams && team && (
         <>
           <TeamSummary teams={teams} team={team} onTeam={setTeamIndex} />
-          <div className="squad-actions"><SquadHtmlExport teams={teams} clubName={clubName} /></div>
+          <div className="squad-actions"><SquadExcelExport teams={teams} clubName={clubName} /></div>
 
           {overview?.(team, (player, from) => {
             opener.current = from;
