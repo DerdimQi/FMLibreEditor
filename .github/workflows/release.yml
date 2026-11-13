@@ -23,6 +23,46 @@ permissions:
   contents: write
 
 jobs:
+  # A portable, unsigned Windows build for pull requests and manual runs.
+  # It uses the repository's CI Tauri config, so no release-signing secrets are needed.
+  portable-windows:
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install the interface's packages
+        working-directory: app
+        run: npm ci
+
+      - name: Build the portable application
+        working-directory: app
+        run: npm run release
+
+      - name: Package the portable application
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force portable/FMLibreEditor | Out-Null
+          Copy-Item target/release/FMLibreEditor.exe portable/FMLibreEditor/
+          Copy-Item docs/portable-readme.txt portable/FMLibreEditor/README.txt
+          Compress-Archive -Path portable/FMLibreEditor -DestinationPath FMLibreEditor-portable.zip
+          Get-Item FMLibreEditor-portable.zip | Format-Table Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FMLibreEditor-portable
+          path: FMLibreEditor-portable.zip
+          retention-days: 14
+
   windows:
     runs-on: windows-latest
     steps:
@@ -65,15 +105,23 @@ jobs:
           cargo clippy --workspace --all-targets -- -D warnings
           cargo test --workspace
 
-      # The installer is signed with the key whose public half is in tauri.conf.json, so that installed copies accept
-      # it as an update; the signature lands beside it (.sig). The key and its password are the repository's secrets
-      # TAURI_SIGNING_PRIVATE_KEY and TAURI_SIGNING_PRIVATE_KEY_PASSWORD; without them the build stops.
-      - name: Build the installer
+      # Tagged releases must be signed so installed copies can verify updates. Pull requests and
+      # manual builds produce an unsigned installer and do not need release-signing secrets.
+      - name: Build the signed installer
+        if: startsWith(github.ref, 'refs/tags/v')
         working-directory: app
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npx tauri build --bundles nsis
+
+      - name: Build the unsigned installer
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        working-directory: app
+        shell: pwsh
+        run: |
+          '{"bundle":{"createUpdaterArtifacts":false}}' | Set-Content -Path tauri.ci.conf.json -Encoding utf8
+          npx tauri build --bundles nsis --config tauri.ci.conf.json
 
       - name: Package the installer and the portable zip
         shell: pwsh
@@ -81,7 +129,9 @@ jobs:
           New-Item -ItemType Directory -Force out | Out-Null
           $setup = Get-ChildItem target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
           Copy-Item $setup.FullName out/FMLibreEditor-Setup.exe
-          Copy-Item "$($setup.FullName).sig" out/FMLibreEditor-Setup.exe.sig
+          if (Test-Path "$($setup.FullName).sig") {
+            Copy-Item "$($setup.FullName).sig" out/FMLibreEditor-Setup.exe.sig
+          }
           New-Item -ItemType Directory -Force portable/FMLibreEditor | Out-Null
           Copy-Item target/release/FMLibreEditor.exe portable/FMLibreEditor/
           Copy-Item docs/portable-readme.txt portable/FMLibreEditor/README.txt
@@ -233,8 +283,10 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent "$bundle/FMLibreEditor.app" out/FMLibreEditor-macOS.zip
           COPYFILE_DISABLE=1 tar -czf out/FMLibreEditor-macOS.app.tar.gz --no-xattrs --no-mac-metadata --no-acls \
             -C "$bundle" FMLibreEditor.app
-          version=$(node -p "require('./app/src-tauri/tauri.conf.json').version")
-          (cd app && npx tauri signer sign --app-version "$version" ../out/FMLibreEditor-macOS.app.tar.gz)
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            version=$(node -p "require('./app/src-tauri/tauri.conf.json').version")
+            (cd app && npx tauri signer sign --app-version "$version" ../out/FMLibreEditor-macOS.app.tar.gz)
+          fi
           ls -l out
 
       - uses: actions/upload-artifact@v4

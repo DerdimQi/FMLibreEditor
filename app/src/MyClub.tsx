@@ -13,6 +13,7 @@ import { percentText } from "./MedicalGroup";
 import { ClubLogo, PICTURE_SIZE } from "./Picture";
 import { ReputationMeter, useProfileDetails } from "./ProfileParts";
 import { SquadTab } from "./SquadTab";
+import { FormationPlanner } from "./FormationPlanner";
 import type { ClubDetails, ClubPage, ClubSummary, ClubTeam, FmDate, SquadPlayer, StaffPage, StaffSummary } from "./types";
 
 /** Where the club picked to follow is kept: its UID. */
@@ -180,10 +181,12 @@ export function MyClub({ version, gameDate, onOpenClub, onEmpty }: MyClubProps) 
             <SquadTab
               key={`squad-${subject.uid}`}
               clubUid={subject.uid}
+              clubName={subject.name}
               version={version}
               label={text.squad}
               overview={(team, open) => <Attention team={team} gameDate={gameDate} onOpen={open} />}
             />
+            <FormationPlanner key={`planner-${subject.uid}`} clubUid={subject.uid} version={version} />
           </>
         )}
       </section>

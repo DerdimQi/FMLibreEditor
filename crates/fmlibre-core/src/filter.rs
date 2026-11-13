@@ -62,10 +62,14 @@ impl AttributeBound {
 pub struct PlayerFilter {
     /// A [`POSITIONS`] key; matches players rated [`PLAYABLE_RATING`] or more there.
     pub position: Option<String>,
+    /// Any of these positions rated playable; an empty list leaves position unrestricted.
+    pub positions: Vec<String>,
     pub min_age: Option<u16>,
     pub max_age: Option<u16>,
     pub min_current_ability: Option<u16>,
+    pub max_current_ability: Option<u16>,
     pub min_potential_ability: Option<i16>,
+    pub max_potential_ability: Option<i16>,
     /// Part of the nation's name, accents and case ignored.
     pub nation: Option<String>,
     /// Part of the club's name, accents and case ignored.
@@ -93,11 +97,21 @@ impl PlayerFilter {
             }
             None => true,
         };
+        let any_position = self.positions.is_empty()
+            || self.positions.iter().any(|key| {
+                POSITIONS
+                    .iter()
+                    .position(|&position| position == key)
+                    .is_some_and(|i| p.position_ratings[i] >= PLAYABLE_RATING)
+            });
         position
+            && any_position
             && self.min_age.is_none_or(|min| p.age.is_some_and(|age| age >= min))
             && self.max_age.is_none_or(|max| p.age.is_some_and(|age| age <= max))
             && self.min_current_ability.is_none_or(|min| p.current_ability >= min)
+            && self.max_current_ability.is_none_or(|max| p.current_ability <= max)
             && self.min_potential_ability.is_none_or(|min| p.potential_ability >= min)
+            && self.max_potential_ability.is_none_or(|max| p.potential_ability <= max)
             && contains(p.nation.as_deref(), self.nation.as_deref())
             && contains(p.club.as_deref(), self.club.as_deref())
             && self.club_uid.is_none_or(|uid| p.club_uid == Some(uid))
@@ -200,7 +214,9 @@ pub struct StaffFilter {
     pub min_age: Option<u16>,
     pub max_age: Option<u16>,
     pub min_current_ability: Option<u16>,
+    pub max_current_ability: Option<u16>,
     pub min_potential_ability: Option<i16>,
+    pub max_potential_ability: Option<i16>,
     /// Part of the nation's name, accents and case ignored.
     pub nation: Option<String>,
     /// Part of the employer's name, accents and case ignored.
@@ -221,7 +237,9 @@ impl StaffFilter {
             && self.min_age.is_none_or(|min| s.age.is_some_and(|age| age >= min))
             && self.max_age.is_none_or(|max| s.age.is_some_and(|age| age <= max))
             && self.min_current_ability.is_none_or(|min| s.current_ability >= min)
+            && self.max_current_ability.is_none_or(|max| s.current_ability <= max)
             && self.min_potential_ability.is_none_or(|min| s.potential_ability >= min)
+            && self.max_potential_ability.is_none_or(|max| s.potential_ability <= max)
             && contains(s.nation.as_deref(), self.nation.as_deref())
             && contains(s.club.as_deref(), self.club.as_deref())
             && (!self.unemployed || s.job.is_none())
@@ -428,6 +446,18 @@ mod tests {
         assert!(!PlayerFilter { position: Some("gk".to_owned()), ..PlayerFilter::default() }.matches(&striker));
         assert!(!PlayerFilter { free_agents: true, ..PlayerFilter::default() }.matches(&striker));
         assert!(!PlayerFilter { min_age: Some(20), ..PlayerFilter::default() }.matches(&striker));
+        assert!(
+            PlayerFilter {
+                min_current_ability: Some(130),
+                max_current_ability: Some(150),
+                min_potential_ability: Some(145),
+                max_potential_ability: Some(155),
+                ..PlayerFilter::default()
+            }
+            .matches(&striker)
+        );
+        assert!(!PlayerFilter { max_current_ability: Some(139), ..PlayerFilter::default() }.matches(&striker));
+        assert!(!PlayerFilter { max_potential_ability: Some(149), ..PlayerFilter::default() }.matches(&striker));
         let no_age = player("Unknown", None, 100, None, 1);
         assert!(!PlayerFilter { max_age: Some(30), ..PlayerFilter::default() }.matches(&no_age));
         assert!(PlayerFilter { free_agents: true, ..PlayerFilter::default() }.matches(&no_age));

@@ -3580,10 +3580,13 @@ impl PlayerFilterArgs {
         let attributes = self.attributes.iter().map(|text| parse_attribute_bound(text)).collect::<Result<_>>()?;
         let filter = PlayerFilter {
             position: self.position.clone(),
+            positions: Vec::new(),
             min_age: self.min_age,
             max_age: self.max_age,
             min_current_ability: self.min_ca,
+            max_current_ability: None,
             min_potential_ability: self.min_pa,
+            max_potential_ability: None,
             nation: self.nation.clone(),
             club: self.club.clone(),
             club_uid: None,

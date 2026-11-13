@@ -6291,3 +6291,136 @@ kbd {
   width: min(520px, 100%);
   margin-top: 24px;
 }
+
+/* The Excel report's column picker: compact groups that can be opened before the report is built. */
+.squad-excel-export {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.squad-excel-options {
+  flex: 1 1 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--raised);
+}
+
+.squad-excel-options > summary {
+  padding: 9px 12px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.squad-excel-options[open] > summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.squad-excel-options-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 10px 12px 0;
+}
+
+.squad-excel-options-actions button {
+  min-height: 30px;
+  padding: 4px 9px;
+  font-size: 12px;
+}
+
+.squad-excel-options-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.squad-excel-options-group {
+  min-width: 0;
+  margin: 0;
+  padding: 9px 10px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.squad-excel-options-group legend {
+  padding: 0 5px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.squad-excel-group-toggle,
+.squad-excel-options-columns label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.squad-excel-group-toggle {
+  padding-bottom: 7px;
+  margin-bottom: 7px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 700;
+}
+
+.squad-excel-options-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px 10px;
+}
+
+.squad-excel-options-columns input,
+.squad-excel-group-toggle input {
+  flex: none;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.squad-excel-options > .note {
+  margin: 0;
+  padding: 0 12px 10px;
+  font-size: 12px;
+}
+
+@media (max-width: 680px) {
+  .squad-excel-options-groups,
+  .squad-excel-options-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+
+/* Search field for manually filtering export columns. */
+.squad-excel-search {
+  display: grid;
+  gap: 5px;
+  padding: 10px 12px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.squad-excel-search input {
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+  font-weight: 400;
+}
+
+.squad-excel-search input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}

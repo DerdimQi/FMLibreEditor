@@ -62,17 +62,22 @@ impl<T: Listed> SearchIndex<T> {
     /// whose id equals it; highest rank first, then by name. An empty query matches everything.
     pub fn search(&self, query: &str) -> Vec<&T> {
         let uid: Option<u32> = query.trim().parse().ok();
-        let words: Vec<String> = fold(query).split_whitespace().map(str::to_owned).collect();
+        // Keep the folded query in one allocation; the words borrow from it while matching.
+        let folded_query = fold(query);
+        let words: Vec<&str> = folded_query.split_whitespace().collect();
         let mut hits: Vec<usize> = (0..self.items.len())
-            .filter(|&i| uid == Some(self.items[i].uid()) || words.iter().all(|w| self.folded[i].contains(w.as_str())))
+            .filter(|&i| uid == Some(self.items[i].uid()) || words.iter().all(|w| self.folded[i].contains(*w)))
             .collect();
-        hits.sort_by(|&a, &b| {
+        // The original index is the final tie-breaker, preserving the old stable-sort order without
+        // the temporary allocation used by stable sorting.
+        hits.sort_unstable_by(|&a, &b| {
             let (a_item, b_item) = (&self.items[a], &self.items[b]);
             b_item
                 .rank()
                 .cmp(&a_item.rank())
                 .then_with(|| self.sort_names[a].cmp(&self.sort_names[b]))
                 .then_with(|| a_item.display_name().cmp(b_item.display_name()))
+                .then_with(|| a.cmp(&b))
         });
         hits.into_iter().map(|i| &self.items[i]).collect()
     }

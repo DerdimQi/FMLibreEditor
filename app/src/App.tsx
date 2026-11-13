@@ -47,6 +47,7 @@ import { ComparisonContext, useComparison } from "./useComparison";
 import { modalOpen, topModal } from "./useModal";
 import { askToLeave, EditorContext, profileOnTop } from "./useProfileEditing";
 import "./App.css";
+import "./Comfort.css";
 
 type View = "home" | "players" | "staff" | "clubs" | "scouting" | "changes";
 
