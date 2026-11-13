@@ -107,18 +107,19 @@ function worksheet(rows: Row[], widths: number[], headerRow = 1) {
 function playerRow(player: SquadPlayer, details: PlayerDetails | null, teamName: string): Row {
   const contract = details?.contract;
   const base: Cell[] = [
-    player.name, player.fullName, teamName, player.age, player.positions.map(positionLabel).join(", "),
-    player.nation, player.club, dateText(player.dateOfBirth), player.currentAbility, player.potentialAbility,
+    player.name, player.fullName ?? null, teamName, player.age ?? null, player.positions.map(positionLabel).join(", "),
+    player.nation ?? null, player.club ?? null, dateText(player.dateOfBirth), player.currentAbility, player.potentialAbility,
     player.condition / 100, player.matchSharpness / 100, player.jadedness, player.morale,
-    player.cohesion, player.tactics, details?.heightCm, details?.askingPrice,
-    contract?.squadNumber, contract?.wage, dateText(contract?.expires ?? player.contractExpires),
-    contract?.squadStatus, contract?.happiness, contract?.playingTimeHappiness,
-    details?.international.caps, details?.international.goals,
-    details?.injuries.map((x) => x.name).join("; "), details?.bans.map((x) => x.name).join("; "),
+    player.cohesion ?? null, player.tactics ?? null, details?.heightCm ?? null, details?.askingPrice ?? null,
+    contract?.squadNumber ?? null, contract?.wage ?? null, dateText(contract?.expires ?? player.contractExpires),
+    contract?.squadStatus ?? null, contract?.happiness ?? null, contract?.playingTimeHappiness ?? null,
+    details?.international.caps ?? null, details?.international.goals ?? null,
+    details?.injuries.map((x) => x.name ?? "").filter(Boolean).join("; ") ?? "",
+    details?.bans.map((x) => String(x.matches)).join("; ") ?? "",
     details?.loan?.club ?? (player.loan === "out" ? "Kiralık" : ""),
-    details?.loan?.parent, details?.loan?.until ? dateText(details.loan.until) : "",
-    details?.traits.join(", "), details?.ties.map((x) => x.name ?? "").filter(Boolean).join("; "),
-    contract?.transferListed, contract?.loanListed,
+    details?.loan?.parent ?? null, details?.loan?.until ? dateText(details.loan.until) : "",
+    details?.traits.join(", ") ?? "", details?.ties.map((x) => x.name ?? "").filter(Boolean).join("; ") ?? "",
+    contract?.transferListed ?? null, contract?.loanListed ?? null,
   ];
   const attributes = Object.keys(ATTRIBUTE_LABELS).map((key) => details?.attributes[key]?.value ?? null);
   const personality = Object.keys(PERSONALITY_LABELS).map((key) => details?.personality[key] ?? null);
