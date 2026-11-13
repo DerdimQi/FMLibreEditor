@@ -208,7 +208,7 @@ function savedExportColumns(): string[] {
 }
 
 function safeSheetName(name: string, used: Set<string>) {
-  const base = name.replace(/[\\/?*:[\]]/g, " ").slice(0, 31) || "Takım";
+  const base = name.replace(/[\\/?*:[\]]/g, " ").slice(0, 31) || t.team;
   let candidate = base, n = 2;
   while (used.has(candidate.toLowerCase())) {
     const suffix = ` ${n++}`;
@@ -300,7 +300,8 @@ export function SquadExcelExport({ teams, clubName }: { teams: readonly ClubTeam
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `${clubName.replace(/[^a-z0-9-_]+/gi, "-")}-kadro-raporu.xlsx`;
+      const fileName = `${clubName}-${t.report}`.normalize("NFKD").replace(/[^a-z0-9-_]+/gi, "-");
+      anchor.download = `${fileName}.xlsx`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
