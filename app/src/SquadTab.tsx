@@ -24,6 +24,7 @@ import {
 import { undoFailureLines } from "./massDraft";
 import { percentText } from "./MedicalGroup";
 import { PlayerDialog } from "./PlayerProfile";
+import { SquadExcelExport } from "./SquadExcelExport";
 import type { Loaded, PanelIds } from "./ProfileParts";
 import { SortHeader } from "./SortHeader";
 import type {
@@ -179,6 +180,7 @@ function captainMessage(role: CaptainRole, player: string, captaincy: LoggedChan
 
 interface SquadTabProps {
   clubUid: number;
+  clubName: string;
   /** Changes when the game data is read again, so the squad is too. */
   version: number;
   /** The tab it is the panel of, in a club's profile. Without one it is a part of a page, named by `label`. */
@@ -192,7 +194,7 @@ interface SquadTabProps {
 }
 
 /** The squad of the club `clubUid`: a switch between its teams, the team's summary and actions, and its table. */
-export function SquadTab({ clubUid, version, panel, label, overview }: SquadTabProps) {
+export function SquadTab({ clubUid, clubName, version, panel, label, overview }: SquadTabProps) {
   const { editable, onEdited } = useContext(EditorContext);
   const loaded = useSquads(clubUid, version);
   // The team that is shown, by its place in the club's list.
@@ -390,6 +392,7 @@ export function SquadTab({ clubUid, version, panel, label, overview }: SquadTabP
       {teams && team && (
         <>
           <TeamSummary teams={teams} team={team} onTeam={setTeamIndex} />
+          <div className="squad-actions"><SquadExcelExport teams={teams} clubName={clubName} /></div>
 
           {overview?.(team, (player, from) => {
             opener.current = from;
