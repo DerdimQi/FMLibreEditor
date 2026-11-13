@@ -216,7 +216,7 @@ function safeSheetName(name: string, used: Set<string>) {
 }
 
 function buildWorkbook(clubName: string, teams: readonly ClubTeam[], details: (PlayerDetails | null)[][], selectedColumns: ReadonlySet<string>) {
-  const used = new Set<string>();
+  const used = new Set<string>(["kulüp özeti"]);
   const names = ["Kulüp Özeti", ...teams.map((team) => safeSheetName(teamLabel(team), used))];
   const summary: Row[] = [[clubName, "Kulüp kadro raporu", "Oluşturulma", new Date().toLocaleString("tr-TR")], [], ["Takım", "Oyuncu sayısı", "Ortalama yaş", "Kaptan", "Kaptan yardımcısı"]];
   teams.forEach((team) => {
