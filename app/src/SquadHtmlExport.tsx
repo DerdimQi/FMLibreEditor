@@ -104,7 +104,7 @@ export function SquadHtmlExport({ team, clubName }: { team: ClubTeam; clubName: 
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
-      URL.revokeObjectURL(url);
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (e) {
       setError(String(e));
     } finally {
