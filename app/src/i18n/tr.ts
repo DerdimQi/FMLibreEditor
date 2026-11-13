@@ -1857,6 +1857,7 @@ export const tr: Strings = {
     captain: "Kaptan",
     viceCaptain: "Kaptan yardımcısı",
     fieldHeaders: ["Oyuncu", "Tam ad", "Takım", "Yaş", "Mevkiler", "Uyruk", "Kulüp", "Doğum tarihi", "Kondisyon %", "Maç keskinliği %", "Yorgunluk", "Moral", "Takım uyumu", "Taktik aşinalığı", "Boy (cm)", "İstenen bonservis (£)", "Forma no", "Haftalık ücret (£)", "Sözleşme bitişi", "Kadro statüsü", "Mutluluk", "Forma süresi mutluluğu", "Milli maç", "Milli gol", "Sakatlıklar", "Cezalar", "Kiralık olduğu kulüp", "Bonservisinin olduğu kulüp", "Kiralık bitişi", "Özel hareketler", "Uyruk / yetişme bağları", "Transfer listesinde", "Kiralık listesinde"],
+    positionPrefix: "Mevki",
     groupBase: "Oyuncu bilgileri",
     groupAttributes: "Oyuncu özellikleri",
     groupPersonality: "Kişilik",
