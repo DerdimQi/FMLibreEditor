@@ -393,7 +393,7 @@ export function SquadTab({ clubUid, clubName = "Kulüp", version, panel, label, 
       {teams && team && (
         <>
           <TeamSummary teams={teams} team={team} onTeam={setTeamIndex} />
-          <div className="squad-actions"><SquadHtmlExport team={team} clubName={clubName} /></div>
+          <div className="squad-actions"><SquadHtmlExport teams={teams} clubName={clubName} /></div>
 
           {overview?.(team, (player, from) => {
             opener.current = from;
