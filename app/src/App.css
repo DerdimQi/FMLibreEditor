@@ -6719,3 +6719,117 @@ textarea {
   .home { padding-inline: 16px; }
   .home-head { padding: 14px; }
 }
+
+
+/* Comparison workspace: turn the player shortlist into a clear, side-by-side decision surface. */
+.compare-tray {
+  gap: 8px 12px;
+  padding: 10px 14px;
+  border-color: #dfe6ef;
+  border-radius: 0 0 10px 10px;
+  background: #fff;
+}
+.compare-chip {
+  gap: 3px;
+  padding: 3px 4px 3px 11px;
+  border-color: #dce4ef;
+  border-radius: 7px;
+  background: #f7f9fc;
+  color: #34445b;
+  font-size: 12px;
+  font-weight: 650;
+}
+.compare-chip .icon-button {
+  border-radius: 5px;
+}
+.compare-open {
+  min-height: 34px;
+  border-radius: 8px;
+}
+.compare-dialog {
+  width: min(1180px, calc(100vw - 40px));
+  max-height: min(88vh, 900px);
+  border: 1px solid #dce4ee;
+  border-radius: 14px;
+  box-shadow: 0 24px 80px rgb(20 35 55 / 0.22);
+}
+.compare-dialog .modal-head {
+  padding: 19px 22px 15px;
+  border-bottom: 1px solid #e6ebf2;
+  background: #fff;
+}
+.compare-dialog .modal-head h2 {
+  color: #1e2e43;
+  font-size: 19px;
+  letter-spacing: -0.35px;
+}
+.compare-dialog .compare-hint {
+  margin-top: 4px;
+  color: #77869a;
+  font-size: 12px;
+}
+.compare-dialog .modal-body {
+  gap: 12px;
+  padding: 16px 20px 20px;
+  background: #f7f9fc;
+}
+.compare-dialog .compare-wrap {
+  border-color: #dfe6ef;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgb(25 42 65 / 0.035);
+}
+.compare-grid thead :is(th, td) {
+  border-bottom-color: #d8e1ed;
+  background: #f7f9fc;
+}
+.compare-grid .compare-head {
+  background: #fff;
+}
+.compare-grid .compare-name {
+  color: #1e3048;
+  font-weight: 750;
+}
+.compare-grid .compare-group {
+  border-top-color: #315d98;
+  background: #f2f6fc;
+  color: #31527f;
+  letter-spacing: .7px;
+}
+.compare-grid tbody th[scope="row"] {
+  color: #586a81;
+  background: #fbfcfe;
+  font-size: 12px;
+  font-weight: 650;
+}
+.compare-grid tbody td {
+  color: #34465e;
+  font-size: 12px;
+}
+.compare-grid tbody tr:hover :is(th, td) {
+  background: #f2f6fb;
+}
+.compare-grid td.best {
+  background: #eaf2fd;
+}
+.compare-grid tbody tr:hover td.best {
+  background: #e3eefc;
+}
+.compare-dialog .modal-foot {
+  padding: 12px 20px;
+  border-top: 1px solid #e6ebf2;
+  background: #fff;
+}
+.compare-dialog .compare-close {
+  min-height: 34px;
+  border-radius: 8px;
+}
+@media (max-width: 760px) {
+  .compare-dialog {
+    width: calc(100vw - 20px);
+    max-height: 94vh;
+  }
+  .compare-dialog .modal-head,
+  .compare-dialog .modal-body {
+    padding-inline: 12px;
+  }
+}
