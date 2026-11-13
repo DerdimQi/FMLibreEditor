@@ -65,7 +65,9 @@ pub struct PlayerFilter {
     pub min_age: Option<u16>,
     pub max_age: Option<u16>,
     pub min_current_ability: Option<u16>,
+    pub max_current_ability: Option<u16>,
     pub min_potential_ability: Option<i16>,
+    pub max_potential_ability: Option<i16>,
     /// Part of the nation's name, accents and case ignored.
     pub nation: Option<String>,
     /// Part of the club's name, accents and case ignored.
@@ -97,7 +99,9 @@ impl PlayerFilter {
             && self.min_age.is_none_or(|min| p.age.is_some_and(|age| age >= min))
             && self.max_age.is_none_or(|max| p.age.is_some_and(|age| age <= max))
             && self.min_current_ability.is_none_or(|min| p.current_ability >= min)
+            && self.max_current_ability.is_none_or(|max| p.current_ability <= max)
             && self.min_potential_ability.is_none_or(|min| p.potential_ability >= min)
+            && self.max_potential_ability.is_none_or(|max| p.potential_ability <= max)
             && contains(p.nation.as_deref(), self.nation.as_deref())
             && contains(p.club.as_deref(), self.club.as_deref())
             && self.club_uid.is_none_or(|uid| p.club_uid == Some(uid))
@@ -200,7 +204,9 @@ pub struct StaffFilter {
     pub min_age: Option<u16>,
     pub max_age: Option<u16>,
     pub min_current_ability: Option<u16>,
+    pub max_current_ability: Option<u16>,
     pub min_potential_ability: Option<i16>,
+    pub max_potential_ability: Option<i16>,
     /// Part of the nation's name, accents and case ignored.
     pub nation: Option<String>,
     /// Part of the employer's name, accents and case ignored.
@@ -221,7 +227,9 @@ impl StaffFilter {
             && self.min_age.is_none_or(|min| s.age.is_some_and(|age| age >= min))
             && self.max_age.is_none_or(|max| s.age.is_some_and(|age| age <= max))
             && self.min_current_ability.is_none_or(|min| s.current_ability >= min)
+            && self.max_current_ability.is_none_or(|max| s.current_ability <= max)
             && self.min_potential_ability.is_none_or(|min| s.potential_ability >= min)
+            && self.max_potential_ability.is_none_or(|max| s.potential_ability <= max)
             && contains(s.nation.as_deref(), self.nation.as_deref())
             && contains(s.club.as_deref(), self.club.as_deref())
             && (!self.unemployed || s.job.is_none())
