@@ -187,6 +187,20 @@ const DEFAULT_EXPORT_COLUMNS = [...EXPORT_PROFILES[0].columns];
 const EXPORT_COLUMNS_STORAGE_KEY = "fmlibreeditor.squadExcelColumns.v2";
 const ALL_EXPORT_COLUMN_KEYS = ALL_EXPORT_COLUMNS.map((column) => column.key);
 
+// Columns available on the squad list do not need a full player-profile read.
+// Keep this list in step with playerRow: only these base fields come from player_details.
+const DETAIL_BASE_COLUMN_INDEXES = new Set([
+  14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+]);
+
+function columnNeedsPlayerDetails(key: string) {
+  if (key.startsWith("attribute-") || key.startsWith("personality-") || key.startsWith("position-")) {
+    return true;
+  }
+  const match = /^base-(\\d+)$/.exec(key);
+  return match !== null && DETAIL_BASE_COLUMN_INDEXES.has(Number(match[1]));
+}
+
 function savedExportColumns(): string[] {
   try {
     const saved = window.localStorage.getItem(EXPORT_COLUMNS_STORAGE_KEY);
@@ -284,11 +298,16 @@ export function SquadExcelExport({ teams, clubName }: { teams: readonly ClubTeam
     setBusy(true);
     setError(null);
     try {
-      const allDetails = await Promise.all(teams.map(async (team) => Promise.allSettled(
-        team.players.map((player) => call<PlayerDetails>("player_details", { uid: player.uid })),
-      )));
+      const needsPlayerDetails = selectedColumns.some(columnNeedsPlayerDetails);
+      const allDetails = needsPlayerDetails
+        ? await Promise.all(teams.map(async (team) => Promise.allSettled(
+            team.players.map((player) => call<PlayerDetails>("player_details", { uid: player.uid })),
+          )))
+        : teams.map((team) => team.players.map(() => null));
       const details = allDetails.map((results) => results.map((result) =>
-        result.status === "fulfilled" ? result.value : null));
+        result && "status" in result
+          ? result.status === "fulfilled" ? result.value : null
+          : result));
       const blob = buildWorkbook(clubName, teams, details, selectedSet);
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
