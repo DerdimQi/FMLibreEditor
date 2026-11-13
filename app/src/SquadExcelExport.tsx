@@ -197,7 +197,7 @@ function columnNeedsPlayerDetails(key: string) {
   if (key.startsWith("attribute-") || key.startsWith("personality-") || key.startsWith("position-")) {
     return true;
   }
-  const match = /^base-(\\d+)$/.exec(key);
+  const match = /^base-(\d+)$/.exec(key);
   return match !== null && DETAIL_BASE_COLUMN_INDEXES.has(Number(match[1]));
 }
 
