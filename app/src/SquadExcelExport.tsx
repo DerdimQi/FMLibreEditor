@@ -143,10 +143,53 @@ const EXPORT_GROUPS = [
   { id: "positions", label: "Mevki yetkinlikleri", columns: Object.keys(POSITION_LABELS).map((key) => ({ key: `position-${key}`, label: `Mevki: ${POSITION_LABELS[key as keyof typeof POSITION_LABELS]}` })) },
 ] as const;
 
-const DEFAULT_EXPORT_COLUMNS = EXPORT_GROUPS.flatMap((group) => group.columns).map((column) => column.key);
+const ALL_EXPORT_COLUMNS = EXPORT_GROUPS.flatMap((group) => group.columns);
+const BASE_COLUMN = (index: number) => `base-${index}`;
+
+const EXPORT_PROFILES = [
+  {
+    id: "general",
+    label: "Genel kadro raporu",
+    columns: [
+      ...Array.from({ length: 15 }, (_, index) => BASE_COLUMN(index)),
+      BASE_COLUMN(18), BASE_COLUMN(20), BASE_COLUMN(21),
+      BASE_COLUMN(23), BASE_COLUMN(24), BASE_COLUMN(25),
+    ],
+  },
+  {
+    id: "transfer",
+    label: "Transfer değerlendirmesi",
+    columns: [
+      BASE_COLUMN(0), BASE_COLUMN(3), BASE_COLUMN(4), BASE_COLUMN(5),
+      BASE_COLUMN(6), BASE_COLUMN(15), BASE_COLUMN(18), BASE_COLUMN(31), BASE_COLUMN(32),
+      "attribute-acceleration", "attribute-pace", "attribute-finishing",
+      "attribute-first_touch", "attribute-passing", "attribute-technique",
+    ],
+  },
+  {
+    id: "contracts",
+    label: "Maaş ve sözleşme",
+    columns: [
+      BASE_COLUMN(0), BASE_COLUMN(3), BASE_COLUMN(16), BASE_COLUMN(17),
+      BASE_COLUMN(18), BASE_COLUMN(19), BASE_COLUMN(20), BASE_COLUMN(21),
+      BASE_COLUMN(31), BASE_COLUMN(32),
+    ],
+  },
+  {
+    id: "attributes",
+    label: "Oyuncu özellikleri",
+    columns: [
+      BASE_COLUMN(0), BASE_COLUMN(3), BASE_COLUMN(4),
+      ...Object.keys(ATTRIBUTE_LABELS).map((key) => `attribute-${key}`),
+      ...Object.keys(POSITION_LABELS).map((key) => `position-${key}`),
+    ],
+  },
+] as const;
+
+const DEFAULT_EXPORT_COLUMNS = [...EXPORT_PROFILES[0].columns];
 
 const EXPORT_COLUMNS_STORAGE_KEY = "fmlibreeditor.squadExcelColumns.v2";
-const ALL_EXPORT_COLUMN_KEYS = EXPORT_GROUPS.flatMap((group) => group.columns.map((column) => column.key));
+const ALL_EXPORT_COLUMN_KEYS = ALL_EXPORT_COLUMNS.map((column) => column.key);
 
 function savedExportColumns(): string[] {
   try {
@@ -269,6 +312,18 @@ export function SquadExcelExport({ teams, clubName }: { teams: readonly ClubTeam
     <details className="squad-excel-options">
       <summary>Excel raporunda bulunacak alanları seç ({selectedColumns.length}/{totalColumns})</summary>
       <div className="squad-excel-options-actions">
+        <button type="button" onClick={() => setSelectedColumns(EXPORT_PROFILES[0].columns.slice())}>
+          Genel kadro
+        </button>
+        <button type="button" onClick={() => setSelectedColumns(EXPORT_PROFILES[1].columns.slice())}>
+          Transfer
+        </button>
+        <button type="button" onClick={() => setSelectedColumns(EXPORT_PROFILES[2].columns.slice())}>
+          Maaş / sözleşme
+        </button>
+        <button type="button" onClick={() => setSelectedColumns(EXPORT_PROFILES[3].columns.slice())}>
+          Oyuncu özellikleri
+        </button>
         <button type="button" onClick={() => setSelectedColumns(EXPORT_GROUPS.flatMap((group) => group.columns.map((column) => column.key)))}>
           Tümünü seç
         </button>
