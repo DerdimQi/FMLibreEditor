@@ -99,7 +99,10 @@ impl PlayerFilter {
         };
         let any_position = self.positions.is_empty()
             || self.positions.iter().any(|key| {
-                POSITIONS.iter().position(|&position| position == key).is_some_and(|i| p.position_ratings[i] >= PLAYABLE_RATING)
+                POSITIONS
+                    .iter()
+                    .position(|&position| position == key)
+                    .is_some_and(|i| p.position_ratings[i] >= PLAYABLE_RATING)
             });
         position
             && any_position
