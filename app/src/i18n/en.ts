@@ -2094,6 +2094,38 @@ export const en = {
    * A club's squad: the tab of the club profile that lists the players of each of its teams, with the actions on a
    * whole team and the captains.
    */
+  excelExport: {
+    panelTitle: "Choose fields for the Excel report",
+    general: "General squad report",
+    transfer: "Transfer assessment",
+    contracts: "Wages and contracts",
+    attributes: "Player attributes",
+    selectAll: "Select all",
+    clear: "Clear",
+    reset: "Reset to defaults",
+    search: "Search columns",
+    placeholder: "e.g. wages, acceleration, passing…",
+    searchAria: "Search Excel columns",
+    noResults: "No columns match your search.",
+    selectVisible: "Select visible",
+    matching: "matching",
+    preparing: "Preparing Excel…",
+    download: "Download club report (.xlsx)",
+    needOne: "Select at least one column.",
+    summary: "Club summary",
+    report: "Club squad report",
+    created: "Created",
+    team: "Team",
+    players: "Players",
+    averageAge: "Average age",
+    captain: "Captain",
+    viceCaptain: "Vice-captain",
+    groupBase: "Player information",
+    groupAttributes: "Player attributes",
+    groupPersonality: "Personality",
+    groupPositions: "Position ratings",
+  },
+
   squad: {
     // The switch between the club's teams
     /** The name of the switch for assistive technology. */
