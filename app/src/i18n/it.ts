@@ -1946,6 +1946,7 @@ export const it: Strings = {
     captain: "Capitano",
     viceCaptain: "Vice-capitano",
     fieldHeaders: ["Giocatore", "Nome completo", "Squadra", "Età", "Ruoli", "Nazionalità", "Club", "Data di nascita", "Condizione %", "Preparazione partita %", "Affaticamento", "Morale", "Coesione squadra", "Affinità tattica", "Altezza (cm)", "Prezzo richiesto (£)", "Numero di maglia", "Ingaggio settimanale (£)", "Scadenza contratto", "Status rosa", "Felicità", "Soddisfazione per il minutaggio", "Presenze in nazionale", "Gol in nazionale", "Infortuni", "Squalifiche", "Club di prestito", "Club proprietario", "Fine prestito", "Caratteristiche giocatore", "Legami di nazionalità e formazione", "In lista trasferimenti", "In lista prestiti"],
+    positionPrefix: "Ruolo",
     groupBase: "Informazioni giocatore",
     groupAttributes: "Attributi giocatore",
     groupPersonality: "Personalità",
