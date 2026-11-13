@@ -158,7 +158,7 @@ function savedExportColumns(): string[] {
     if (!Array.isArray(parsed)) return [...DEFAULT_EXPORT_COLUMNS];
     const valid = parsed.filter((key): key is string =>
       typeof key === "string" && ALL_EXPORT_COLUMN_KEYS.includes(key));
-    return valid.length > 0 ? valid : [...DEFAULT_EXPORT_COLUMNS];
+    return valid;
   } catch {
     return [...DEFAULT_EXPORT_COLUMNS];
   }
