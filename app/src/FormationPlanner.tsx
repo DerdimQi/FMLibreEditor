@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { clubSquads } from "./editing";
 import { describeError } from "./format";
-import type { ClubTeam, SquadPlayer } from "./types";
+import type { ClubTeam } from "./types";
 type Slot={id:string;label:string;x:number;y:number};
 const FORMATIONS:Record<string,Slot[]>={
 "4-3-3":[{id:"gk",label:"KL",x:50,y:91},{id:"lb",label:"SLB",x:12,y:70},{id:"lcb",label:"STP",x:37,y:73},{id:"rcb",label:"STP",x:63,y:73},{id:"rb",label:"SĞB",x:88,y:70},{id:"dm",label:"DOS",x:50,y:55},{id:"lcm",label:"MO",x:32,y:43},{id:"rcm",label:"MO",x:68,y:43},{id:"lw",label:"SLK",x:16,y:19},{id:"st",label:"SNT",x:50,y:12},{id:"rw",label:"SAK",x:84,y:19}],
