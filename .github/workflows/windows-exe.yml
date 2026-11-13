@@ -19,7 +19,8 @@ jobs:
     timeout-minutes: 90
     env:
       # Keep release optimizations while avoiding the very slow full-LTO link on CI.
-      CARGO_PROFILE_RELEASE_LTO: thin
+      CARGO_PROFILE_RELEASE_LTO: "false"
+      CARGO_PROFILE_RELEASE_OPT_LEVEL: "2"
       CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
     steps:
       - uses: actions/checkout@v4
@@ -41,6 +42,7 @@ jobs:
       # Build the standalone app, not an installer. This avoids the updater signing
       # secrets required by the release workflow and produces target/release/FMLibreEditor.exe.
       - name: Build standalone executable
+        timeout-minutes: 45
         working-directory: app
         run: npm run release
 
