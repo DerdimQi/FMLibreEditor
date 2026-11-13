@@ -66,7 +66,7 @@ export function readFields(value: unknown): PlayerFilterFields {
   const none = NO_PLAYER_FILTERS;
   return {
     ...readPersonFields(given, PLAYER_ATTRIBUTES),
-    position: textOr(given.position, none.position, (text) => text === "" || POSITION_KEYS.has(text)),
+    positions: Array.isArray(given.positions) ? given.positions.filter((item): item is string => typeof item === "string" && POSITION_KEYS.has(item)).slice(0, POSITION_ORDER.length) : none.positions,
     freeAgents: typeof given.freeAgents === "boolean" ? given.freeAgents : none.freeAgents,
     transferListed: typeof given.transferListed === "boolean" ? given.transferListed : none.transferListed,
     loanListed: typeof given.loanListed === "boolean" ? given.loanListed : none.loanListed,
