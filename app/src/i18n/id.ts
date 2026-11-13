@@ -1805,6 +1805,7 @@ export const id: Strings = {
     averageAge: "Usia rata-rata",
     captain: "Kapten",
     viceCaptain: "Wakil kapten",
+    fieldHeaders: ["Pemain", "Nama lengkap", "Tim", "Usia", "Posisi", "Kebangsaan", "Klub", "Tanggal lahir", "Kondisi %", "Ketajaman pertandingan %", "Kelelahan", "Moral", "Kekompakan tim", "Kefasihan taktik", "Tinggi (cm)", "Harga yang diminta (£)", "Nomor punggung", "Gaji mingguan (£)", "Kontrak berakhir", "Status skuad", "Kebahagiaan", "Kepuasan waktu bermain", "Caps internasional", "Gol internasional", "Cedera", "Skorsing", "Klub peminjam", "Klub induk", "Akhir masa pinjaman", "Ciri pemain", "Ikatan kewarganegaraan / binaan lokal", "Masuk daftar transfer", "Masuk daftar pinjaman"],
     groupBase: "Informasi pemain",
     groupAttributes: "Atribut pemain",
     groupPersonality: "Kepribadian",
