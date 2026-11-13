@@ -378,6 +378,8 @@ export interface PersonFilter {
 export interface PlayerFilter extends PersonFilter {
   /** A position key (gk, sw, dl, dc, dr, dm, ml, mc, mr, aml, amc, amr, st, wbl, wbr); rated 15+ there. */
   position?: string;
+  /** Any selected position rated 15+; an empty list leaves position unrestricted. */
+  positions?: string[];
   /** Only players of the club with this UID, e.g. those a player can swap with. */
   clubUid?: number;
   /** Only players without a club. */
