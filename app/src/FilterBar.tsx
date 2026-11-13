@@ -22,7 +22,9 @@ export interface PersonFilterFields {
   minAge: string;
   maxAge: string;
   minCurrentAbility: string;
+  maxCurrentAbility: string;
   minPotentialAbility: string;
+  maxPotentialAbility: string;
   nation: string;
   club: string;
   /** `YYYY-MM-DD`, as a date input holds it. */
@@ -35,7 +37,9 @@ export const NO_PERSON_FILTERS: PersonFilterFields = {
   minAge: "",
   maxAge: "",
   minCurrentAbility: "",
+  maxCurrentAbility: "",
   minPotentialAbility: "",
+  maxPotentialAbility: "",
   nation: "",
   club: "",
   contractExpiresBy: "",
@@ -64,7 +68,9 @@ export function toPersonFilter(fields: PersonFilterFields): PersonFilter {
     minAge: whole(fields.minAge, AGE_RANGE),
     maxAge: whole(fields.maxAge, AGE_RANGE),
     minCurrentAbility: whole(fields.minCurrentAbility, ABILITY_RANGE),
+    maxCurrentAbility: whole(fields.maxCurrentAbility, ABILITY_RANGE),
     minPotentialAbility: whole(fields.minPotentialAbility, ABILITY_RANGE),
+    maxPotentialAbility: whole(fields.maxPotentialAbility, ABILITY_RANGE),
     nation: fields.nation.trim() || undefined,
     club: fields.club.trim() || undefined,
     contractExpiresBy: toFmDate(fields.contractExpiresBy),
@@ -80,8 +86,8 @@ export function countPersonFilters(filter: PersonFilter): number {
   const single = [
     filter.women,
     filter.minAge ?? filter.maxAge,
-    filter.minCurrentAbility,
-    filter.minPotentialAbility,
+    filter.minCurrentAbility ?? filter.maxCurrentAbility,
+    filter.minPotentialAbility ?? filter.maxPotentialAbility,
     filter.nation,
     filter.club,
     filter.contractExpiresBy,
@@ -114,7 +120,9 @@ export function readPersonFields(given: Record<string, unknown>, choices: Attrib
     minAge: textOr(given.minAge, none.minAge, isNumberText),
     maxAge: textOr(given.maxAge, none.maxAge, isNumberText),
     minCurrentAbility: textOr(given.minCurrentAbility, none.minCurrentAbility, isNumberText),
+    maxCurrentAbility: textOr(given.maxCurrentAbility, none.maxCurrentAbility, isNumberText),
     minPotentialAbility: textOr(given.minPotentialAbility, none.minPotentialAbility, isNumberText),
+    maxPotentialAbility: textOr(given.maxPotentialAbility, none.maxPotentialAbility, isNumberText),
     nation: textOr(given.nation, none.nation),
     club: textOr(given.club, none.club),
     contractExpiresBy: textOr(
@@ -232,23 +240,44 @@ export function AgeInputs({ min, max }: { min: InputProps<string>; max: InputPro
 }
 
 /** The least current or potential ability: its short name, the long one as hover text. */
-export function AbilityInput({ label, title, value, onChange }: InputProps<string> & { label: string; title: string }) {
+export function AbilityRangeInput({
+  label,
+  title,
+  min,
+  max,
+}: {
+  label: string;
+  title: string;
+  min: InputProps<string>;
+  max: InputProps<string>;
+}) {
   return (
-    <label className="filter-field" title={title}>
+    <div className="filter-field ability-range" role="group" title={title}>
       <span>{label}</span>
       <input
         type="number"
         min={ABILITY_RANGE.min}
         max={ABILITY_RANGE.max}
         step={1}
-        placeholder={text.abilityPlaceholder}
-        value={value}
-        onChange={(e) => onChange(e.currentTarget.value)}
+        placeholder={text.minPlaceholder}
+        aria-label={`${label} ${text.minPlaceholder}`}
+        value={min.value}
+        onChange={(e) => min.onChange(e.currentTarget.value)}
       />
-    </label>
+      <span aria-hidden="true">–</span>
+      <input
+        type="number"
+        min={ABILITY_RANGE.min}
+        max={ABILITY_RANGE.max}
+        step={1}
+        placeholder={text.maxPlaceholder}
+        aria-label={`${label} ${text.maxPlaceholder}`}
+        value={max.value}
+        onChange={(e) => max.onChange(e.currentTarget.value)}
+      />
+    </div>
   );
 }
-
 /** Part of a name, e.g. the nation's or the club's. */
 export function TextInput({ label, value, onChange }: InputProps<string> & { label: string }) {
   return (
