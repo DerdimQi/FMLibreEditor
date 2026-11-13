@@ -181,6 +181,7 @@ export function MyClub({ version, gameDate, onOpenClub, onEmpty }: MyClubProps) 
             <SquadTab
               key={`squad-${subject.uid}`}
               clubUid={subject.uid}
+              clubName={subject.name}
               version={version}
               label={text.squad}
               overview={(team, open) => <Attention team={team} gameDate={gameDate} onOpen={open} />}
