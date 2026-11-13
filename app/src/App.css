@@ -6396,3 +6396,31 @@ kbd {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+
+/* Search field for manually filtering export columns. */
+.squad-excel-search {
+  display: grid;
+  gap: 5px;
+  padding: 10px 12px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.squad-excel-search input {
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+  font-weight: 400;
+}
+
+.squad-excel-search input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
