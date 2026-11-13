@@ -182,6 +182,7 @@ export function MyClub({ version, gameDate, onOpenClub, onEmpty }: MyClubProps) 
               clubUid={subject.uid}
               version={version}
               label={text.squad}
+              clubName={subject.name}
               overview={(team, open) => <Attention team={team} gameDate={gameDate} onOpen={open} />}
             />
           </>
