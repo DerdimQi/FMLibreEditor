@@ -212,6 +212,13 @@ export function SquadExcelExport({ teams, clubName }: { teams: readonly ClubTeam
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedColumns, setSelectedColumns] = useState<string[]>(savedExportColumns);
+  const [columnSearch, setColumnSearch] = useState("");
+  const normalizedSearch = columnSearch.trim().toLocaleLowerCase("tr-TR");
+  const visibleGroups = EXPORT_GROUPS.map((group) => ({
+    ...group,
+    columns: group.columns.filter((column) =>
+      !normalizedSearch || column.label.toLocaleLowerCase("tr-TR").includes(normalizedSearch)),
+  })).filter((group) => group.columns.length > 0);
   useEffect(() => {
     try {
       window.localStorage.setItem(EXPORT_COLUMNS_STORAGE_KEY, JSON.stringify(selectedColumns));
@@ -270,20 +277,22 @@ export function SquadExcelExport({ teams, clubName }: { teams: readonly ClubTeam
         <button type="button" onClick={() => setSelectedColumns([])}>Temizle</button>
         <button type="button" onClick={() => setSelectedColumns([...DEFAULT_EXPORT_COLUMNS])}>Varsayılana dön</button>
       </div>
+      <label className="squad-excel-search">
+        <span>Sütunlarda ara</span>
+        <input
+          type="search"
+          value={columnSearch}
+          onChange={(event) => setColumnSearch(event.currentTarget.value)}
+          placeholder="Örn. maaş, hızlanma, pas…"
+          aria-label="Excel sütunlarında ara"
+        />
+      </label>
       <div className="squad-excel-options-groups">
-        {EXPORT_GROUPS.map((group) => {
+        {visibleGroups.length === 0 && <p className="note">Aramanla eşleşen sütun bulunamadı.</p>}
+        {visibleGroups.map((group) => {
           const selectedInGroup = group.columns.filter((column) => selectedSet.has(column.key)).length;
           return <fieldset key={group.id} className="squad-excel-options-group">
-            <legend>{group.label} ({selectedInGroup}/{group.columns.length})</legend>
-            <label className="squad-excel-group-toggle">
-              <input
-                type="checkbox"
-                checked={selectedInGroup === group.columns.length}
-                ref={(element) => { if (element) element.indeterminate = selectedInGroup > 0 && selectedInGroup < group.columns.length; }}
-                onChange={(event) => setGroup(group.id, event.currentTarget.checked)}
-              />
-              Grubun tamamı
-            </label>
+            <legend>{group.label} ({selectedInGroup}/{group.columns.length} eşleşen)</legend>
             <div className="squad-excel-options-columns">
               {group.columns.map((column) => <label key={column.key}>
                 <input
