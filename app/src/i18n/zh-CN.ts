@@ -2149,6 +2149,40 @@ export const zhCN: Strings = {
    * A club's squad: the tab of the club profile that lists the players of each of its teams, with the actions on a
    * whole team and the captains.
    */
+  excelExport: {
+    panelTitle: "选择 Excel 报告中的字段",
+    general: "球队阵容报告",
+    transfer: "转会评估",
+    contracts: "工资与合同",
+    attributes: "球员属性",
+    selectAll: "全选",
+    clear: "清除",
+    reset: "恢复默认",
+    search: "搜索列",
+    placeholder: "例如：工资、加速度、传球…",
+    searchAria: "搜索 Excel 列",
+    noResults: "没有匹配的列。",
+    selectVisible: "选择可见项",
+    matching: "项匹配",
+    preparing: "正在准备 Excel…",
+    download: "下载俱乐部报告 (.xlsx)",
+    needOne: "请至少选择一列。",
+    summary: "俱乐部摘要",
+    report: "俱乐部阵容报告",
+    created: "创建时间",
+    team: "球队",
+    players: "球员人数",
+    averageAge: "平均年龄",
+    captain: "队长",
+    viceCaptain: "副队长",
+    fieldHeaders: ["球员", "全名", "球队", "年龄", "位置", "国籍", "俱乐部", "出生日期", "体能 %", "比赛状态 %", "疲劳度", "士气", "团队凝聚力", "战术熟悉度", "身高 (cm)", "要价 (£)", "球衣号码", "周薪 (£)", "合同到期日", "阵容身份", "满意度", "出场时间满意度", "国家队出场", "国家队进球", "伤病", "停赛", "租借俱乐部", "所属俱乐部", "租借结束日期", "球员习惯", "国籍 / 本土培养关联", "已列入转会名单", "已列入外租名单"],
+    positionPrefix: "位置",
+    groupBase: "球员信息",
+    groupAttributes: "球员属性",
+    groupPersonality: "性格",
+    groupPositions: "位置评分",
+  },
+
   squad: {
     // The switch between the club's teams
     /** The name of the switch for assistive technology. */

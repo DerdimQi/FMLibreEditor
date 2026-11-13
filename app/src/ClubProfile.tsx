@@ -94,7 +94,7 @@ export function ClubProfile({ club, version, tab, onTab, onClose }: ClubProfileP
     >
       {details &&
         (shown === "squad" ? (
-          <SquadTab clubUid={club.uid} version={version} panel={panel} />
+          <SquadTab clubUid={club.uid} clubName={info.name} version={version} panel={panel} />
         ) : shown === "stadium" ? (
           <StadiumTab club={club.uid} stadium={details.stadium} panel={panel} />
         ) : (

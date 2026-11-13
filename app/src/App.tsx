@@ -412,22 +412,13 @@ function App() {
   return (
     <div className="app">
       <header className="masthead">
-        <BrandMark />
-        <nav className="tabs">
-          {VIEWS.map(({ id, label }, index) => (
-            <button
-              key={id}
-              type="button"
-              className={id === view ? "tab active" : "tab"}
-              aria-current={id === view ? "page" : undefined}
-              title={withShortcut(label, viewShortcut(index))}
-              onClick={() => show(id)}
-            >
-              {label}
-              {id === "changes" && log.length > 0 && <small>{log.length}</small>}
-            </button>
-          ))}
-        </nav>
+        <div className="brand-lockup">
+          <BrandMark />
+          <div className="brand-copy">
+            <strong>FMLibreEditor</strong>
+            <span>FOOTBALL MANAGER EDITOR</span>
+          </div>
+        </div>
         <div className="masthead-side">
           {busy && <span className="busy">{busy}</span>}
           <button
@@ -462,7 +453,33 @@ function App() {
         </div>
       </header>
 
-      <div className="main">
+      <div className="app-body">
+        <aside className="sidebar">
+          <nav className="tabs" aria-label="Main navigation">
+            {VIEWS.map(({ id, label }, index) => (
+              <button
+                key={id}
+                type="button"
+                className={id === view ? "tab active" : "tab"}
+                aria-current={id === view ? "page" : undefined}
+                title={withShortcut(label, viewShortcut(index))}
+                onClick={() => show(id)}
+              >
+                <span className="nav-marker" aria-hidden="true" />
+                <span className="nav-label">{label}</span>
+                {id === "changes" && log.length > 0 && <small>{log.length}</small>}
+              </button>
+            ))}
+          </nav>
+          <div className="sidebar-foot">
+            <span className={connection ? "sidebar-status connected" : "sidebar-status"}>
+              <span className="dot" />
+              {connection ? describeGame(connection.game) : appText.notConnected}
+            </span>
+          </div>
+        </aside>
+        <div className="app-content">
+          <div className="main">
         {update.notice && (
           <UpdateNotice
             release={update.notice}
@@ -564,6 +581,9 @@ function App() {
           <GraphicsStatus />
         </div>
       </footer>
+
+        </div>
+      </div>
 
       {paletteOpen && (
         <CommandPalette

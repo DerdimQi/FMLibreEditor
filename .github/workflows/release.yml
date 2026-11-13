@@ -16,6 +16,8 @@ on:
       - ".github/workflows/release.yml"
       - "app/src-tauri/tauri.conf.json"
       - "app/src-tauri/tauri.bridge.conf.json"
+      - "app/src/SquadExcelExport.tsx"
+      - "app/src/SquadTab.tsx"
       - "docs/portable-readme.txt"
   workflow_dispatch:
 
@@ -68,12 +70,21 @@ jobs:
       # The installer is signed with the key whose public half is in tauri.conf.json, so that installed copies accept
       # it as an update; the signature lands beside it (.sig). The key and its password are the repository's secrets
       # TAURI_SIGNING_PRIVATE_KEY and TAURI_SIGNING_PRIVATE_KEY_PASSWORD; without them the build stops.
-      - name: Build the installer
+      - name: Build the signed installer for releases
+        if: startsWith(github.ref, 'refs/tags/v')
         working-directory: app
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npx tauri build --bundles nsis
+
+      - name: Build an unsigned installer for pull requests
+        if: github.event_name == 'pull_request'
+        working-directory: app
+        shell: pwsh
+        run: |
+          '{"bundle":{"createUpdaterArtifacts":false}}' | Set-Content -NoNewline src-tauri/tauri.unsigned.conf.json
+          npx tauri build --bundles nsis --config src-tauri/tauri.unsigned.conf.json
 
       - name: Package the installer and the portable zip
         shell: pwsh
@@ -81,7 +92,7 @@ jobs:
           New-Item -ItemType Directory -Force out | Out-Null
           $setup = Get-ChildItem target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
           Copy-Item $setup.FullName out/FMLibreEditor-Setup.exe
-          Copy-Item "$($setup.FullName).sig" out/FMLibreEditor-Setup.exe.sig
+          if (Test-Path "$($setup.FullName).sig") { Copy-Item "$($setup.FullName).sig" out/FMLibreEditor-Setup.exe.sig }
           New-Item -ItemType Directory -Force portable/FMLibreEditor | Out-Null
           Copy-Item target/release/FMLibreEditor.exe portable/FMLibreEditor/
           Copy-Item docs/portable-readme.txt portable/FMLibreEditor/README.txt
@@ -94,6 +105,7 @@ jobs:
           path: out/*
 
   macos:
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: macos-latest
     env:
       # With the maintainer's Apple Developer ID in the repository's secrets, the app is signed and notarized, and
