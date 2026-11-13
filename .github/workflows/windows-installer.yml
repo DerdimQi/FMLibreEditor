@@ -1,0 +1,65 @@
+# Build an installable Windows package for feature pull requests without release-signing secrets.
+name: Windows installer
+
+on:
+  pull_request:
+    paths:
+      - "app/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/windows-installer.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install interface packages
+        working-directory: app
+        run: npm ci
+
+      - name: Build interface
+        working-directory: app
+        run: npm run build
+
+      # Feature builds are unsigned and do not create updater signatures.
+      - name: Configure unsigned installer
+        shell: pwsh
+        run: |
+          '{"bundle":{"createUpdaterArtifacts":false}}' | Set-Content -NoNewline app/src-tauri/tauri.unsigned.conf.json
+
+      - name: Build Windows installer
+        working-directory: app
+        run: npx tauri build --bundles nsis --config src-tauri/tauri.unsigned.conf.json
+
+      - name: Package installer and portable executable
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force out | Out-Null
+          $setup = Get-ChildItem target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
+          if (-not $setup) { throw "NSIS installer was not produced." }
+          Copy-Item $setup.FullName out/FMLibreEditor-Setup.exe
+          Copy-Item target/release/FMLibreEditor.exe out/FMLibreEditor.exe
+          Get-ChildItem out | Format-Table Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FMLibreEditor-Windows-Installer
+          path: out/*
+          if-no-files-found: error
+          retention-days: 14
