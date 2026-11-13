@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { AttributeFilters, PLAYER_ATTRIBUTES } from "./AttributeFilters";
 import {
-  AbilityInput,
+  AbilityRangeInput,
   AgeInputs,
   CheckInput,
   ContractEndInput,
@@ -98,15 +98,17 @@ export function PlayerFilterBar({ fields, onChange, active, genderKnown, actions
       </label>
       {genderKnown && <GenderInput {...input("gender")} />}
       <AgeInputs min={input("minAge")} max={input("maxAge")} />
-      <AbilityInput
+      <AbilityRangeInput
         label={text.minCurrentAbility}
         title={text.minCurrentAbilityTitle}
-        {...input("minCurrentAbility")}
+        min={input("minCurrentAbility")}
+        max={input("maxCurrentAbility")}
       />
-      <AbilityInput
+      <AbilityRangeInput
         label={text.minPotentialAbility}
         title={text.minPotentialAbilityTitle}
-        {...input("minPotentialAbility")}
+        min={input("minPotentialAbility")}
+        max={input("maxPotentialAbility")}
       />
       <TextInput label={text.nation} {...input("nation")} />
       <TextInput label={text.club} {...input("club")} />
