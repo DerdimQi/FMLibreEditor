@@ -108,7 +108,7 @@ function playerRow(player: SquadPlayer, details: PlayerDetails | null, teamName:
   const contract = details?.contract;
   const base: Cell[] = [
     player.name, player.fullName ?? null, teamName, player.age ?? null, player.positions.map(positionLabel).join(", "),
-    player.nation ?? null, player.club ?? null, dateText(player.dateOfBirth), player.currentAbility, player.potentialAbility,
+    player.nation ?? null, player.club ?? null, dateText(player.dateOfBirth),
     player.condition / 100, player.matchSharpness / 100, player.jadedness, player.morale,
     player.cohesion ?? null, player.tactics ?? null, details?.heightCm ?? null, details?.askingPrice ?? null,
     contract?.squadNumber ?? null, contract?.wage ?? null, dateText(contract?.expires ?? player.contractExpires),
@@ -129,7 +129,7 @@ function playerRow(player: SquadPlayer, details: PlayerDetails | null, teamName:
 
 const BASE_HEADERS = [
   "Oyuncu", "Tam ad", "Takım", "Yaş", "Mevkiler", "Uyruk", "Kulüp", "Doğum tarihi",
-  "CA (oyun içi)", "PA (oyun içi)", "Kondisyon %", "Maç keskinliği %", "Yorgunluk", "Moral",
+  "Kondisyon %", "Maç keskinliği %", "Yorgunluk", "Moral",
   "Takım uyumu", "Taktik aşinalığı", "Boy (cm)", "İstenen bonservis (£)", "Forma no",
   "Haftalık ücret (£)", "Sözleşme bitişi", "Kadro statüsü", "Mutluluk", "Forma süresi mutluluğu",
   "Milli maç", "Milli gol", "Sakatlıklar", "Cezalar", "Kiralık olduğu kulüp", "Bonservisinin olduğu kulüp",
@@ -143,11 +143,9 @@ const EXPORT_GROUPS = [
   { id: "positions", label: "Mevki yetkinlikleri", columns: Object.keys(POSITION_LABELS).map((key) => ({ key: `position-${key}`, label: `Mevki: ${POSITION_LABELS[key as keyof typeof POSITION_LABELS]}` })) },
 ] as const;
 
-const DEFAULT_EXPORT_COLUMNS = EXPORT_GROUPS.flatMap((group) => group.columns)
-  .map((column) => column.key)
-  .filter((key) => key !== "base-8" && key !== "base-9");
+const DEFAULT_EXPORT_COLUMNS = EXPORT_GROUPS.flatMap((group) => group.columns).map((column) => column.key);
 
-const EXPORT_COLUMNS_STORAGE_KEY = "fmlibreeditor.squadExcelColumns.v1";
+const EXPORT_COLUMNS_STORAGE_KEY = "fmlibreeditor.squadExcelColumns.v2";
 const ALL_EXPORT_COLUMN_KEYS = EXPORT_GROUPS.flatMap((group) => group.columns.map((column) => column.key));
 
 function savedExportColumns(): string[] {
@@ -156,9 +154,8 @@ function savedExportColumns(): string[] {
     if (!saved) return [...DEFAULT_EXPORT_COLUMNS];
     const parsed: unknown = JSON.parse(saved);
     if (!Array.isArray(parsed)) return [...DEFAULT_EXPORT_COLUMNS];
-    const valid = parsed.filter((key): key is string =>
+    return parsed.filter((key): key is string =>
       typeof key === "string" && ALL_EXPORT_COLUMN_KEYS.includes(key));
-    return valid;
   } catch {
     return [...DEFAULT_EXPORT_COLUMNS];
   }
@@ -300,7 +297,6 @@ export function SquadExcelExport({ teams, clubName }: { teams: readonly ClubTeam
           </fieldset>;
         })}
       </div>
-      <p className="note">CA ve PA varsayılan olarak kapalıdır. İstersen rapora kendin ekleyebilirsin.</p>
     </details>
     <button type="button" onClick={() => void download()} disabled={busy || teams.every((team) => team.players.length === 0) || selectedColumns.length === 0}>
       {busy ? "Excel hazırlanıyor…" : "Excel kulüp raporu indir (.xlsx)"}
