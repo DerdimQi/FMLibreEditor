@@ -143,7 +143,7 @@ const EXPORT_GROUPS = [
   { id: "base", label: t.groupBase, columns: BASE_HEADERS.map((label, index) => ({ key: `base-${index}`, label })) },
   { id: "attributes", label: t.groupAttributes, columns: Object.keys(ATTRIBUTE_LABELS).map((key) => ({ key: `attribute-${key}`, label: ATTRIBUTE_LABELS[key as keyof typeof ATTRIBUTE_LABELS] })) },
   { id: "personality", label: t.groupPersonality, columns: Object.keys(PERSONALITY_LABELS).map((key) => ({ key: `personality-${key}`, label: PERSONALITY_LABELS[key as keyof typeof PERSONALITY_LABELS] })) },
-  { id: "positions", label: t.groupPositions, columns: Object.keys(POSITION_LABELS).map((key) => ({ key: `position-${key}`, label: `Mevki: ${POSITION_LABELS[key as keyof typeof POSITION_LABELS]}` })) },
+  { id: "positions", label: t.groupPositions, columns: Object.keys(POSITION_LABELS).map((key) => ({ key: `position-${key}`, label: `${t.groupPositions}: ${POSITION_LABELS[key as keyof typeof POSITION_LABELS]}` })) },
 ] as const;
 
 const ALL_EXPORT_COLUMNS = EXPORT_GROUPS.flatMap((group) => group.columns);
@@ -219,7 +219,7 @@ function safeSheetName(name: string, used: Set<string>) {
 }
 
 function buildWorkbook(clubName: string, teams: readonly ClubTeam[], details: (PlayerDetails | null)[][], selectedColumns: ReadonlySet<string>) {
-  const used = new Set<string>(["kulüp özeti"]);
+  const used = new Set<string>([t.summary.toLocaleLowerCase()]);
   const names = [t.summary, ...teams.map((team) => safeSheetName(teamLabel(team), used))];
   const summary: Row[] = [[clubName, t.report, t.created, new Date().toLocaleString(intlLocale)], [], [t.team, t.players, t.averageAge, t.captain, t.viceCaptain]];
   teams.forEach((team) => {
@@ -316,19 +316,19 @@ export function SquadExcelExport({ teams, clubName }: { teams: readonly ClubTeam
       <summary>{t.panelTitle} ({selectedColumns.length}/{totalColumns})</summary>
       <div className="squad-excel-options-actions">
         <button type="button" onClick={() => setSelectedColumns(EXPORT_PROFILES[0].columns.slice())}>
-          Genel kadro
+          {t.general}
         </button>
         <button type="button" onClick={() => setSelectedColumns(EXPORT_PROFILES[1].columns.slice())}>
-          Transfer
+          {t.transfer}
         </button>
         <button type="button" onClick={() => setSelectedColumns(EXPORT_PROFILES[2].columns.slice())}>
-          Maaş / sözleşme
+          {t.contracts}
         </button>
         <button type="button" onClick={() => setSelectedColumns(EXPORT_PROFILES[3].columns.slice())}>
-          Oyuncu özellikleri
+          {t.attributes}
         </button>
         <button type="button" onClick={() => setSelectedColumns(EXPORT_GROUPS.flatMap((group) => group.columns.map((column) => column.key)))}>
-          Tümünü seç
+          {t.selectAll}
         </button>
         <button type="button" onClick={() => setSelectedColumns([])}>{t.clear}</button>
         <button type="button" onClick={() => setSelectedColumns([...DEFAULT_EXPORT_COLUMNS])}>{t.reset}</button>
@@ -357,7 +357,7 @@ export function SquadExcelExport({ teams, clubName }: { teams: readonly ClubTeam
                 ref={(element) => { if (element) element.indeterminate = selectedInGroup > 0 && selectedInGroup < group.columns.length; }}
                 onChange={(event) => setVisibleGroup(visibleKeys, event.currentTarget.checked)}
               />
-              Görünenleri seç
+              {t.selectVisible}
             </label>
             <div className="squad-excel-options-columns">
               {group.columns.map((column) => <label key={column.key}>
