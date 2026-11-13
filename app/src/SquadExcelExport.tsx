@@ -66,7 +66,7 @@ function zip(files: { name: string; content: string }[]) {
       new Uint8Array([0x50,0x4b,0x01,0x02]),
       new Uint8Array([20,0,20,0,0,0,0,0,0,0,0,0]),
       new Uint8Array(u32(crc)), new Uint8Array(u32(data.length)), new Uint8Array(u32(data.length)),
-      new Uint8Array(u16(name.length)), new Uint8Array([0,0,0,0,0,0,0,0,0,0]),
+      new Uint8Array(u16(name.length)), new Uint8Array([0,0,0,0,0,0,0,0]),
       new Uint8Array(u32(0)), new Uint8Array(u32(offset)), name,
     ]);
     central.push(directory);
