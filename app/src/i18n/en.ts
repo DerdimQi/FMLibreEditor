@@ -2121,6 +2121,7 @@ export const en = {
     captain: "Captain",
     viceCaptain: "Vice-captain",
     fieldHeaders: ["Player", "Full name", "Team", "Age", "Positions", "Nationality", "Club", "Date of birth", "Condition %", "Match sharpness %", "Jadedness", "Morale", "Team cohesion", "Tactical familiarity", "Height (cm)", "Asking price (£)", "Squad number", "Weekly wage (£)", "Contract expiry", "Squad status", "Happiness", "Playing time happiness", "International caps", "International goals", "Injuries", "Suspensions", "Loan club", "Parent club", "Loan end date", "Player traits", "Nationality / homegrown ties", "Transfer listed", "Loan listed"],
+    positionPrefix: "Position",
     groupBase: "Player information",
     groupAttributes: "Player attributes",
     groupPersonality: "Personality",
