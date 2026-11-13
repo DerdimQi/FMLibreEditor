@@ -1,0 +1,247 @@
+/*
+ * Comfort sizing pass.
+ * Keep the existing visual language and components; make the layout breathe
+ * at common desktop window sizes and keep controls comfortably readable.
+ */
+
+:root {
+  --ui-font-size: 14.5px;
+  --ui-control-height: 34px;
+  --ui-cell-y: 7px;
+  --ui-cell-x: 10px;
+  font-size: var(--ui-font-size);
+  line-height: 1.5;
+}
+
+/* Consistent, less cramped controls without enlarging compact icon/name actions. */
+button:not(.icon-button):not(.name-link) {
+  min-height: var(--ui-control-height);
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  min-height: var(--ui-control-height);
+  font: inherit;
+}
+
+table :is(th, td) {
+  padding-top: var(--ui-cell-y);
+  padding-bottom: var(--ui-cell-y);
+}
+
+input,
+select,
+textarea {
+  line-height: 1.4;
+}
+
+.masthead {
+  min-height: 58px;
+  gap: clamp(10px, 1.35vw, 22px);
+  padding-right: clamp(12px, 1.5vw, 24px);
+  padding-left: clamp(14px, 1.8vw, 28px);
+}
+
+.tab {
+  min-height: 42px;
+  padding-right: clamp(10px, 1.1vw, 18px);
+  padding-left: clamp(10px, 1.1vw, 18px);
+}
+
+.home,
+.scout-main {
+  padding-right: clamp(16px, 2vw, 32px);
+  padding-left: clamp(16px, 2vw, 32px);
+}
+
+.home {
+  gap: 18px;
+  padding-top: 20px;
+  padding-bottom: 22px;
+}
+
+.home-head {
+  gap: 16px 24px;
+  padding-bottom: 18px;
+}
+
+.home-id h2 {
+  font-size: clamp(28px, 2.1vw, 36px);
+}
+
+.profile-tabs {
+  gap: 6px;
+  padding-right: 16px;
+  padding-left: 16px;
+}
+
+.profile-tab {
+  padding: 10px 16px;
+}
+
+.squad-tab {
+  gap: 16px;
+}
+
+.squad-table-wrap,
+.mass-table-wrap,
+.modal-body > .compare-wrap {
+  scrollbar-gutter: stable;
+}
+
+.squad-grid :is(th, td) {
+  padding: 8px 10px;
+}
+
+.scout-main {
+  padding-top: 18px;
+}
+
+.scout-recommend {
+  gap: clamp(18px, 2vw, 30px);
+}
+
+.scout-brief {
+  width: clamp(280px, 23vw, 340px);
+}
+
+.scout-pitch {
+  grid-template-rows: repeat(6, 32px);
+  gap: 7px;
+  padding: 10px 12px;
+}
+
+.pager-bar,
+.compare-tray {
+  padding: 10px 14px;
+}
+
+.colophon {
+  min-height: 32px;
+  padding-right: 20px;
+  padding-left: 20px;
+  line-height: 31px;
+}
+
+@media (min-width: 1600px) {
+  :root {
+    --ui-font-size: 15px;
+    --ui-control-height: 36px;
+    --ui-cell-y: 8px;
+    --ui-cell-x: 12px;
+  }
+
+  .home,
+  .scout-main {
+    padding-right: 32px;
+    padding-left: 32px;
+  }
+
+  .squad-grid :is(th, td) {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+}
+
+/* Keep the masthead and two-column scouting layout from colliding in smaller windows. */
+@media (max-width: 1180px) {
+  .masthead {
+    gap: 8px;
+  }
+
+  .tab {
+    padding-right: 7px;
+    padding-left: 7px;
+    font-size: 13px;
+  }
+
+  .masthead-side {
+    gap: 6px;
+  }
+
+  .scout-recommend {
+    gap: 16px;
+  }
+
+  .scout-brief {
+    width: 270px;
+  }
+}
+
+@media (max-width: 980px) {
+  :root {
+    --ui-font-size: 14px;
+    --ui-control-height: 33px;
+    --ui-cell-y: 6px;
+    --ui-cell-x: 8px;
+  }
+
+  .masthead {
+    flex-wrap: wrap;
+    align-items: center;
+    padding-top: 8px;
+  }
+
+  .masthead-side {
+    margin-left: auto;
+  }
+
+  .tabs {
+    order: 3;
+    flex: 1 1 100%;
+    overflow-x: auto;
+  }
+
+  .tab {
+    flex: none;
+    min-height: 36px;
+  }
+
+  .scout-recommend {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .scout-brief {
+    width: 100%;
+    max-height: none;
+    padding-right: 0;
+    overflow: visible;
+  }
+
+  .scout-results {
+    overflow: visible;
+  }
+
+  .home-facts > div {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+}
+
+@media (max-height: 760px) {
+  .home {
+    gap: 12px;
+    padding-top: 12px;
+    padding-bottom: 14px;
+  }
+
+  .home-head {
+    padding-bottom: 10px;
+  }
+
+  .squad-tab {
+    gap: 10px;
+  }
+
+  .scout-main {
+    padding-top: 10px;
+  }
+
+  .scout-panel {
+    padding-top: 10px;
+  }
+}
