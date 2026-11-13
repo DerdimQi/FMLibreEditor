@@ -25,8 +25,8 @@ export const POSITION_ORDER: readonly PositionKey[] = [
 
 /** What the filter inputs hold, as typed: an empty string, or `false`, is no filter. */
 export interface PlayerFilterFields extends PersonFilterFields {
-  /** A position key. */
-  position: string;
+  /** Position keys; any one may match. */
+  positions: string[];
   freeAgents: boolean;
   transferListed: boolean;
   loanListed: boolean;
@@ -34,7 +34,7 @@ export interface PlayerFilterFields extends PersonFilterFields {
 
 export const NO_PLAYER_FILTERS: PlayerFilterFields = {
   ...NO_PERSON_FILTERS,
-  position: "",
+  positions: [],
   freeAgents: false,
   transferListed: false,
   loanListed: false,
@@ -44,7 +44,7 @@ export const NO_PLAYER_FILTERS: PlayerFilterFields = {
 export function toPlayerFilter(fields: PlayerFilterFields): PlayerFilter | undefined {
   const filter: PlayerFilter = {
     ...toPersonFilter(fields),
-    position: fields.position || undefined,
+    positions: fields.positions.length ? fields.positions : undefined,
     freeAgents: fields.freeAgents || undefined,
     transferListed: fields.transferListed || undefined,
     loanListed: fields.loanListed || undefined,
@@ -57,7 +57,7 @@ export function countFilters(filter: PlayerFilter | undefined): number {
   if (!filter) {
     return 0;
   }
-  const single = [filter.position, filter.freeAgents, filter.transferListed, filter.loanListed].filter(
+  const single = [filter.positions?.length ? filter.positions : undefined, filter.freeAgents, filter.transferListed, filter.loanListed].filter(
     (value) => value !== undefined,
   ).length;
   return single + countPersonFilters(filter);
@@ -87,8 +87,7 @@ export function PlayerFilterBar({ fields, onChange, active, genderKnown, actions
     <FilterBar active={active} onClear={() => onChange(NO_PLAYER_FILTERS)} actions={actions}>
       <label className="filter-field">
         <span>{text.position}</span>
-        <select value={fields.position} onChange={(e) => set("position", e.currentTarget.value)}>
-          <option value="">{text.any}</option>
+        <select multiple value={fields.positions} onChange={(e) => set("positions", Array.from(e.currentTarget.selectedOptions, (option) => option.value))}>
           {POSITION_ORDER.map((key) => (
             <option key={key} value={key}>
               {POSITION_LABELS[key]}
