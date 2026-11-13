@@ -228,12 +228,10 @@ export function SquadExcelExport({ teams, clubName }: { teams: readonly ClubTeam
   }, [selectedColumns]);
   const totalColumns = EXPORT_GROUPS.reduce((count, group) => count + group.columns.length, 0);
   const selectedSet = new Set(selectedColumns);
-  const setGroup = (groupId: string, checked: boolean) => {
-    const group = EXPORT_GROUPS.find((item) => item.id === groupId);
-    if (!group) return;
+  const setVisibleGroup = (keys: string[], checked: boolean) => {
     setSelectedColumns((current) => {
       const next = new Set(current);
-      group.columns.forEach((column) => checked ? next.add(column.key) : next.delete(column.key));
+      keys.forEach((key) => checked ? next.add(key) : next.delete(key));
       return [...next];
     });
   };
@@ -291,8 +289,18 @@ export function SquadExcelExport({ teams, clubName }: { teams: readonly ClubTeam
         {visibleGroups.length === 0 && <p className="note">Aramanla eşleşen sütun bulunamadı.</p>}
         {visibleGroups.map((group) => {
           const selectedInGroup = group.columns.filter((column) => selectedSet.has(column.key)).length;
+          const visibleKeys = group.columns.map((column) => column.key);
           return <fieldset key={group.id} className="squad-excel-options-group">
             <legend>{group.label} ({selectedInGroup}/{group.columns.length} eşleşen)</legend>
+            <label className="squad-excel-group-toggle">
+              <input
+                type="checkbox"
+                checked={selectedInGroup === group.columns.length}
+                ref={(element) => { if (element) element.indeterminate = selectedInGroup > 0 && selectedInGroup < group.columns.length; }}
+                onChange={(event) => setVisibleGroup(visibleKeys, event.currentTarget.checked)}
+              />
+              Görünenleri seç
+            </label>
             <div className="squad-excel-options-columns">
               {group.columns.map((column) => <label key={column.key}>
                 <input
