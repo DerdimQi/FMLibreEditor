@@ -130,14 +130,7 @@ function playerRow(player: SquadPlayer, details: PlayerDetails | null, teamName:
   return [...base, ...attributes, ...personality, ...positions];
 }
 
-const BASE_HEADERS = [
-  "Oyuncu", "Tam ad", "Takım", "Yaş", "Mevkiler", "Uyruk", "Kulüp", "Doğum tarihi",
-  "Kondisyon %", "Maç keskinliği %", "Yorgunluk", "Moral",
-  "Takım uyumu", "Taktik aşinalığı", "Boy (cm)", "İstenen bonservis (£)", "Forma no",
-  "Haftalık ücret (£)", "Sözleşme bitişi", "Kadro statüsü", "Mutluluk", "Forma süresi mutluluğu",
-  "Milli maç", "Milli gol", "Sakatlıklar", "Cezalar", "Kiralık olduğu kulüp", "Bonservisinin olduğu kulüp",
-  "Kiralık bitişi", "Özel hareketler (kod)", "Uyruk / yetişme bağları", "Transfer listesinde", "Kiralık listesinde",
-];
+const BASE_HEADERS = t.fieldHeaders;
 
 const EXPORT_GROUPS = [
   { id: "base", label: t.groupBase, columns: BASE_HEADERS.map((label, index) => ({ key: `base-${index}`, label })) },
