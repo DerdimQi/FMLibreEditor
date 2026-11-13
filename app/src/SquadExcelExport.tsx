@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { call } from "./api";
 import { ATTRIBUTE_LABELS, PERSONALITY_LABELS, positionLabel, POSITION_LABELS, teamLabel } from "./labels";
 import type { ClubTeam, PlayerDetails, SquadPlayer } from "./types";
+import { intlLocale, strings } from "./i18n";
+
+const t = strings.excelExport;
 
 type Cell = string | number | boolean | null;
 type Row = Cell[];
@@ -137,10 +140,10 @@ const BASE_HEADERS = [
 ];
 
 const EXPORT_GROUPS = [
-  { id: "base", label: "Oyuncu bilgileri", columns: BASE_HEADERS.map((label, index) => ({ key: `base-${index}`, label })) },
-  { id: "attributes", label: "Oyuncu özellikleri", columns: Object.keys(ATTRIBUTE_LABELS).map((key) => ({ key: `attribute-${key}`, label: ATTRIBUTE_LABELS[key as keyof typeof ATTRIBUTE_LABELS] })) },
-  { id: "personality", label: "Kişilik", columns: Object.keys(PERSONALITY_LABELS).map((key) => ({ key: `personality-${key}`, label: PERSONALITY_LABELS[key as keyof typeof PERSONALITY_LABELS] })) },
-  { id: "positions", label: "Mevki yetkinlikleri", columns: Object.keys(POSITION_LABELS).map((key) => ({ key: `position-${key}`, label: `Mevki: ${POSITION_LABELS[key as keyof typeof POSITION_LABELS]}` })) },
+  { id: "base", label: t.groupBase, columns: BASE_HEADERS.map((label, index) => ({ key: `base-${index}`, label })) },
+  { id: "attributes", label: t.groupAttributes, columns: Object.keys(ATTRIBUTE_LABELS).map((key) => ({ key: `attribute-${key}`, label: ATTRIBUTE_LABELS[key as keyof typeof ATTRIBUTE_LABELS] })) },
+  { id: "personality", label: t.groupPersonality, columns: Object.keys(PERSONALITY_LABELS).map((key) => ({ key: `personality-${key}`, label: PERSONALITY_LABELS[key as keyof typeof PERSONALITY_LABELS] })) },
+  { id: "positions", label: t.groupPositions, columns: Object.keys(POSITION_LABELS).map((key) => ({ key: `position-${key}`, label: `Mevki: ${POSITION_LABELS[key as keyof typeof POSITION_LABELS]}` })) },
 ] as const;
 
 const ALL_EXPORT_COLUMNS = EXPORT_GROUPS.flatMap((group) => group.columns);
@@ -149,7 +152,7 @@ const BASE_COLUMN = (index: number) => `base-${index}`;
 const EXPORT_PROFILES = [
   {
     id: "general",
-    label: "Genel kadro raporu",
+    label: t.general,
     columns: [
       ...Array.from({ length: 15 }, (_, index) => BASE_COLUMN(index)),
       BASE_COLUMN(18), BASE_COLUMN(20), BASE_COLUMN(21),
@@ -158,7 +161,7 @@ const EXPORT_PROFILES = [
   },
   {
     id: "transfer",
-    label: "Transfer değerlendirmesi",
+    label: t.transfer,
     columns: [
       BASE_COLUMN(0), BASE_COLUMN(3), BASE_COLUMN(4), BASE_COLUMN(5),
       BASE_COLUMN(6), BASE_COLUMN(15), BASE_COLUMN(18), BASE_COLUMN(31), BASE_COLUMN(32),
@@ -168,7 +171,7 @@ const EXPORT_PROFILES = [
   },
   {
     id: "contracts",
-    label: "Maaş ve sözleşme",
+    label: t.contracts,
     columns: [
       BASE_COLUMN(0), BASE_COLUMN(3), BASE_COLUMN(16), BASE_COLUMN(17),
       BASE_COLUMN(18), BASE_COLUMN(19), BASE_COLUMN(20), BASE_COLUMN(21),
@@ -177,7 +180,7 @@ const EXPORT_PROFILES = [
   },
   {
     id: "attributes",
-    label: "Oyuncu özellikleri",
+    label: t.attributes,
     columns: [
       BASE_COLUMN(0), BASE_COLUMN(3), BASE_COLUMN(4),
       ...Object.keys(ATTRIBUTE_LABELS).map((key) => `attribute-${key}`),
@@ -217,8 +220,8 @@ function safeSheetName(name: string, used: Set<string>) {
 
 function buildWorkbook(clubName: string, teams: readonly ClubTeam[], details: (PlayerDetails | null)[][], selectedColumns: ReadonlySet<string>) {
   const used = new Set<string>(["kulüp özeti"]);
-  const names = ["Kulüp Özeti", ...teams.map((team) => safeSheetName(teamLabel(team), used))];
-  const summary: Row[] = [[clubName, "Kulüp kadro raporu", "Oluşturulma", new Date().toLocaleString("tr-TR")], [], ["Takım", "Oyuncu sayısı", "Ortalama yaş", "Kaptan", "Kaptan yardımcısı"]];
+  const names = [t.summary, ...teams.map((team) => safeSheetName(teamLabel(team), used))];
+  const summary: Row[] = [[clubName, t.report, t.created, new Date().toLocaleString(intlLocale)], [], [t.team, t.players, t.averageAge, t.captain, t.viceCaptain]];
   teams.forEach((team) => {
     const ages = team.players.flatMap((p) => p.age === null ? [] : [p.age]);
     summary.push([
@@ -256,11 +259,11 @@ export function SquadExcelExport({ teams, clubName }: { teams: readonly ClubTeam
   const [error, setError] = useState<string | null>(null);
   const [selectedColumns, setSelectedColumns] = useState<string[]>(savedExportColumns);
   const [columnSearch, setColumnSearch] = useState("");
-  const normalizedSearch = columnSearch.trim().toLocaleLowerCase("tr-TR");
+  const normalizedSearch = columnSearch.trim().toLocaleLowerCase();
   const visibleGroups = EXPORT_GROUPS.map((group) => ({
     ...group,
     columns: group.columns.filter((column) =>
-      !normalizedSearch || column.label.toLocaleLowerCase("tr-TR").includes(normalizedSearch)),
+      !normalizedSearch || column.label.toLocaleLowerCase().includes(normalizedSearch)),
   })).filter((group) => group.columns.length > 0);
   useEffect(() => {
     try {
@@ -310,7 +313,7 @@ export function SquadExcelExport({ teams, clubName }: { teams: readonly ClubTeam
   };
   return <div className="squad-excel-export">
     <details className="squad-excel-options">
-      <summary>Excel raporunda bulunacak alanları seç ({selectedColumns.length}/{totalColumns})</summary>
+      <summary>{t.panelTitle} ({selectedColumns.length}/{totalColumns})</summary>
       <div className="squad-excel-options-actions">
         <button type="button" onClick={() => setSelectedColumns(EXPORT_PROFILES[0].columns.slice())}>
           Genel kadro
@@ -327,26 +330,26 @@ export function SquadExcelExport({ teams, clubName }: { teams: readonly ClubTeam
         <button type="button" onClick={() => setSelectedColumns(EXPORT_GROUPS.flatMap((group) => group.columns.map((column) => column.key)))}>
           Tümünü seç
         </button>
-        <button type="button" onClick={() => setSelectedColumns([])}>Temizle</button>
-        <button type="button" onClick={() => setSelectedColumns([...DEFAULT_EXPORT_COLUMNS])}>Varsayılana dön</button>
+        <button type="button" onClick={() => setSelectedColumns([])}>{t.clear}</button>
+        <button type="button" onClick={() => setSelectedColumns([...DEFAULT_EXPORT_COLUMNS])}>{t.reset}</button>
       </div>
       <label className="squad-excel-search">
-        <span>Sütunlarda ara</span>
+        <span>{t.search}</span>
         <input
           type="search"
           value={columnSearch}
           onChange={(event) => setColumnSearch(event.currentTarget.value)}
-          placeholder="Örn. maaş, hızlanma, pas…"
-          aria-label="Excel sütunlarında ara"
+          placeholder={t.placeholder}
+          aria-label={t.searchAria}
         />
       </label>
       <div className="squad-excel-options-groups">
-        {visibleGroups.length === 0 && <p className="note">Aramanla eşleşen sütun bulunamadı.</p>}
+        {visibleGroups.length === 0 && <p className="note">{t.noResults}</p>}
         {visibleGroups.map((group) => {
           const selectedInGroup = group.columns.filter((column) => selectedSet.has(column.key)).length;
           const visibleKeys = group.columns.map((column) => column.key);
           return <fieldset key={group.id} className="squad-excel-options-group">
-            <legend>{group.label} ({selectedInGroup}/{group.columns.length} eşleşen)</legend>
+            <legend>{group.label} ({selectedInGroup}/{group.columns.length} {t.matching})</legend>
             <label className="squad-excel-group-toggle">
               <input
                 type="checkbox"
@@ -371,9 +374,9 @@ export function SquadExcelExport({ teams, clubName }: { teams: readonly ClubTeam
       </div>
     </details>
     <button type="button" onClick={() => void download()} disabled={busy || teams.every((team) => team.players.length === 0) || selectedColumns.length === 0}>
-      {busy ? "Excel hazırlanıyor…" : "Excel kulüp raporu indir (.xlsx)"}
+      {busy ? t.preparing : t.download}
     </button>
-    {selectedColumns.length === 0 && <span className="note">En az bir sütun seçmelisin.</span>}
+    {selectedColumns.length === 0 && <span className="note">{t.needOne}</span>}
     {error && <span role="alert" className="error">{error}</span>}
   </div>;
 }
