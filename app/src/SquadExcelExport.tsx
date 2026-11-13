@@ -136,7 +136,7 @@ const EXPORT_GROUPS = [
   { id: "base", label: t.groupBase, columns: BASE_HEADERS.map((label, index) => ({ key: `base-${index}`, label })) },
   { id: "attributes", label: t.groupAttributes, columns: Object.keys(ATTRIBUTE_LABELS).map((key) => ({ key: `attribute-${key}`, label: ATTRIBUTE_LABELS[key as keyof typeof ATTRIBUTE_LABELS] })) },
   { id: "personality", label: t.groupPersonality, columns: Object.keys(PERSONALITY_LABELS).map((key) => ({ key: `personality-${key}`, label: PERSONALITY_LABELS[key as keyof typeof PERSONALITY_LABELS] })) },
-  { id: "positions", label: t.groupPositions, columns: Object.keys(POSITION_LABELS).map((key) => ({ key: `position-${key}`, label: `${t.groupPositions}: ${POSITION_LABELS[key as keyof typeof POSITION_LABELS]}` })) },
+  { id: "positions", label: t.groupPositions, columns: Object.keys(POSITION_LABELS).map((key) => ({ key: `position-${key}`, label: `${t.positionPrefix}: ${POSITION_LABELS[key as keyof typeof POSITION_LABELS]}` })) },
 ] as const;
 
 const ALL_EXPORT_COLUMNS = EXPORT_GROUPS.flatMap((group) => group.columns);
