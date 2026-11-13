@@ -136,6 +136,17 @@ const BASE_HEADERS = [
   "Kiralık bitişi", "Özel hareketler (kod)", "Uyruk / yetişme bağları", "Transfer listesinde", "Kiralık listesinde",
 ];
 
+const EXPORT_GROUPS = [
+  { id: "base", label: "Oyuncu bilgileri", columns: BASE_HEADERS.map((label, index) => ({ key: `base-${index}`, label })) },
+  { id: "attributes", label: "Oyuncu özellikleri", columns: Object.keys(ATTRIBUTE_LABELS).map((key) => ({ key: `attribute-${key}`, label: ATTRIBUTE_LABELS[key as keyof typeof ATTRIBUTE_LABELS] })) },
+  { id: "personality", label: "Kişilik", columns: Object.keys(PERSONALITY_LABELS).map((key) => ({ key: `personality-${key}`, label: PERSONALITY_LABELS[key as keyof typeof PERSONALITY_LABELS] })) },
+  { id: "positions", label: "Mevki yetkinlikleri", columns: Object.keys(POSITION_LABELS).map((key) => ({ key: `position-${key}`, label: `Mevki: ${POSITION_LABELS[key as keyof typeof POSITION_LABELS]}` })) },
+] as const;
+
+const DEFAULT_EXPORT_COLUMNS = EXPORT_GROUPS.flatMap((group) => group.columns)
+  .map((column) => column.key)
+  .filter((key) => key !== "base-8" && key !== "base-9");
+
 function safeSheetName(name: string, used: Set<string>) {
   const base = name.replace(/[\\/?*:[\]]/g, " ").slice(0, 31) || "Takım";
   let candidate = base, n = 2;
@@ -147,7 +158,7 @@ function safeSheetName(name: string, used: Set<string>) {
   return candidate;
 }
 
-function buildWorkbook(clubName: string, teams: readonly ClubTeam[], details: (PlayerDetails | null)[][]) {
+function buildWorkbook(clubName: string, teams: readonly ClubTeam[], details: (PlayerDetails | null)[][], selectedColumns: ReadonlySet<string>) {
   const used = new Set<string>();
   const names = ["Kulüp Özeti", ...teams.map((team) => safeSheetName(teamLabel(team), used))];
   const summary: Row[] = [[clubName, "Kulüp kadro raporu", "Oluşturulma", new Date().toLocaleString("tr-TR")], [], ["Takım", "Oyuncu sayısı", "Ortalama yaş", "Kaptan", "Kaptan yardımcısı"]];
@@ -162,14 +173,14 @@ function buildWorkbook(clubName: string, teams: readonly ClubTeam[], details: (P
   });
   const sheets = [worksheet(summary, [28, 18, 18, 28, 28], 3)];
   teams.forEach((team, ti) => {
-    const headers = [
-      ...BASE_HEADERS,
-      ...Object.keys(ATTRIBUTE_LABELS).map((key) => ATTRIBUTE_LABELS[key as keyof typeof ATTRIBUTE_LABELS]),
-      ...Object.keys(PERSONALITY_LABELS).map((key) => PERSONALITY_LABELS[key as keyof typeof PERSONALITY_LABELS]),
-      ...Object.keys(POSITION_LABELS).map((key) => `Mevki: ${POSITION_LABELS[key as keyof typeof POSITION_LABELS]}`),
-    ];
+    const allHeaders = EXPORT_GROUPS.flatMap((group) => group.columns);
+    const selectedIndexes = allHeaders.flatMap((column, index) => selectedColumns.has(column.key) ? [index] : []);
+    const headers = selectedIndexes.map((index) => allHeaders[index].label);
     const rows: Row[] = [headers];
-    team.players.forEach((player, pi) => rows.push(playerRow(player, details[ti][pi], teamLabel(team))));
+    team.players.forEach((player, pi) => {
+      const fullRow = playerRow(player, details[ti][pi], teamLabel(team));
+      rows.push(selectedIndexes.map((index) => fullRow[index]));
+    });
     sheets.push(worksheet(rows, headers.map((h) => Math.max(13, Math.min(26, h.length + 3)))));
   });
   const files = [
@@ -186,8 +197,25 @@ function buildWorkbook(clubName: string, teams: readonly ClubTeam[], details: (P
 export function SquadExcelExport({ teams, clubName }: { teams: readonly ClubTeam[]; clubName: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedColumns, setSelectedColumns] = useState<string[]>([...DEFAULT_EXPORT_COLUMNS]);
+  const totalColumns = EXPORT_GROUPS.reduce((count, group) => count + group.columns.length, 0);
+  const selectedSet = new Set(selectedColumns);
+  const setGroup = (groupId: string, checked: boolean) => {
+    const group = EXPORT_GROUPS.find((item) => item.id === groupId);
+    if (!group) return;
+    setSelectedColumns((current) => {
+      const next = new Set(current);
+      group.columns.forEach((column) => checked ? next.add(column.key) : next.delete(column.key));
+      return [...next];
+    });
+  };
+  const toggleColumn = (key: string, checked: boolean) => {
+    setSelectedColumns((current) => checked
+      ? current.includes(key) ? current : [...current, key]
+      : current.filter((item) => item !== key));
+  };
   const download = async () => {
-    if (busy || teams.every((team) => team.players.length === 0)) return;
+    if (busy || teams.every((team) => team.players.length === 0) || selectedColumns.length === 0) return;
     setBusy(true);
     setError(null);
     try {
@@ -196,7 +224,7 @@ export function SquadExcelExport({ teams, clubName }: { teams: readonly ClubTeam
       )));
       const details = allDetails.map((results) => results.map((result) =>
         result.status === "fulfilled" ? result.value : null));
-      const blob = buildWorkbook(clubName, teams, details);
+      const blob = buildWorkbook(clubName, teams, details, selectedSet);
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -212,9 +240,48 @@ export function SquadExcelExport({ teams, clubName }: { teams: readonly ClubTeam
     }
   };
   return <div className="squad-excel-export">
-    <button type="button" onClick={() => void download()} disabled={busy || teams.every((team) => team.players.length === 0)}>
+    <details className="squad-excel-options">
+      <summary>Excel raporunda bulunacak alanları seç ({selectedColumns.length}/{totalColumns})</summary>
+      <div className="squad-excel-options-actions">
+        <button type="button" onClick={() => setSelectedColumns(EXPORT_GROUPS.flatMap((group) => group.columns.map((column) => column.key)))}>
+          Tümünü seç
+        </button>
+        <button type="button" onClick={() => setSelectedColumns([])}>Temizle</button>
+        <button type="button" onClick={() => setSelectedColumns([...DEFAULT_EXPORT_COLUMNS])}>Varsayılana dön</button>
+      </div>
+      <div className="squad-excel-options-groups">
+        {EXPORT_GROUPS.map((group) => {
+          const selectedInGroup = group.columns.filter((column) => selectedSet.has(column.key)).length;
+          return <fieldset key={group.id} className="squad-excel-options-group">
+            <legend>{group.label} ({selectedInGroup}/{group.columns.length})</legend>
+            <label className="squad-excel-group-toggle">
+              <input
+                type="checkbox"
+                checked={selectedInGroup === group.columns.length}
+                ref={(element) => { if (element) element.indeterminate = selectedInGroup > 0 && selectedInGroup < group.columns.length; }}
+                onChange={(event) => setGroup(group.id, event.currentTarget.checked)}
+              />
+              Grubun tamamı
+            </label>
+            <div className="squad-excel-options-columns">
+              {group.columns.map((column) => <label key={column.key}>
+                <input
+                  type="checkbox"
+                  checked={selectedSet.has(column.key)}
+                  onChange={(event) => toggleColumn(column.key, event.currentTarget.checked)}
+                />
+                {column.label}
+              </label>)}
+            </div>
+          </fieldset>;
+        })}
+      </div>
+      <p className="note">CA ve PA varsayılan olarak kapalıdır. İstersen rapora kendin ekleyebilirsin.</p>
+    </details>
+    <button type="button" onClick={() => void download()} disabled={busy || teams.every((team) => team.players.length === 0) || selectedColumns.length === 0}>
       {busy ? "Excel hazırlanıyor…" : "Excel kulüp raporu indir (.xlsx)"}
     </button>
+    {selectedColumns.length === 0 && <span className="note">En az bir sütun seçmelisin.</span>}
     {error && <span role="alert" className="error">{error}</span>}
   </div>;
 }
