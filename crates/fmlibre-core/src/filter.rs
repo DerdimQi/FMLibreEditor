@@ -436,13 +436,16 @@ mod tests {
         assert!(!PlayerFilter { position: Some("gk".to_owned()), ..PlayerFilter::default() }.matches(&striker));
         assert!(!PlayerFilter { free_agents: true, ..PlayerFilter::default() }.matches(&striker));
         assert!(!PlayerFilter { min_age: Some(20), ..PlayerFilter::default() }.matches(&striker));
-        assert!(PlayerFilter {
-            min_current_ability: Some(130),
-            max_current_ability: Some(150),
-            min_potential_ability: Some(145),
-            max_potential_ability: Some(155),
-            ..PlayerFilter::default()
-        }.matches(&striker));
+        assert!(
+            PlayerFilter {
+                min_current_ability: Some(130),
+                max_current_ability: Some(150),
+                min_potential_ability: Some(145),
+                max_potential_ability: Some(155),
+                ..PlayerFilter::default()
+            }
+            .matches(&striker)
+        );
         assert!(!PlayerFilter { max_current_ability: Some(139), ..PlayerFilter::default() }.matches(&striker));
         assert!(!PlayerFilter { max_potential_ability: Some(149), ..PlayerFilter::default() }.matches(&striker));
         let no_age = player("Unknown", None, 100, None, 1);
