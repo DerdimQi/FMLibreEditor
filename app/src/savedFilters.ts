@@ -55,8 +55,6 @@ const STAFF_SORTS: Record<StaffSort, true> = {
   club: true,
 };
 
-const POSITION_KEYS: ReadonlySet<string> = new Set(POSITION_ORDER);
-
 /**
  * The fields of the player filter bar from a stored value; a field that is missing or is not what the bar holds is
  * empty. It also brings the bar back after the language was switched (see `restore.ts`).
@@ -66,7 +64,11 @@ export function readFields(value: unknown): PlayerFilterFields {
   const none = NO_PLAYER_FILTERS;
   return {
     ...readPersonFields(given, PLAYER_ATTRIBUTES),
-    positions: Array.isArray(given.positions) ? given.positions.filter((item): item is string => typeof item === "string" && POSITION_KEYS.has(item)).slice(0, POSITION_ORDER.length) : none.positions,
+    positions: Array.isArray(given.positions)
+      ? given.positions.filter((item): item is string => typeof item === "string" && POSITION_ORDER.includes(item as (typeof POSITION_ORDER)[number])).slice(0, POSITION_ORDER.length)
+      : typeof given.position === "string" && POSITION_ORDER.includes(given.position as (typeof POSITION_ORDER)[number])
+        ? [given.position]
+        : none.positions,
     freeAgents: typeof given.freeAgents === "boolean" ? given.freeAgents : none.freeAgents,
     transferListed: typeof given.transferListed === "boolean" ? given.transferListed : none.transferListed,
     loanListed: typeof given.loanListed === "boolean" ? given.loanListed : none.loanListed,
