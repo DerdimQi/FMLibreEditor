@@ -118,7 +118,10 @@ jobs:
       - name: Build the unsigned installer
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         working-directory: app
-        run: npx tauri build --bundles nsis --config '{"bundle":{"createUpdaterArtifacts":false}}'
+        shell: pwsh
+        run: |
+          '{"bundle":{"createUpdaterArtifacts":false}}' | Set-Content -Path tauri.ci.conf.json -Encoding utf8
+          npx tauri build --bundles nsis --config tauri.ci.conf.json
 
       - name: Package the installer and the portable zip
         shell: pwsh
