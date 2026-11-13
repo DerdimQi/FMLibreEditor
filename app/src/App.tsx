@@ -552,7 +552,6 @@ function App() {
         )}
       </div>
 
-          </div>
       <footer className="colophon">
         <div className="colophon-main">
           <span className="colophon-name">
