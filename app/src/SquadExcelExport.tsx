@@ -82,7 +82,7 @@ function zip(files: { name: string; content: string }[]) {
   });
 }
 
-function worksheet(rows: Row[], widths: number[]) {
+function worksheet(rows: Row[], widths: number[], headerRow = 1) {
   const lastCol = colName(Math.max(1, widths.length));
   const lastRow = Math.max(1, rows.length);
   const cols = widths.map((width, i) => `<col min="${i + 1}" max="${i + 1}" width="${width}" customWidth="1"/>`).join("");
@@ -90,16 +90,16 @@ function worksheet(rows: Row[], widths: number[]) {
     const cells = row.map((value, ci) => {
       if (value === null || value === undefined || value === "") return "";
       const ref = `${colName(ci + 1)}${ri + 1}`;
-      if (typeof value === "number" && Number.isFinite(value)) return `<c r="${ref}" s="${ri === 0 ? 1 : 0}"><v>${value}</v></c>`;
-      if (typeof value === "boolean") return `<c r="${ref}" t="b" s="${ri === 0 ? 1 : 0}"><v>${value ? 1 : 0}</v></c>`;
-      return `<c r="${ref}" t="inlineStr" s="${ri === 0 ? 1 : 0}"><is><t xml:space="preserve">${xml(value)}</t></is></c>`;
+      if (typeof value === "number" && Number.isFinite(value)) return `<c r="${ref}" s="${ri === headerRow - 1 ? 1 : 0}"><v>${value}</v></c>`;
+      if (typeof value === "boolean") return `<c r="${ref}" t="b" s="${ri === headerRow - 1 ? 1 : 0}"><v>${value ? 1 : 0}</v></c>`;
+      return `<c r="${ref}" t="inlineStr" s="${ri === headerRow - 1 ? 1 : 0}"><is><t xml:space="preserve">${xml(value)}</t></is></c>`;
     }).join("");
     return `<row r="${ri + 1}">${cells}</row>`;
   }).join("");
-  const autoFilter = rows.length > 1 ? `<autoFilter ref="A1:${lastCol}${lastRow}"/>` : "";
+  const autoFilter = rows.length >= headerRow ? `<autoFilter ref="A${headerRow}:${lastCol}${lastRow}"/>` : "";
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
+<sheetViews><sheetView workbookViewId="0"><pane ySplit="${headerRow}" topLeftCell="A${headerRow + 1}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
 <cols>${cols}</cols><sheetData>${sheetRows}</sheetData>${autoFilter}
 </worksheet>`;
 }
@@ -149,7 +149,7 @@ function safeSheetName(name: string, used: Set<string>) {
 function buildWorkbook(clubName: string, teams: readonly ClubTeam[], details: (PlayerDetails | null)[][]) {
   const used = new Set<string>();
   const names = ["Kulüp Özeti", ...teams.map((team) => safeSheetName(teamLabel(team), used))];
-  const summary: Row[] = [["Takım", "Oyuncu sayısı", "Ortalama yaş", "Kaptan", "Kaptan yardımcısı"]];
+  const summary: Row[] = [[clubName, "Kulüp kadro raporu", "Oluşturulma", new Date().toLocaleString("tr-TR")], [], ["Takım", "Oyuncu sayısı", "Ortalama yaş", "Kaptan", "Kaptan yardımcısı"]];
   teams.forEach((team) => {
     const ages = team.players.flatMap((p) => p.age === null ? [] : [p.age]);
     summary.push([
@@ -159,7 +159,7 @@ function buildWorkbook(clubName: string, teams: readonly ClubTeam[], details: (P
       team.players.find((p) => p.uid === team.viceCaptain)?.name ?? "",
     ]);
   });
-  const sheets = [worksheet([[clubName, "Kulüp kadro raporu", "Oluşturulma", new Date().toLocaleString("tr-TR")], ...summary], [28, 18, 18, 28, 28])];
+  const sheets = [worksheet(summary, [28, 18, 18, 28, 28], 3)];
   teams.forEach((team, ti) => {
     const headers = [
       ...BASE_HEADERS,
