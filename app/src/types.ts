@@ -361,7 +361,9 @@ export interface PersonFilter {
   minAge?: number;
   maxAge?: number;
   minCurrentAbility?: number;
+  maxCurrentAbility?: number;
   minPotentialAbility?: number;
+  maxPotentialAbility?: number;
   /** Part of the nation's name; accents and case ignored. */
   nation?: string;
   /** Part of the club's name (the employer's, for staff); accents and case ignored. */
